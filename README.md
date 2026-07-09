@@ -89,13 +89,30 @@ checked against Barbarian's data).
   the TILE section produces visible in-game changes (confirmed: Adept walk
   frames turned solid white when all pixels set to index 1).
 
-## File Relationships
+## Game Modes and Data Loading
 
-```
-unittype.cam (DUNT section)
-  └── ImageIDBase = "AVA1" ──→ maindata.cam IMAG section "AVA1Adept"
-                                  └── frame descriptors point to TILE indices
-                                        └── TILE[3547..3594] = Adept Walk frames
-                                              └── pixel bytes = palette indices
-                                                    └── SPLT[350] = palette (DO NOT MODIFY)
-```
+The game has two modes with different data loading:
+
+**Original mode** (`Data/MajestyDatasetDefinitions.xml`):
+- Loads from `Data/` folder only
+- Modify: `Data/maindata.cam` (sprites), `Data/unittype.cam` (unit defs)
+
+**Expansion mode** (`DataMX/MajestyExpansionDatasetDefinitions.xml`):
+- Loads base `Data/` first, then overlays `DataMX/` on top
+- The expansion OVERRIDES base entries with same IDs
+- Modify: `DataMX/mx_maindata.cam` (sprites), `DataMX/mx_Unittype.cam` (unit defs)
+
+**Targeting your mod:**
+| Target | Files to modify |
+|--------|----------------|
+| Original only | `Data/maindata.cam` + `Data/unittype.cam` |
+| Expansion only | `DataMX/mx_maindata.cam` + `DataMX/mx_Unittype.cam` |
+| Both modes | All four files above |
+
+**Data sizes:**
+| File | Sections |
+|------|----------|
+| `Data/maindata.cam` (91.6 MB) | 380 IMAG, 17,224 TILE, 854 SPLT |
+| `DataMX/mx_maindata.cam` (53.8 MB) | 166 IMAG, 9,031 TILE, 288 SPLT |
+| `Data/unittype.cam` (148 KB) | 20 DMOV, 394 DUNT |
+| `DataMX/mx_Unittype.cam` (59.6 KB) | 2 DMOV, 174 DUNT |
