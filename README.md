@@ -129,6 +129,12 @@ is only necessary for things GPL can't touch (like sprite pixel data).
 - GPL script function to execute
 - Duration, cooldown, level requirements
 
+**Adding new spells:** The most practical approach would be to clone an existing
+effect's IMAG+TILE data, modify the pixel frames for new visuals, and reference
+it under a new ID in a quest's XML files. This avoids building IMAG metadata
+blobs from scratch (which is unexplored territory). The WrathOfKrolm SDK example
+demonstrates how quests define custom actions, overlays, and particle systems.
+
 ## TILE Pixel Format (Technical)
 
 ```
