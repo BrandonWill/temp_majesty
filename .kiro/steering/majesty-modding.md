@@ -161,6 +161,74 @@ Binary terrain/map definition file edited by RGSeditor. Defines terrain tile com
 height/slope data for the map. NOT a code constants file despite the name. Not relevant
 to spell/sprite modding.
 
+### Q File Format (Reverse-Engineered)
+
+The `.q` file is the binary quest map produced by RGSEditor. Key findings:
+
+**Header (16 bytes):**
+- Bytes 0-3: Magic "RGMa" (editor version) or "RGM6" (base game version)
+- Bytes 4-7: zeros
+- Bytes 8-11: Same magic repeated
+- Bytes 12-15: zeros
+
+**Strings (starting at offset 0x10):**
+- Null-terminated quest name (e.g., "basicAI", "WrathOfKrolm", "BARREN_WASTE")
+- Null-terminated pattern/module name (e.g., "pattMyAI", references the GPL entry function)
+
+**Map parameters (after strings):**
+- Several u32 values encoding map dimensions, seed/checksum, etc.
+- MyQuest uses dimensions ~256x256 (value 0x00000100)
+- WrathOfKrolm and base quests use 32768x32768 (0x00008000)
+- Followed by "NONE"/"none" section markers
+
+**Object entries (bulk of file):**
+
+Two types identified:
+
+1. **Short entries (24 bytes each)** — Spawner definitions:
+   - 4-byte Object_ID (e.g., "BVr1" = Ratman Champion)
+   - u32 value (spawn count or index, values like 9-17 seen)
+   - 16 bytes zeros/flags (includes a u32 = 1 at offset +16)
+   - These come in groups of 4 (spacing: 24,24,24,73) representing lair spawn lists
+   - A u32 count precedes each group (e.g., "04 00 00 00" = 4 entries)
+
+2. **Long entries (29+ bytes each)** — Placed buildings/lairs:
+   - 4-byte Object_ID (e.g., "BBw1" = Ice Cave, "ABJ1" = Palace)
+   - u32 = 0
+   - Null-terminated description string (e.g., "Ice Cave", "Goblin Fortress", "Palace")
+   - Position data follows (encoding not fully cracked — appears to be in the u32 before/after)
+
+**Object ID conventions:**
+- `BV**` = monsters/characters (BVm1=Ice Dragon, BVx1=Yeti, BVN1=Daemon, BVr1=Ratman Champion)
+- `BB**` = monster lairs (BBw1=Ice Cave, BBz1=Goblin Fortress, BBH1=Goblin Camp, BBx1=Rat's Nest)
+- `AB**` = player buildings (ABJ1=Palace)
+
+**Coordinate encoding (PARTIALLY UNDERSTOOD):**
+- The u32 value immediately before each Long_Entry lair appears to encode position
+- Values seen: 1476395008 (Ice Cave), 1258291200, 1157627904 (Snake Pits)
+- These could be fixed-point coordinates or packed x,y pairs — needs more analysis
+- Comparing multiple quests with known map layouts against these values would crack it
+
+**File sizes:**
+- Minimal (MyQuest, ~20 objects): 2469 bytes
+- Medium (WrathOfKrolm): 3198 bytes  
+- Large (Brashnard, many lairs): 4870 bytes
+
+**RGS terrain file:**
+- Magic "RGCB" (newer) or "RGCA" (older)
+- Quest.rgs: 49833 bytes, Data/constants.rgs: 28012 bytes
+- Contains terrain heightmap/type data
+- For test quests, reusing an existing .rgs is the simplest approach
+
+**Exploration script:** `utility/test_decoder.py` was used for this research.
+The Quests/ folder has 38 .q files available for comparison analysis.
+
+### RGSEditor
+- Located at `SDK/RGSeditor.exe` (also decompiled sections in `SDK/RGSeditor/`)
+- Creates `.q` map files and `.rgs` terrain files
+- Also used to configure mods (`.mmxml`) — sets GPL Bytecode and Game Object Definitions fields
+- For quest creation: saves Quest.q + Quest.mqxml, then you hand-edit the mqxml to add mod references
+
 ### What's Proven Working
 - Extract any sprite: `python sprite_extractor.py --cam Data/maindata.cam --extract AVA1 Walk`
 - Encode sprites back: `python sprite_injector.py --cam Data/maindata.cam --roundtrip --tile-idx 3547`
