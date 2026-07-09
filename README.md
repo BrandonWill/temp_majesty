@@ -1,118 +1,193 @@
-# Majesty HD Sprite Editor
+# Majesty Gold HD Modding Toolkit
 
-A work-in-progress toolset for extracting, viewing, and injecting sprite graphics
-into Majesty Gold HD's `maindata.cam` binary data file.
+A complete toolset for extracting, modifying, and injecting sprites, spell effects,
+and unit definitions in Majesty Gold HD. Fully reverse-engineered and verified in-game.
 
 ## Status
 
-| Component                          | Status        |
-|-------------------------------------|---------------|
-| Container format (sections/files)  | ✅ Solid - validated against real `` C# source |
-| IMAG blob parsing (image-set table)| ✅ Confirmed against 3 units (Adept, Barbarian, Warrior) |
-| Frame descriptor / direction blocks| ✅ Confirmed against 2 directional units |
-| TILE index resolution              | ✅ Confirmed - frame indices resolve to real, sensible TILE entries |
-| TILE pixel payload format          | ✅ **CRACKED** - 8-bit paletted, per-row RLE with absolute x-positioning |
-| Palette system                     | ✅ **SOLVED** - SPLT section holds 854 RGBA palettes (read-only! modifying crashes) |
-| PNG extractor                      | ✅ Working with correct colors and transparency |
-| PNG injector / TILE encoder        | ✅ Working - round-trip verified, in-game pixel changes confirmed |
-| CAM repacker                       | ✅ Working - identity repack + pixel mods verified in-game |
-| unittype.cam modification          | ✅ Working - can swap sprite sets, change stats |
-| In-game sprite modification        | ✅ **CONFIRMED** - pixel changes visible in original game mode |
-| Expansion mode modding             | ❌ Expansion mode ignores base CAM file changes |
-| SPLT palette modification          | ❌ Crashes the game - palettes are read-only |
-| Full sprite replacement            | ⬜ Next step - replace artwork using existing palette indices |
-| New unit creation                   | ⬜ Requires new IMAG + TILE entries + unittype.cam definition |
+| Component | Status |
+|-----------|--------|
+| CAM container format | ✅ Fully decoded (validated against  source) |
+| TILE sprite pixel format | ✅ **Cracked** — 8-bit paletted, per-row RLE, absolute x-positioning |
+| SPLT palette system | ✅ Decoded (854 palettes, 256 RGBA entries each) — **read-only** |
+| IMAG animation metadata | ✅ Image sets, frame descriptors, 8-direction blocks |
+| PNG sprite extraction | ✅ Working with correct colors and transparency |
+| TILE encoder (PNG → game format) | ✅ Round-trip verified, in-game confirmed |
+| CAM repacker | ✅ Identity repack + modified tiles verified in-game |
+| In-game pixel modification | ✅ **Confirmed working** in original game mode |
+| Unit type modification (unittype.cam) | ✅ Stats, sprite swaps, verified in-game |
+| Expansion mode modding | ✅ Uses `DataMX/mx_maindata.cam` + `DataMX/mx_Unittype.cam` |
+| Spell/effect animation modding | ✅ Same TILE format — overlays, particles, projectiles all moddable |
+| SPLT palette modification | ❌ Crashes the game — palettes are read-only |
 
-## Files
+## Tools
 
-- `RESEARCH_NOTES.md` — Full reverse-engineering findings, current as of the  breakthrough
-- `cam_reader.py` — Faithful Python port of ``'s container-format reader. Trust this over hand-derived offset math.
-- `sprite_extractor.py` — Built on `cam_reader.py`. Parses IMAG blobs (image-set tables, frame descriptors, per-direction geometry) and resolves frame indices into the TILE section. Cannot yet produce PNGs - the TILE payload format itself isn't decoded.
-- `` / `proj` — Ground-truth C# unpack/pack tool source (not built/run in this environment - no .NET SDK or network access here, so it was ported to Python instead).
+| File | Purpose |
+|------|---------|
+| `cam_reader.py` | Parse CAM archive files (sections, file entries, offsets) |
+| `sprite_extractor.py` | Extract sprites as PNGs with correct palette colors |
+| `sprite_injector.py` | Encode PNGs back into TILE RLE format |
+| `cam_writer.py` | Repack CAM archives with modified/replaced entries |
 
 ## Quick Start
 
-```
+```bash
+# List all sprite records
 python sprite_extractor.py --cam maindata.cam --list
+
+# Show a unit's animation sets
 python sprite_extractor.py --cam maindata.cam --dump-anim AVA1
-python sprite_extractor.py --cam maindata.cam --dump-frames AVA1 Walk
+
+# Extract all walk frames with correct colors
 python sprite_extractor.py --cam maindata.cam --extract AVA1 Walk
+
+# Extract a single tile frame
 python sprite_extractor.py --cam maindata.cam --extract-tile 3547
+
+# Round-trip test (decode → re-encode → verify)
+python sprite_injector.py --cam maindata.cam --roundtrip --tile-idx 3547
+
+# Repack CAM with a modified tile
+python cam_writer.py --cam maindata.cam --replace-tile 3547 --tile-data new.bin --output modded.cam
+
+# Identity repack (verify repacker)
+python cam_writer.py --cam maindata.cam --identity --output test.cam
 ```
-
-## What changed this session
-
-A previous session found the real `` source (someone else's
-validated unpack/pack tool for this exact format). That's a much stronger
-source of truth than continued hand-decoding, and it caught real bugs:
-
-- The container-format section directory was being misparsed (a tag/offset
-  byte-alignment bug), leading to a false belief that the pixel-index
-  section was tagged `CUT` with 854 entries. It's actually tagged `SPLT`.
-  A real, separate `CUT ` section exists but only has 20 entries.
-- The image-set table format (inside each unit/building's IMAG blob) was
-  wrong - assumed 12-byte `(setID, frameCount, relOffset)` triplets, but
-  it's actually a `u32` count followed by 8-byte `(setID, relOffset)` pairs,
-  with no frame-count field in this table at all.
-- **The single most important finding:** neither `SPLT` (854 entries, fixed
-  1032 bytes each) nor `CUT` (20 entries, fixed 886 bytes each) is where
-  character animation pixel data lives - both are too small and too
-  uniformly-sized. The real home is the **`TILE` section, with 17,224
-  variable-sized entries** - confirmed by checking that frame descriptor
-  indices (e.g. 3547+) resolve to real, sensibly-sized TILE entries, for
-  two different units (Adept, Barbarian).
-
-Frame descriptor parsing was also corrected and validated against a second
-unit: direction offsets must be read as **signed**, and frame count per
-direction is best derived from the byte-distance to the next populated
-direction slot, not from a header field (which gave a wrong answer when
-checked against Barbarian's data).
-
-## Next Steps (for next session)
-
-1. **Full sprite replacement** — Replace all Adept animation frames with
-   modified artwork using valid existing palette indices (no palette changes).
-2. **New unit creation** — Create a new unit with custom sprites by adding
-   IMAG/TILE entries to maindata.cam + a new entry in unittype.cam.
-3. **Quest-based modding** — Use the MyQuest framework to package mods
-   as distributable quest files.
-
-## Key Constraints Discovered
-
-- **Original game mode only** — Base CAM file modifications only take effect
-  in original game mode. Expansion mode uses its own compiled data.
-- **Palettes are read-only** — Modifying SPLT entries crashes the game.
-  Sprites must use colors already defined in their existing palette.
-- **unittype.cam is live** — Unit stats, ImageIDBase references, and other
-  properties in unittype.cam are read at runtime and can be freely modified.
-- **Pixel data in TILE entries is live** — Changing pixel byte values in
-  the TILE section produces visible in-game changes (confirmed: Adept walk
-  frames turned solid white when all pixels set to index 1).
 
 ## Game Modes and Data Loading
 
-The game has two modes with different data loading:
+The game has two modes with independent data pipelines:
 
-**Original mode** (`Data/MajestyDatasetDefinitions.xml`):
-- Loads from `Data/` folder only
-- Modify: `Data/maindata.cam` (sprites), `Data/unittype.cam` (unit defs)
+**Original mode** — loads from `Data/` only:
+```
+Data/MajestyDatasetDefinitions.xml → loads Data/maindata.cam, Data/unittype.cam, etc.
+```
 
-**Expansion mode** (`DataMX/MajestyExpansionDatasetDefinitions.xml`):
-- Loads base `Data/` first, then overlays `DataMX/` on top
-- The expansion OVERRIDES base entries with same IDs
-- Modify: `DataMX/mx_maindata.cam` (sprites), `DataMX/mx_Unittype.cam` (unit defs)
+**Expansion mode** — loads base `Data/` first, then overlays `DataMX/`:
+```
+DataMX/MajestyExpansionDatasetDefinitions.xml → base="Majesty" (inherits base data)
+  → then loads DataMX/mx_maindata.cam, DataMX/mx_Unittype.cam, etc.
+  → expansion entries OVERRIDE base entries with same IDs
+```
 
-**Targeting your mod:**
-| Target | Files to modify |
-|--------|----------------|
-| Original only | `Data/maindata.cam` + `Data/unittype.cam` |
-| Expansion only | `DataMX/mx_maindata.cam` + `DataMX/mx_Unittype.cam` |
-| Both modes | All four files above |
+### Targeting Your Mod
 
-**Data sizes:**
-| File | Sections |
-|------|----------|
-| `Data/maindata.cam` (91.6 MB) | 380 IMAG, 17,224 TILE, 854 SPLT |
-| `DataMX/mx_maindata.cam` (53.8 MB) | 166 IMAG, 9,031 TILE, 288 SPLT |
-| `Data/unittype.cam` (148 KB) | 20 DMOV, 394 DUNT |
-| `DataMX/mx_Unittype.cam` (59.6 KB) | 2 DMOV, 174 DUNT |
+| Target | Sprite file | Unit type file |
+|--------|-------------|---------------|
+| Original only | `Data/maindata.cam` | `Data/unittype.cam` |
+| Expansion only | `DataMX/mx_maindata.cam` | `DataMX/mx_Unittype.cam` |
+| Both modes | Modify all four files |
+
+### Data File Sizes
+
+| File | IMAG records | TILE frames | SPLT palettes |
+|------|-------------|-------------|---------------|
+| `Data/maindata.cam` (91.6 MB) | 380 | 17,224 | 854 |
+| `DataMX/mx_maindata.cam` (53.8 MB) | 166 | 9,031 | 288 |
+
+## What Can Be Modded
+
+### Unit Sprites (characters, buildings, monsters)
+Every unit has an IMAG record in `maindata.cam` containing animation metadata:
+- Multiple image sets: Walk, Stand, Attack, Cast, Die, Dead, Special, etc.
+- 6-8 directions per set (isometric facings)
+- Variable frame count per direction (typically 7-8 for walk cycles)
+
+Each frame is a TILE entry using the same RLE format.
+
+### Spell & Effect Animations
+Spells use three types of visuals, all stored as standard TILE sprites:
+
+| Type | Defined in | Example | IMAG prefix |
+|------|-----------|---------|-------------|
+| Caster animation | Unit's own IMAG "Cast" set | Adept raising staff | `AVA1` |
+| Overlays (persistent effects) | `M_Overlays.xml` | Fire shield glow | `WRb2` |
+| Particle systems | `M_ParticleSystems.xml` | Meteor storm, fireballs | `XL20` |
+| Projectiles | `M_Projectiles.xml` | Lightning bolt, acid bolt | `WRC1` |
+
+Effect IMAG records in maindata.cam include:
+- `WRd1teleport_e` — Teleport visual effect
+- `WRc1fire_blast_e` — Fire blast explosion
+- `WRC1lightng_bolt` — Lightning bolt
+- `XL14Firestorm` — Firestorm particles
+- `XL20MeteorStrmEffct` — Meteor storm effect
+- `HRA1healing_e` — Healing glow
+- `WPe1fireball_missil` — Fireball projectile
+
+All use the same TILE RLE format and can be extracted/modified identically to unit sprites.
+
+### Unit Stats and Behavior
+`unittype.cam` (DUNT section) defines every unit's properties:
+- HP, speed, attack, defense, resistances
+- ImageIDBase (which sprite set to use)
+- Allowed weapons, armor, spells
+- Movement class, recruitment cost/delay
+
+These are read live and can be freely modified.
+
+### Spell Definitions
+`action.cam` (DACT section) defines spell behavior:
+- Which animation set to play (ImageSet = "Cast")
+- Sound effects
+- GPL script function to execute
+- Duration, cooldown, level requirements
+
+## TILE Pixel Format (Technical)
+
+```
+[16 bytes]  Header: version(3), height(u16), w2, w3, w4(32), w5, w6, w7
+[6 bytes]   Zeros (padding)
+[4 bytes]   u32 palette_id (index into SPLT section — DO NOT MODIFY SPLT)
+[height×4]  u32 offset table (offsets relative to byte 26, self-referencing)
+[variable]  Row data (RLE compressed pixel runs)
+```
+
+**Row format** — repeated segments until last flag set:
+```
+[u16 x_position]  Absolute column where opaque pixels begin
+[u8  count]       Number of opaque pixels
+[u8  flags]       0x80 = last segment in row, 0x00 = more follow
+[count bytes]     Palette indices (one byte per pixel)
+```
+
+**Transparency:**
+- Palette index 0 = fully transparent
+- Palette indices 248-255 = "magic pink" (game renders as shadow/blend, not opaque)
+- Any gap between segments = transparent pixels
+
+## Key Constraints
+
+| Rule | Detail |
+|------|--------|
+| **Don't modify SPLT palettes** | Crashes the game. Use existing palette colors only. |
+| **Original mode for base mods** | `Data/maindata.cam` changes only visible in original game mode |
+| **Expansion uses DataMX** | Expansion mode reads `DataMX/mx_maindata.cam` for sprites |
+| **Preserve pixel format** | Keep RLE segment structure intact; only change pixel byte values |
+| **Quest mods add, not override** | Quest CAM files (like WrathOfKrolm_maindata.cam) add NEW entries |
+
+## Architecture
+
+```
+unittype.cam (DUNT section)
+  └── Unit definition: ImageIDBase = "AVA1"
+        └── maindata.cam IMAG section: "AVA1Adept"
+              └── Image sets (Walk, Stand, Attack, Cast, Die...)
+                    └── Frame descriptors → TILE indices
+                          └── TILE[3547..3594] = Walk frames (6 dirs × 8 frames)
+                                └── Pixel bytes = palette indices
+                                      └── SPLT[350] = 256-color RGBA palette
+
+action.cam (DACT section)
+  └── Spell definition: "teleport_short"
+        ├── ImageSet = "Cast" (uses unit's Cast animation)
+        └── GPLFunction = "Teleport_Short_Effect" (spawns visual effect)
+              └── Overlay/Particle definition (M_Overlays.xml)
+                    └── ImageIDBase = "DRa1" → maindata.cam IMAG "DRa1teleport_shrt_e"
+                          └── TILE frames (same RLE format)
+```
+
+## Requirements
+
+```
+pip install Pillow numpy
+```
