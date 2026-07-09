@@ -163,7 +163,7 @@ These are read live and can be freely modified.
 | **Original mode for base mods** | `Data/maindata.cam` changes only visible in original game mode |
 | **Expansion uses DataMX** | Expansion mode reads `DataMX/mx_maindata.cam` for sprites |
 | **Preserve pixel format** | Keep RLE segment structure intact; only change pixel byte values |
-| **Quest mods add, not override** | Quest CAM files (like WrathOfKrolm_maindata.cam) add NEW entries |
+| **Quest mods can override** | Quest CAM files may override base entries — needs testing for sprites |
 
 ## Architecture
 
