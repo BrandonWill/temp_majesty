@@ -6,5 +6,11 @@ __pycache__/
 *.png
 *.gif
 
+# Large binary game archives (local working copy, redundant with Data/)
+/maindata.cam
+
 # Large zip downloads
 *.zip
+
+# Scratch/utility scripts (not part of the toolkit)
+utility/

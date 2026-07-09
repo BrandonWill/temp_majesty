@@ -33,7 +33,7 @@ from pathlib import Path
 
 from cam_reader import read_cam
 
-CAM_FILE = r"C:\Program Files (x86)\Steam\steamapps\common\Majesty HD\Data\maindata.cam"
+CAM_FILE = r"Data/maindata.cam"
 
 ANIM_HEADER_SIZE   = 0x14   # u32 n_directions + 16 bytes padding, then u32 entryCount
 IMAGE_SET_ENTRY_SZ = 8      # u32 setID + u32 relOffset (corrected from a wrong 12-byte guess)

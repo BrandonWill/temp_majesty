@@ -78,7 +78,7 @@ def read_cam(path_or_bytes):
 
 if __name__ == "__main__":
     import sys
-    path = sys.argv[1] if len(sys.argv) > 1 else "/mnt/user-data/uploads/maindata.cam"
+    path = sys.argv[1] if len(sys.argv) > 1 else "Data/maindata.cam"
     sections = read_cam(path)
     for i, sec in enumerate(sections):
         print(f"Section {i}: ext={sec.extension!r}  files={len(sec.files)}")

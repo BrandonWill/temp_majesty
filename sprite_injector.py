@@ -279,7 +279,7 @@ def roundtrip_test(cam_data, tile_section, splt_section, tile_idx):
 
 def main():
     parser = argparse.ArgumentParser(description="Majesty HD sprite injector")
-    parser.add_argument("--cam", default="maindata.cam", help="Path to maindata.cam")
+    parser.add_argument("--cam", default="Data/maindata.cam", help="Path to maindata.cam")
     parser.add_argument("--encode", metavar="PNG", help="Encode a PNG to TILE format")
     parser.add_argument("--palette-id", type=int, default=350,
                         help="SPLT palette index to use (default: 350 = Adept)")
