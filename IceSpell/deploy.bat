@@ -29,6 +29,7 @@ copy /y "Data\IceSpell_Actions.xml" "%DEST%\Data\"
 copy /y "Data\IceSpell_Characters.xml" "%DEST%\Data\"
 copy /y "Data\IceSpell_Overlays.xml" "%DEST%\Data\"
 copy /y "Data\IceSpell.bcd" "%DEST%\Data\"
+copy /y "Data\Quest_maindata.cam" "%DEST%\Data\"
 
 rem Copy GPL source (needed for Source reference in mmxml)
 copy /y "GPL\IceSpell_Globals.dat" "%DEST%\GPL\"

@@ -1,111 +1,129 @@
 # IceSpell Mod — TODO / Troubleshooting
 
-## Status: Mod loads, but IceElemental fails to spawn
+## Current Status
 
-The mod IS recognized and loaded by the game (confirmed in logs). GPL compiles and runs.
-The Ice Cave lair attempts to spawn an IceElemental but fails at runtime.
-
----
-
-## Issue 1: GUID must be generated properly
-
-**Background:** The original `IceSpell.mmxml` was created by an AI agent with a hand-crafted fake GUID (`{F1CE0001-ICE1-4A2B-B3C4-FREEZESPELL01}`). The game did NOT recognize the mod with this GUID.
-
-The user manually created `Mod.mmxml` using RGSEditor, which generated a valid GUID (`{2A7F2E17-5B54-40B4-88C3-9E15927B9865}`). The user then copied this GUID into `IceSpell.mmxml`, after which the game DID load the mod.
-
-**The "duplicate ID" error in err.log** happened because both `Mod.mmxml` and `IceSpell.mmxml` were deployed with the same GUID — expected behavior since one was copied from the other.
-
-**TODO for next agent:** Investigate how RGSEditor generates GUIDs. Determine if the game validates GUIDs in a specific way (standard UUID v4? registry-based? checksum?) or if the fake GUID was rejected for another reason (e.g., filename convention, XML element order, missing `<Name>` tag). Replicate valid GUID generation in the toolchain so we don't need RGSEditor for this step.
-
-**Reference — working `Mod.mmxml` (RGSEditor-generated):**
-```xml
-<Majesty>
-	<Mod id="{2A7F2E17-5B54-40B4-88C3-9E15927B9865}">
-		<DataConfiguration>
-			...
-		</DataConfiguration>
-		<DisplayName lang="en_US">IceSpell</DisplayName>
-		<Description lang="en_US">
-			<Short>...</Short>
-			<Long/>
-		</Description>
-	</Mod>
-</Majesty>
-```
-
-Note differences from our `IceSpell.mmxml`:
-- No `<Name>` element
-- `<DataConfiguration>` comes BEFORE `<DisplayName>`/`<Description>`
-- The AI_Takeover working mod (`MyAI.mmxml`) DOES have `<Name>` and puts it first — so element order may not matter
+The mod loads, the IceElemental spawns, the GPL freeze logic works correctly (targeting, guards, duration calc all confirmed in logs). **The game crashes when `$createeffector` tries to render the overlay sprite** because the IMAG records in `Quest_maindata.cam` are malformed.
 
 ---
 
-## Issue 2: IceElemental has no initialization data
+## Resolved Issues
 
-**Error from gpl.log:**
+### 1. Mod not appearing in game
+**Cause:** The hand-crafted GUID `{F1CE0001-ICE1-4A2B-B3C4-FREEZESPELL01}` was not accepted by the game. Using RGSEditor to create a `Mod.mmxml` generated a valid GUID `{2A7F2E17-5B54-40B4-88C3-9E15927B9865}`. That GUID was then replaced with another RGSEditor-generated one `{FD53F69F-B6E7-4868-8B6E-8FA5754F7233}` which is what's currently in `IceSpell.mmxml`.
+
+**Fix applied:** Use RGSEditor-generated GUID. Future TODO: investigate if a standard UUID v4 works or if the game validates GUIDs specially.
+
+### 2. mmxml format wrong (slashes, GPL structure)
+**Cause:** Forward slashes and bare `<GPL>path</GPL>` text node instead of `<Target>`/`<Source>` sub-elements.
+
+**Fix applied:** Backslashes, structured GPL section with `<Target>` and `<Source>`.
+
+### 3. IceElemental "couldn't find initialization data" + BirthScript error
+**Cause:** Missing required attributes in the character XML definition.
+
+**Fix applied:** (By other agent) Added required fields. IceElemental now spawns successfully as `IceElemental#32`.
+
+### 4. CAM file not loaded
+**Cause:** `<CAM>Data\Quest_maindata.cam</CAM>` was missing from the mmxml.
+
+**Fix applied:** Added CAM line to `IceSpell.mmxml`. File is now loaded by the engine (`Library added: ...\Quest_maindata.cam` confirmed in logs).
+
+### 5. Deployment via junction link
+**Fix applied:** Created a directory junction:
 ```
-MakeAgent() couldn't create an agent of type IceElemental: Reason: couldn't find initialization data.
+C:\Users\Brandon\Documents\My Games\MajestyHD\Mods\IceSpell → C:\Users\Brandon\Documents\Kiro\Majesty\temp_majesty\IceSpell
 ```
-
-**What this means:** The GPL lair spawn code calls `MakeAgent("IceElemental")` but the engine can't find a complete unit definition with that ID. The `IceSpell_Characters.xml` file WAS loaded (confirmed in err.log), so the XML is being read — but the character definition is missing something.
-
-**TODO:** Compare `IceSpell_Characters.xml` against a working monster definition from the base game. Likely missing required fields. See Issue 3 for a specific missing attribute.
+No more manual copying needed. Edits in the repo are immediately live.
 
 ---
 
-## Issue 3: BirthScript attribute missing
+## Current Crash: IMAG record format is wrong in Quest_maindata.cam
 
-**Error from err.log:**
-```
-GplDispatcherHandle script error:
- Call Sequence was:
-$NewUnitInit( 0 ) - line 288 : Tried to access non-existent attribute BirthScript in agent#13, ().
-```
+### Symptoms
+- Game crashes when entering a zone with IceElemental
+- err.log shows all files loaded successfully, then just stops (hard crash, no error message)
+- gpl.log shows nothing (crash happens before GPL runs in this load)
+- Previous test WITHOUT the CAM loaded: spell worked fine until `$createeffector` which crashed because the overlay sprite (`IR01`) didn't exist
 
-**What this means:** When a unit spawns, `$NewUnitInit` reads a `BirthScript` attribute. The IceElemental definition in `IceSpell_Characters.xml` doesn't define this.
+### Root Cause Analysis
 
-**TODO:** Add the missing `birthScript` field (and any other required attributes) to the IceElemental definition. Use a working monster (Yeti/Ice Dragon) as a template.
+Compared our `IR01` IMAG record (216 bytes) against the real `MRB1` (petrify_effector, 412 bytes) from the base game's `maindata.cam`:
 
----
+**Key differences at the binary level:**
 
-## Issue 4 (resolved): Backslash paths + GPL `<Target>`/`<Source>` structure
+| Offset | Field (guessed) | Real MRB1 | Our IR01 | Notes |
+|--------|-----------------|-----------|----------|-------|
+| 44 | flags/palette? | 256 (0x100) | 0 | Missing value — likely critical |
+| 96 | frame table offset | 68 | 88 | Different internal offset to frame data |
+| 104 | packed field | 0x00240001 | 0 | Real has metadata we don't emit |
+| 116 | unknown | 0x00010000 | 0 | Additional metadata missing |
+| 128+ | TILE indices | 2473-2481 | — | Real references actual TILE indices in maindata.cam |
+| 180+ | TILE indices | — | 1-5 | Ours uses small sequential indices (for our 11 TILE entries) |
+| Total size | | 412 bytes | 216 bytes | Nearly 2x size difference |
 
-Fixed. `IceSpell.mmxml` now uses backslashes and the structured GPL format matching the working AI_Takeover mod. Game confirmed loading all files correctly.
+**Conclusion:** The IMAG record builder in the CAM generation tool is producing records that don't match the engine's expected binary layout. The real IMAG has additional metadata fields between the header and the frame table that our tool doesn't emit.
 
----
+### Recommended Fix (two options)
 
-## Log Evidence (2026-07-09 17:09)
+**Option A — Quick workaround (test logic without custom sprites):**
+Change `IceSpell_Overlays.xml` to use `ImageIDBase value="MRB1"` (the existing petrify effector sprite from the base game). The freeze overlay will display as grey stone instead of ice, but the entire freeze/unfreeze mechanic will work for testing.
 
-### err.log — confirms mod loaded successfully:
-```
-Adding Mod C:\Users\Brandon\Documents\My Games\MajestyHD\Mods\IceSpell\IceSpell.mmxml
-Loaded GPL bytecode: ...\IceSpell\Data\IceSpell.bcd
-Description file added: ...\IceSpell\Data\IceSpell_Actions.xml
-Description file added: ...\IceSpell\Data\IceSpell_Characters.xml
-Description file added: ...\IceSpell\Data\IceSpell_Overlays.xml
-```
-
-### err.log — duplicate ID warning (because both mmxml files have same GUID):
-```
-Mod definition ...\Mod.mmxml uses a duplicate ID.  Make new IDs for mods with a GUID creator!
-```
-
-### err.log — runtime spawn failure:
-```
-GplDispatcherHandle script error:
- $NewUnitInit( 0 ) - line 288 : Tried to access non-existent attribute BirthScript in agent#13, ().
-```
-
-### gpl.log — spawn failure:
-```
-MakeAgent() couldn't create an agent of type IceElemental: Reason: couldn't find initialization data.
-```
+**Option B — Fix the CAM IMAG format (proper fix):**
+1. Fully reverse-engineer the IMAG record format by comparing multiple real IMAG entries
+2. The real MRB1 has 9 frames (TILE indices 2473-2481) in a 412-byte record
+3. Key unknowns to crack:
+   - Offset 44: what does 256 mean? (palette count? sprite width in pixels?)
+   - Offset 104: packed field 0x00240001 — could be (36, 1) or (frame_count_related, direction_count)
+   - Offset 116: 0x00010000 — another packed field
+   - What's the stride between frame index entries? (appears to be 8 bytes per frame in real data)
+   - Our tool uses 8-byte stride too but the header section before the frame table is wrong
+4. Fix the CAM builder (`cam_writer.py` or whatever generated `Quest_maindata.cam`) to emit correct IMAG headers
+5. Rebuild `Quest_maindata.cam` and re-test
 
 ---
 
-## Next Steps (for next agent session)
+## File State
 
-1. Fix `IceSpell_Characters.xml` — add missing `birthScript` and other required attributes by comparing against working monster definitions
-2. Investigate GUID generation — can we produce valid GUIDs without RGSEditor?
-3. Remove `Mod.mmxml` from deployed folder (only `IceSpell.mmxml` should be there)
-4. Re-deploy and re-test
+```
+IceSpell/
+├── IceSpell.mmxml          ✓ Working (game loads it, GUID valid)
+├── Mod.mmxml               ✗ Remove from deployed folder (duplicate GUID conflict)
+├── deploy.bat              ✓ Updated (copies CAM too) — BUT junction makes this unnecessary now
+├── Data/
+│   ├── IceSpell.bcd        ✓ Compiles and loads, GPL logic confirmed working
+│   ├── IceSpell_Actions.xml    ✓ Loaded
+│   ├── IceSpell_Characters.xml ✓ Loaded, IceElemental spawns
+│   ├── IceSpell_Overlays.xml   ✓ Loaded (references IR01/IR02/IR03)
+│   └── Quest_maindata.cam      ✗ IMAG records malformed — causes crash
+├── GPL/
+│   ├── IceSpell.gpl        ✓ Debug version with extensive $DebugOut
+│   ├── IceSpell_Globals.dat    ✓ Lair spawn override works
+│   └── IceSpell.gplproj    ✓ Compiles successfully
+├── sprites/                 ✓ TILE frames generated (round-trip verified)
+└── utility/                 — Generator scripts
+```
+
+---
+
+## GPL Logic Status (confirmed working from logs)
+
+```
+✓ IceElemental spawns from Ice Cave
+✓ Ice_Freeze_Begin fires correctly
+✓ Building guard clause works (rejects Warriors_Guild)
+✓ IsDead check works
+✓ HasEffectPetrify check works
+✓ Duration calculation (19000) works
+✓ MagicResistance random check works
+✗ $createeffector("freeze_effector") — crashes due to missing/bad IMAG sprite data
+```
+
+---
+
+## Next Steps
+
+1. **Either** apply Option A (swap ImageIDBase to MRB1 for testing) **or** Option B (fix CAM IMAG format)
+2. Once overlay doesn't crash, verify the full freeze cycle: freeze → damage ticks → timer expires → thaw
+3. Fix targeting: IceElemental spams freeze on buildings before finding heroes (low priority, spell correctly rejects them via guard clause, just wastes AI cycles)
+4. Remove debug `$DebugOut` lines from GPL once everything is confirmed working
+5. Investigate GUID generation for automation (low priority — RGSEditor works for now)
