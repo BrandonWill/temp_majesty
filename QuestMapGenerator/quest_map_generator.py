@@ -1165,24 +1165,241 @@ def format_q_text(qmap: QuestMap) -> str:
 
 
 # =============================================================================
-# CLI
+# Validation (Task 8)
 # =============================================================================
+
+@dataclass
+class ValidationIssue:
+    offset: int
+    severity: str  # "error" or "warning"
+    message: str
+
+
+def validate_q_file(filepath) -> list[ValidationIssue]:
+    """
+    Validate a .q file's structural integrity.
+    
+    Checks magic bytes, object IDs, position bytes, and structural consistency.
+    Returns a list of issues found (empty = valid).
+    """
+    filepath = Path(filepath)
+    issues = []
+    
+    if not filepath.exists():
+        issues.append(ValidationIssue(0, "error", f"File not found: {filepath}"))
+        return issues
+    
+    data = filepath.read_bytes()
+    
+    # Check file size
+    if len(data) < 16:
+        issues.append(ValidationIssue(0, "error", f"File too small: {len(data)} bytes"))
+        return issues
+    
+    # Check magic at offset 0
+    magic = data[0:4]
+    if magic not in VALID_MAGICS:
+        issues.append(ValidationIssue(0, "error", f"Invalid magic: {magic!r}"))
+    
+    # Check magic repeated at offset 8
+    magic2 = data[8:12]
+    if magic2 != magic:
+        issues.append(ValidationIssue(8, "error", f"Magic mismatch at offset 8: {magic2!r} != {magic!r}"))
+    
+    # Check zeros at 4-7 and 12-15
+    if data[4:8] != b'\x00\x00\x00\x00':
+        issues.append(ValidationIssue(4, "warning", f"Expected zeros at offset 4-7"))
+    if data[12:16] != b'\x00\x00\x00\x00':
+        issues.append(ValidationIssue(12, "warning", f"Expected zeros at offset 12-15"))
+    
+    # Try to parse and check placed groups
+    try:
+        qmap = parse_q_file(filepath)
+        
+        # Check all object IDs are valid
+        for group in qmap.placed_groups:
+            for entry in group.entries:
+                oid = entry.object_id
+                if len(oid) != 4:
+                    issues.append(ValidationIssue(0, "error", f"Object ID not 4 chars: {oid!r}"))
+                elif not all(32 <= ord(c) < 127 for c in oid):
+                    issues.append(ValidationIssue(0, "error", f"Object ID has non-ASCII: {oid!r}"))
+                
+                # Check positions
+                for pos in entry.positions:
+                    if not (65 <= pos <= 89):
+                        issues.append(ValidationIssue(0, "error", 
+                            f"Invalid position {pos} in {oid} (expected 65-89)"))
+        
+        # Check for empty quest name
+        if not qmap.quest_name:
+            issues.append(ValidationIssue(16, "warning", "Empty quest name"))
+        
+        # Check placed groups found
+        if not qmap.placed_groups:
+            issues.append(ValidationIssue(0, "warning", "No placed groups found"))
+            
+    except QFormatError as e:
+        issues.append(ValidationIssue(0, "error", f"Parse error: {e}"))
+    except Exception as e:
+        issues.append(ValidationIssue(0, "error", f"Unexpected error: {e}"))
+    
+    return issues
+
+
+def compare_q_files(generated_path, reference_path) -> list[str]:
+    """
+    Compare structural properties between a generated .q file and a reference.
+    Returns list of difference descriptions.
+    """
+    diffs = []
+    
+    gen = parse_q_file(generated_path)
+    ref = parse_q_file(reference_path)
+    
+    if gen.magic != ref.magic:
+        diffs.append(f"Magic: {gen.magic} vs {ref.magic}")
+    
+    gen_groups = len(gen.placed_groups)
+    ref_groups = len(ref.placed_groups)
+    if gen_groups != ref_groups:
+        diffs.append(f"Placed groups: {gen_groups} vs {ref_groups}")
+    
+    gen_entries = sum(len(g.entries) for g in gen.placed_groups)
+    ref_entries = sum(len(g.entries) for g in ref.placed_groups)
+    if gen_entries != ref_entries:
+        diffs.append(f"Total entries: {gen_entries} vs {ref_entries}")
+    
+    gen_positions = sum(len(e.positions) for g in gen.placed_groups for e in g.entries)
+    ref_positions = sum(len(e.positions) for g in ref.placed_groups for e in g.entries)
+    if gen_positions != ref_positions:
+        diffs.append(f"Total positions: {gen_positions} vs {ref_positions}")
+    
+    gen_spawners = len(gen.spawner_blocks)
+    ref_spawners = len(ref.spawner_blocks)
+    if gen_spawners != ref_spawners:
+        diffs.append(f"Spawner blocks: {gen_spawners} vs {ref_spawners}")
+    
+    return diffs
+
+
+# =============================================================================
+# CLI (Task 9)
+# =============================================================================
+
+def _cli_parse(args):
+    """CLI: parse a .q file and print formatted output."""
+    if not args:
+        print("Usage: quest_map_generator.py parse <file.q>")
+        return 1
+    qmap = parse_q_file(args[0])
+    print(format_q_text(qmap))
+    return 0
+
+
+def _cli_validate(args):
+    """CLI: validate a .q file."""
+    if not args:
+        print("Usage: quest_map_generator.py validate <file.q> [--reference <ref.q>]")
+        return 1
+    
+    filepath = args[0]
+    reference = None
+    if "--reference" in args:
+        ref_idx = args.index("--reference")
+        if ref_idx + 1 < len(args):
+            reference = args[ref_idx + 1]
+    
+    print(f"Validating: {filepath}")
+    issues = validate_q_file(filepath)
+    
+    if issues:
+        for issue in issues:
+            prefix = "ERROR" if issue.severity == "error" else "WARN"
+            print(f"  [{prefix}] @0x{issue.offset:04X}: {issue.message}")
+    else:
+        print("  No issues found.")
+    
+    if reference:
+        print(f"\nComparing to reference: {reference}")
+        diffs = compare_q_files(filepath, reference)
+        if diffs:
+            for d in diffs:
+                print(f"  DIFF: {d}")
+        else:
+            print("  Structures match.")
+    
+    errors = [i for i in issues if i.severity == "error"]
+    return 1 if errors else 0
+
+
+def _cli_generate(args):
+    """CLI: generate a test quest."""
+    import argparse
+    parser = argparse.ArgumentParser(prog="quest_map_generator.py generate")
+    parser.add_argument("--name", required=True, help="Quest name")
+    parser.add_argument("--output", required=True, help="Output directory")
+    parser.add_argument("--lairs", default="", help="Comma-separated lair specs: ID:Desc:Pos (pos optional)")
+    parser.add_argument("--dataset", default="Majesty", choices=["Majesty", "MajestyExpansion"])
+    parser.add_argument("--palace", default="M", help="Palace grid position (A-Y)")
+    
+    try:
+        parsed = parser.parse_args(args)
+    except SystemExit:
+        return 1
+    
+    # Parse lair specs
+    lairs = []
+    if parsed.lairs:
+        for spec in parsed.lairs.split(","):
+            parts = spec.strip().split(":")
+            if len(parts) >= 2:
+                lair = {"id": parts[0], "desc": parts[1]}
+                if len(parts) >= 3 and parts[2]:
+                    lair["position"] = parts[2]
+                lairs.append(lair)
+            elif len(parts) == 1 and parts[0]:
+                lairs.append({"id": parts[0], "desc": parts[0]})
+    
+    result = generate_test_quest(
+        quest_name=parsed.name,
+        lairs=lairs,
+        output_dir=parsed.output,
+        palace_position=parsed.palace,
+        dataset_base=parsed.dataset,
+    )
+    
+    print(f"Generated quest package in: {parsed.output}")
+    for key, path in result.items():
+        print(f"  {key}: {path} ({path.stat().st_size} bytes)")
+    return 0
+
 
 if __name__ == "__main__":
     import sys
-
+    
     if len(sys.argv) < 2:
-        print("Usage: quest_map_generator.py <command> [args]")
-        print("Commands: parse <file.q>")
+        print("Quest Map Generator — Majesty Gold HD")
+        print()
+        print("Usage:")
+        print("  quest_map_generator.py parse <file.q>")
+        print("  quest_map_generator.py validate <file.q> [--reference <ref.q>]")
+        print("  quest_map_generator.py generate --name <name> --output <dir> [--lairs <specs>]")
+        print()
+        print("Lair spec format: ID:Description:Position (position optional, A-Y)")
+        print("Example: quest_map_generator.py generate --name Test --output out --lairs BBw1:Ice Cave:N,BBH1:Goblin Camp")
         sys.exit(1)
-
+    
     cmd = sys.argv[1]
+    rest = sys.argv[2:]
+    
     if cmd == "parse":
-        if len(sys.argv) < 3:
-            print("Usage: quest_map_generator.py parse <file.q>")
-            sys.exit(1)
-        qmap = parse_q_file(sys.argv[2])
-        print(format_q_text(qmap))
+        sys.exit(_cli_parse(rest))
+    elif cmd == "validate":
+        sys.exit(_cli_validate(rest))
+    elif cmd == "generate":
+        sys.exit(_cli_generate(rest))
     else:
         print(f"Unknown command: {cmd}")
+        print("Available: parse, validate, generate")
         sys.exit(1)
