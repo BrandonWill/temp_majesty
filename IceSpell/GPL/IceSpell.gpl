@@ -1,0 +1,163 @@
+///////////////////////////////////////////////////////////////////////////////
+// Ice Freeze Spell - GPL Implementation
+// 
+// Architecture: Clones the Gorgon_Petrify dual-effector pattern with
+// periodic damage via $NewThread (following Ratman_Plague_Active pattern).
+//
+// Components:
+//   Ice_Freeze_Begin  - Applies freeze effect (called by action script)
+//   Ice_Freeze_End    - Removes freeze effect (called by freeze_icon expiration)
+//   Ice_Damage_Tick   - Periodic cold damage (auto-repeating thread)
+//   UnFreeze_Unit     - Override to add ice freeze-lock check
+///////////////////////////////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////////////////////////////
+function Ice_Freeze_Begin ( agent ThisAgent, agent target )
+// Monster-cast spell - called from Ice_Freeze action
+// ThisAgent = caster (Ice Elemental), target = victim
+declare
+	integer time;
+begin
+	// Guard: dead targets
+	If ( $IsDead ( target ))
+		return;
+
+	// Guard: buildings and lairs cannot be frozen
+	If ( Target's "Type" == "Building" )
+		return;
+	If ( Target's "Type" == "Lair" )
+		return;
+
+	// Guard: already frozen by this effect - no stacking
+	If ( $HasAttribute ( "is_frozen_ice", target ))
+		If ( target's "is_frozen_ice" == TRUE )
+			return;
+
+	// Calculate duration with magic resistance check
+	time = #Freeze_Duration;
+	if ( $randomnumber ( 100 ) <= $getattribute ( target, #ATTRIB_MagicResistance ))
+		time = time / 2;
+
+	// Apply visible ice overlay (duration 0 = infinite, stays until we remove it)
+	$createeffector ( target, "freeze_effector", 0 );
+
+	// Apply invisible timer overlay (calls Ice_Freeze_End when duration expires)
+	$createeffector ( target, "freeze_icon", time );
+
+	// Set our custom freeze flag
+	$AddAttribute ( target, "is_frozen_ice", "boolean", TRUE );
+
+	// Immobilize the unit (GPL function: StopMoving + SuspendThread + IsFrozen)
+	$Freeze_Unit ( target );
+	$SpecifyIntent ( target, #intent_petrified );
+
+	// Start periodic cold damage thread
+	$AddAttribute ( target, "IceDamageScript", "function", $Ice_Damage_Tick );
+	$NewThread ( target's "IceDamageScript", #Freeze_DamageInterval, target );
+
+	$DebugOut ( 911, "Ice_Freeze_Begin: Frozen ", target, " for ", time, " ticks" );
+end
+
+
+///////////////////////////////////////////////////////////////////////////////
+function Ice_Freeze_End ( agent ThisAgent )
+// Called by freeze_icon effector when its duration expires
+// ThisAgent = the frozen unit (target of the spell)
+declare
+begin
+	// Guard: already cleaned up or dead
+	If ( $IsDead ( ThisAgent ))
+		begin
+			// Still clear the flag in case something checks it
+			If ( $HasAttribute ( "is_frozen_ice", ThisAgent ))
+				ThisAgent's "is_frozen_ice" = FALSE;
+			return;
+		end
+
+	// Clear freeze flag
+	ThisAgent's "is_frozen_ice" = FALSE;
+
+	// Stop damage thread
+	If ( $HasAttribute ( "IceDamageScript", ThisAgent ))
+		If ( $isRunning ( ThisAgent's "IceDamageScript" ))
+			$KillThread ( ThisAgent's "IceDamageScript" );
+
+	// Restore unit mobility
+	$UnFreeze_Unit ( ThisAgent );
+
+	// Play thaw/shatter animation (auto-removes after duration)
+	$createeffector ( ThisAgent, "thaw_effector", #Freeze_ThawDuration );
+
+	$DebugOut ( 911, "Ice_Freeze_End: Thawed ", ThisAgent );
+end
+
+
+///////////////////////////////////////////////////////////////////////////////
+function Ice_Damage_Tick ( agent ThisAgent )
+// Periodic cold damage - auto-repeats via $NewThread mechanism
+// Returns early to terminate the thread when effect ends or unit dies
+declare
+	integer HP;
+begin
+	// Guard: unit died while frozen - terminate thread
+	If ( $IsDead ( ThisAgent ))
+		return;
+
+	// Guard: freeze flag cleared (effect ended) - terminate thread
+	If ( $HasAttribute ( "is_frozen_ice", ThisAgent ) == FALSE )
+		return;
+	If ( ThisAgent's "is_frozen_ice" == FALSE )
+		return;
+
+	// Apply cold damage (CAN kill - no HP floor)
+	$AdjustAttribute ( ThisAgent, #ATTRIB_HP, ( 0 - #Freeze_DamagePerTick ));
+
+	$DebugOut ( 911, "Ice_Damage_Tick: Dealt ", #Freeze_DamagePerTick, " cold damage to ", ThisAgent );
+end
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Override: UnFreeze_Unit
+// Adds ice freeze-lock check alongside petrify/vines/paralytic/level-leech
+// A unit is NOT unfrozen if ANY freeze-type effect is still active
+///////////////////////////////////////////////////////////////////////////////
+Function UnFreeze_Unit ( agent ThisAgent )
+Declare
+	boolean has_ice_freeze;
+Begin
+	// Check our custom ice freeze attribute
+	has_ice_freeze = FALSE;
+	If ( $HasAttribute ( "is_frozen_ice", ThisAgent ))
+		If ( ThisAgent's "is_frozen_ice" == TRUE )
+			has_ice_freeze = TRUE;
+
+	// Check all freeze-lock attributes (original + our ice freeze)
+	if ( ($GetAttribute ( ThisAgent, #ATTRIB_HasEffectPetrify ) == 0) &&
+		 ($GetAttribute ( ThisAgent, #ATTRIB_HasEffectVines ) == 0) &&
+		 ($GetAttribute ( ThisAgent, #ATTRIB_HasEffectParalyticGaze ) == 0) &&
+		 ($GetAttribute ( ThisAgent, #ATTRIB_HasEffectLevelLeach ) == 0) &&
+		 (has_ice_freeze == FALSE) )
+		begin
+			// No freeze effects active - safe to unfreeze
+			If ( $IsDead ( ThisAgent ) == False )
+				begin
+					$Reset_Tasks ( ThisAgent );
+					$ResumeThread ( ThisAgent's "ActiveScript" );
+					$SetAttribute ( thisagent, #ATTRIB_IsFrozen, 0 );
+				end
+		end
+End
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Override: Freeze_Unit
+// Identical to base game - included here so our mod compiles standalone
+///////////////////////////////////////////////////////////////////////////////
+Function Freeze_Unit ( agent ThisAgent )
+Declare
+Begin
+	$StopMoving ( ThisAgent );
+	$SuspendThread ( ThisAgent's "ActiveScript" );
+	$SetAttribute ( thisagent, #ATTRIB_IsFrozen, 1 );
+End

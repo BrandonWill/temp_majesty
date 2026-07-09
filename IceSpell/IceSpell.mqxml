@@ -1,0 +1,27 @@
+<Majesty>
+	<Quest id="{F1CE0001-ICE1-4A2B-B3C4-FREEZESPELL01}">
+		<Name>IceSpellTest</Name>
+		<DisplayName lang="en_US">Ice Spell Test</DisplayName>
+		<Description lang="en_US">
+			<Short>Test the Ice/Freeze spell effect. An Ice Elemental spawns and freezes heroes with cold damage over time.</Short>
+			<Long>A test quest for the custom Ice Freeze spell effect. Spawns an Ice Elemental monster that casts a freeze spell on nearby heroes, immobilizing them and dealing cold damage over time. When the effect ends, a shatter/thaw animation plays.</Long>
+		</Description>
+		<Difficulty>Normal</Difficulty>
+		<DataConfiguration>
+			<Dataset base="MajestyExpansion">
+				<Load>
+					<Descriptions>Data/IceSpell_Actions.xml</Descriptions>
+					<Descriptions>Data/IceSpell_Characters.xml</Descriptions>
+					<Descriptions>Data/IceSpell_Overlays.xml</Descriptions>
+					<CAM>Data/Quest_maindata.cam</CAM>
+					<GPL>
+						<Target>Data\IceSpell.bcd</Target>
+						<Source>GPL\IceSpell.gpl</Source>
+						<Source>GPL\IceSpell_Globals.dat</Source>
+					</GPL>
+					<GPLSource>GPL</GPLSource>
+				</Load>
+			</Dataset>
+		</DataConfiguration>
+	</Quest>
+</Majesty>

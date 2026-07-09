@@ -1,0 +1,33 @@
+// Ice Spell Configuration
+// All tunable values for balancing the Ice Freeze effect
+
+// Duration of the freeze effect in game ticks (comparable to petrify's 19000)
+expression #Freeze_Duration 19000
+
+// Cold damage dealt per tick while frozen
+expression #Freeze_DamagePerTick 5
+
+// Interval between damage ticks in game ticks
+expression #Freeze_DamageInterval 2000
+
+// Duration of the thaw/shatter animation before it disappears
+expression #Freeze_ThawDuration 3000
+
+
+// Override Ice_Cave lair to spawn our IceElemental instead of Yeti
+[Ice_Cave]
+	{Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			Ice_Cave)
+		(difficulty 		3)
+		(Dispersion_Range	300)
+		(Spawn_Type		IceElemental)
+		(Special_Spawn_Type	IceElemental)
+		(Base_Spawn_Rate	30000)
+		(activeScript		Lair_Brains)
+		(Spawn_function 	Spawn)
+		(birthScript		Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]

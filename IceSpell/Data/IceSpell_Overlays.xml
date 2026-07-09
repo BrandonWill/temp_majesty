@@ -1,0 +1,50 @@
+<Majesty>
+	<!-- Ice Freeze Effector: Visible ice overlay rendered on top of frozen unit -->
+	<Description type="Unit" subType="Overlay" ID="IR01" Name="freeze_effector" Description="Ice Freeze">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="DontBlock"/>
+			<Menu value="11"/>
+			<ImageIDBase value="IR01"/>
+			<AttachmentPointID value="2"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="0"/>
+			<StackPriority value="0"/>
+			<Flags value="TransparentToMouse"/>
+		</Game>
+	</Description>
+	<!-- Ice Freeze Icon: Invisible timer that calls Freeze_End when duration expires -->
+	<Description type="Unit" subType="Overlay" ID="IR02" Name="freeze_icon" Description="Ice Freeze Timer">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="DontBlock"/>
+			<Info value="NotVisibleInISOView"/>
+			<Menu value="11"/>
+			<ImageIDBase value="IR02"/>
+			<Script type="0" cProc="0" GPLFunction="Ice_Freeze_End"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="0"/>
+			<StackPriority value="1"/>
+		</Game>
+	</Description>
+	<!-- Thaw Effector: Visible shatter/thaw animation that plays when freeze ends -->
+	<Description type="Unit" subType="Overlay" ID="IR03" Name="thaw_effector" Description="Ice Thaw">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="DontBlock"/>
+			<Menu value="11"/>
+			<ImageIDBase value="IR03"/>
+			<AttachmentPointID value="2"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="0"/>
+			<StackPriority value="0"/>
+			<Flags value="TransparentToMouse"/>
+		</Game>
+	</Description>
+</Majesty>
