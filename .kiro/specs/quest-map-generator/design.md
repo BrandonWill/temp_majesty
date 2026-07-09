@@ -156,10 +156,13 @@ row 4:  U       V       W       X       Y
 
 The game enforces one building per grid cell — you cannot place a building on top of another building, the same as in the RGSEditor. With 25 cells available (A-Y), a quest map can hold up to 25 placed buildings.
 
+Note: The physical size of each grid zone depends on the map size category (small, medium, large, huge, gigantic). On smaller maps, zones are physically smaller, which limits how large a building can be placed without conflicting with adjacent-zone buildings. The .q format does NOT store pixel-precise positions — only the grid zone letter. The game engine resolves exact tile placement at load time based on the building's sprite footprint and the .rgs terrain.
+
 The generator must:
 1. **Enforce unique positions** — raise an error if two buildings are assigned the same cell
 2. Spread lairs across different cells when auto-distributing
 3. Always place Palace at 'M' (center), consuming that cell
+4. Use the template .rgs file's dimensions (which implicitly define zone physical size)
 
 ### Spawner Entry Format (24 bytes)
 
