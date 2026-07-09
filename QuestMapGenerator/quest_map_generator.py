@@ -856,6 +856,258 @@ def write_q_file_simple(
 
 
 # =============================================================================
+# MQXML Generator (Task 4)
+# =============================================================================
+
+def generate_mqxml(
+    quest_name: str,
+    output_path,
+    dataset_base: str = "Majesty",
+    q_filename: str = None,
+    rgs_filename: str = None,
+    gpl_sources: list[str] = None,
+    gpl_target: str = None,
+    descriptions: list[str] = None,
+    display_name: str = None,
+    description_short: str = None,
+    description_long: str = None,
+    difficulty: str = "Normal",
+) -> Path:
+    """
+    Generate a .mqxml quest definition file.
+    
+    Args:
+        quest_name: Internal quest name (used in Name element)
+        output_path: Where to write the .mqxml
+        dataset_base: "Majesty" or "MajestyExpansion"
+        q_filename: Name of the .q file (default: Quest.q)
+        rgs_filename: Name of the .rgs file (default: Quest.rgs)
+        gpl_sources: List of GPL source file paths
+        gpl_target: GPL bytecode target path
+        descriptions: List of description XML file paths
+        display_name: Human-readable quest name
+        description_short: Short description text
+        description_long: Long description text
+        difficulty: "Easy", "Normal", "Hard"
+        
+    Returns:
+        Path to the written .mqxml file
+    """
+    import uuid
+    
+    output_path = Path(output_path)
+    
+    if q_filename is None:
+        q_filename = "Quest.q"
+    if rgs_filename is None:
+        rgs_filename = "Quest.rgs"
+    if display_name is None:
+        display_name = quest_name
+    if description_short is None:
+        description_short = f"Test quest: {quest_name}"
+    if description_long is None:
+        description_long = description_short
+    
+    # Generate a GUID
+    quest_guid = f"{{{str(uuid.uuid4()).upper()}}}"
+    
+    # Build Load section
+    load_lines = []
+    load_lines.append(f'\t\t\t\t\t<Template>{q_filename}</Template>')
+    load_lines.append(f'\t\t\t\t\t<Constants>{rgs_filename}</Constants>')
+    
+    if gpl_sources or gpl_target:
+        load_lines.append('\t\t\t\t\t<GPL>')
+        if gpl_target:
+            load_lines.append(f'\t\t\t\t\t\t<Target>{gpl_target}</Target>')
+        if gpl_sources:
+            for src in gpl_sources:
+                load_lines.append(f'\t\t\t\t\t\t<Source>{src}</Source>')
+        load_lines.append('\t\t\t\t\t</GPL>')
+    
+    if descriptions:
+        for desc_file in descriptions:
+            load_lines.append(f'\t\t\t\t\t<Descriptions>{desc_file}</Descriptions>')
+    
+    load_section = '\n'.join(load_lines)
+    
+    mqxml = f'''<Majesty>
+\t<Quest id="{quest_guid}">
+\t\t<DataConfiguration>
+\t\t\t<Dataset base="{dataset_base}">
+\t\t\t\t<Load>
+{load_section}
+\t\t\t\t</Load>
+\t\t\t</Dataset>
+\t\t</DataConfiguration>
+\t\t<DisplayName lang="en_US">{display_name}</DisplayName>
+\t\t<Description lang="en_US">
+\t\t\t<Short>{description_short}</Short>
+\t\t\t<Long>{description_long}</Long>
+\t\t</Description>
+\t\t<Difficulty>{difficulty}</Difficulty>
+\t\t<Name>{quest_name}</Name>
+\t</Quest>
+</Majesty>
+'''
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(mqxml, encoding='utf-8')
+    return output_path
+
+
+# =============================================================================
+# Terrain File Handling (Task 5)
+# =============================================================================
+
+DEFAULT_RGS_TEMPLATE = Path(__file__).parent.parent / "MyQuest" / "Quest.rgs"
+
+
+def copy_terrain_template(
+    output_dir,
+    output_name: str = "Quest.rgs",
+    template_path=None,
+) -> Path:
+    """
+    Copy a .rgs terrain template to the output directory.
+    
+    Args:
+        output_dir: Directory to copy the .rgs into
+        output_name: Filename for the output .rgs
+        template_path: Path to source .rgs (default: MyQuest/Quest.rgs)
+        
+    Returns:
+        Path to the copied .rgs file
+        
+    Raises:
+        FileNotFoundError: If template doesn't exist
+        QFormatError: If template doesn't have valid RGS magic
+    """
+    import shutil
+    
+    if template_path is None:
+        template_path = DEFAULT_RGS_TEMPLATE
+    template_path = Path(template_path)
+    
+    if not template_path.exists():
+        raise FileNotFoundError(f"RGS template not found: {template_path}")
+    
+    # Validate RGS magic
+    with open(template_path, 'rb') as f:
+        magic = f.read(4)
+    if magic not in (b'RGCB', b'RGCA'):
+        raise QFormatError(
+            f"Invalid RGS magic {magic!r} in {template_path}. Expected RGCB or RGCA."
+        )
+    
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / output_name
+    shutil.copy2(template_path, output_path)
+    return output_path
+
+
+# =============================================================================
+# High-Level Convenience API (Task 6)
+# =============================================================================
+
+def generate_test_quest(
+    quest_name: str,
+    lairs: list[dict],
+    output_dir,
+    palace_position: str = "M",
+    starting_gold: int = 50000,
+    dataset_base: str = "Majesty",
+    extra_gpl_sources: list[str] = None,
+    extra_gpl_target: str = None,
+    extra_descriptions: list[str] = None,
+    rgs_template: str = None,
+) -> dict:
+    """
+    Generate a complete test quest package (Q file + RGS + MQXML).
+    
+    This is the one-call API for creating a minimal quest with a palace
+    and specified lairs, ready for in-game loading.
+    
+    Args:
+        quest_name: Quest name (used in filenames and metadata)
+        lairs: List of lair specs, each a dict with keys:
+            - "id": Object_ID (e.g., "BBw1")
+            - "desc": Description string (e.g., "Ice Cave")
+            - "position": Optional grid letter "A"-"Y" (auto-distributed if omitted)
+        output_dir: Directory to write the quest package into
+        palace_position: Grid letter for palace (default "M" = center)
+        starting_gold: Starting gold for the quest
+        dataset_base: "Majesty" or "MajestyExpansion"
+        extra_gpl_sources: Additional GPL source files to load
+        extra_gpl_target: GPL bytecode target
+        extra_descriptions: Additional description XML files
+        rgs_template: Custom .rgs template path (default: MyQuest/Quest.rgs)
+        
+    Returns:
+        Dict with paths: {"q": Path, "rgs": Path, "mqxml": Path}
+        
+    Example:
+        generate_test_quest(
+            "IceTest",
+            [{"id": "BBw1", "desc": "Ice Cave"}, {"id": "BBH1", "desc": "Goblin Camp"}],
+            "output/IceTest"
+        )
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Build placed entries
+    palace_byte = letter_to_byte(palace_position)
+    entries = [PlacedEntry("ABJ1", "Palace", [palace_byte])]
+    
+    # Distribute lairs
+    lairs_needing_positions = []
+    lairs_with_positions = []
+    excluded = [palace_byte]
+    
+    for lair in lairs:
+        if "position" in lair and lair["position"]:
+            pos_byte = letter_to_byte(lair["position"])
+            entries.append(PlacedEntry(lair["id"], lair["desc"], [pos_byte]))
+            excluded.append(pos_byte)
+        else:
+            lairs_needing_positions.append(lair)
+    
+    if lairs_needing_positions:
+        positions = auto_distribute(len(lairs_needing_positions), exclude=excluded)
+        for lair, pos_byte in zip(lairs_needing_positions, positions):
+            entries.append(PlacedEntry(lair["id"], lair["desc"], [pos_byte]))
+    
+    # Write .q file
+    group = PlacedGroup(terrain_code="gras", entries=entries, faction_name="Player1")
+    q_path = write_q_file(
+        [group],
+        output_dir / "Quest.q",
+        template_path=rgs_template if rgs_template else None,
+    )
+    
+    # Copy .rgs terrain
+    rgs_path = copy_terrain_template(
+        output_dir,
+        output_name="Quest.rgs",
+        template_path=rgs_template,
+    )
+    
+    # Generate .mqxml
+    mqxml_path = generate_mqxml(
+        quest_name=quest_name,
+        output_path=output_dir / "Quest.mqxml",
+        dataset_base=dataset_base,
+        gpl_sources=extra_gpl_sources,
+        gpl_target=extra_gpl_target,
+        descriptions=extra_descriptions,
+    )
+    
+    return {"q": q_path, "rgs": rgs_path, "mqxml": mqxml_path}
+
+
+# =============================================================================
 # Pretty-print
 # =============================================================================
 
