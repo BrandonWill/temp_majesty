@@ -117,13 +117,10 @@ Effect IMAG records in maindata.cam include:
 All use the same TILE RLE format and can be extracted/modified identically to unit sprites.
 
 ### Unit Stats and Behavior
-`unittype.cam` (DUNT section) defines every unit's properties:
-- HP, speed, attack, defense, resistances
-- ImageIDBase (which sprite set to use)
-- Allowed weapons, armor, spells
-- Movement class, recruitment cost/delay
-
-These are read live and can be freely modified.
+Unit stats (HP, speed, attack, defense, spells, etc.) are exposed through GPL
+scripting and should be modified there rather than editing `unittype.cam` directly.
+GPL is the intended modding interface for gameplay changes — the CAM file approach
+is only necessary for things GPL can't touch (like sprite pixel data).
 
 ### Spell Definitions
 `action.cam` (DACT section) defines spell behavior:
