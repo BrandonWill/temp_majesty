@@ -120,8 +120,58 @@ GPL/Quest.gpl — gameplay logic
 - Always backup original game files before replacing
 - The game needs `maindata.cam` to exist but may cache some data from it
 
+### Pre-Flight Validation (run before loading game)
+The game crashes silently with no useful error messages. These checks catch most crash causes offline:
+
+1. **TILE round-trip** — Every generated TILE must decode back to identical pixels:
+   `python sprite_injector.py --cam Data/maindata.cam --roundtrip --tile-idx <idx>`
+2. **CAM structural integrity** — After any repack, re-read with `cam_reader.py` and verify:
+   - All section file counts match expected values
+   - All file offsets are within the file bounds
+   - No palette modifications in SPLT entries (crashes the game)
+3. **XML cross-references** — Every `ImageIDBase` in overlay/character/action XMLs must
+   have a matching IMAG record in the CAM file being loaded
+4. **GPL compilation** — Always compile GPL with `Gplbcc.exe` before loading. Syntax errors,
+   undefined functions, and type mismatches are caught here without needing the game.
+5. **Effector name consistency** — Every `$createeffector(agent, "name", ...)` in GPL must
+   have a matching overlay definition with that exact ID/Name in the XML
+6. **Palette index bounds** — Every pixel byte in generated TILE data must be 0-255,
+   and palette_id must reference a valid SPLT entry index
+
+### Defensive GPL Coding Patterns
+GPL has no try/catch. Guard every function entry:
+```gpl
+function Freeze_Begin(agent ThisAgent, agent target)
+begin
+    If ($IsDead(target)) return;
+    If (target's "Type" == "Building") return;
+    If (target's "Type" == "Lair") return;
+    If ($GetAttribute(target, #ATTRIB_HasEffectFreeze) == 1) return;
+    // ... rest of logic
+end
+```
+
+Use `$DebugOut` for logging (check SDK/Documentation/GPL Debugger.pdf for how to view output):
+```gpl
+$DebugOut(911, "Freeze_Begin called on: ", target);
+```
+
+### constants.rgs
+Binary terrain/map definition file edited by RGSeditor. Defines terrain tile combinations,
+height/slope data for the map. NOT a code constants file despite the name. Not relevant
+to spell/sprite modding.
+
 ### What's Proven Working
 - Extract any sprite: `python sprite_extractor.py --cam Data/maindata.cam --extract AVA1 Walk`
 - Encode sprites back: `python sprite_injector.py --cam Data/maindata.cam --roundtrip --tile-idx 3547`
 - Repack CAM: `python cam_writer.py --cam Data/maindata.cam --replace-tile 3547 --tile-data new.bin --output modded.cam`
 - Swap unit appearance via unittype.cam: change ImageIDBase field in DUNT entry
+
+### Future Scope: Automated Test Quest Generator
+To speed up in-game testing, explore auto-generating a minimal "test harness" quest:
+- Use a pre-made flat terrain `.q` file (binary map — RGSeditor format, needs understanding)
+- Auto-generate `.mqxml` with DataConfiguration loading the mod's CAM/XML/BCD files
+- GPL script that immediately on quest start: spawns the test unit, gives resources, triggers the spell
+- Goal: compile → launch game → select test quest → see feature in under 10 seconds
+- The `.q` binary map format is unexplored — understanding it would unlock full automation
+- Alternatively: keep one hand-made minimal test map and just swap the GPL/XML/CAM references
