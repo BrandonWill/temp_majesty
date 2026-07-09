@@ -39,11 +39,15 @@ No more manual copying needed. Edits in the repo are immediately live.
 
 ## Current Crash: IMAG record format is wrong in Quest_maindata.cam
 
+### Timeline of the crash investigation
+1. First test: mmxml did NOT include `<CAM>Data\Quest_maindata.cam</CAM>`. The mod loaded, IceElemental spawned, GPL ran correctly, but the game crashed at `$createeffector(target, "freeze_effector", 0)` because the overlay's `ImageIDBase=IR01` had no IMAG data in any loaded CAM file.
+2. Fix attempt: Added `<CAM>Data\Quest_maindata.cam</CAM>` to `IceSpell.mmxml` so the engine would have the IMAG/TILE/SPLT data for IR01/IR02/IR03.
+3. Result: Now the game crashes EARLIER — during zone load itself, before any GPL executes. The engine loads `Quest_maindata.cam` successfully (`Library added:` line in err.log) but crashes when parsing/validating its IMAG records.
+
 ### Symptoms
 - Game crashes when entering a zone with IceElemental
 - err.log shows all files loaded successfully, then just stops (hard crash, no error message)
 - gpl.log shows nothing (crash happens before GPL runs in this load)
-- Previous test WITHOUT the CAM loaded: spell worked fine until `$createeffector` which crashed because the overlay sprite (`IR01`) didn't exist
 
 ### Root Cause Analysis
 
