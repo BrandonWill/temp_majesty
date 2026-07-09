@@ -1,0 +1,20 @@
+<Majesty>
+	<Mod id="{F1CE0001-ICE1-4A2B-B3C4-FREEZESPELL01}">
+		<Name>IceSpell</Name>
+		<DisplayName lang="en_US">Ice Spell Effect</DisplayName>
+		<Description lang="en_US">
+			<Short>Adds an Ice Freeze spell to Ice Dragons. Ice Caves spawn freezing dragons.</Short>
+			<Long/>
+		</Description>
+		<DataConfiguration>
+			<Dataset base="MajestyExpansion">
+				<Load>
+					<Descriptions>Data/IceSpell_Actions.xml</Descriptions>
+					<Descriptions>Data/IceSpell_Characters.xml</Descriptions>
+					<Descriptions>Data/IceSpell_Overlays.xml</Descriptions>
+					<GPL>Data/IceSpell.bcd</GPL>
+				</Load>
+			</Dataset>
+		</DataConfiguration>
+	</Mod>
+</Majesty>
