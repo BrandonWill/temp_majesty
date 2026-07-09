@@ -12,11 +12,16 @@ into Majesty Gold HD's `maindata.cam` binary data file.
 | Frame descriptor / direction blocks| ✅ Confirmed against 2 directional units |
 | TILE index resolution              | ✅ Confirmed - frame indices resolve to real, sensible TILE entries |
 | TILE pixel payload format          | ✅ **CRACKED** - 8-bit paletted, per-row RLE with absolute x-positioning |
-| Palette system                     | ✅ **SOLVED** - SPLT section holds 854 RGBA palettes, indexed by u32 at TILE byte 22 |
+| Palette system                     | ✅ **SOLVED** - SPLT section holds 854 RGBA palettes (read-only! modifying crashes) |
 | PNG extractor                      | ✅ Working with correct colors and transparency |
-| Palette identification             | ✅ Automatic - each TILE entry embeds its palette index |
-| PNG injector                       | ⬜ Not started |
-| GUI tool                           | ⬜ Stretch goal |
+| PNG injector / TILE encoder        | ✅ Working - round-trip verified, in-game pixel changes confirmed |
+| CAM repacker                       | ✅ Working - identity repack + pixel mods verified in-game |
+| unittype.cam modification          | ✅ Working - can swap sprite sets, change stats |
+| In-game sprite modification        | ✅ **CONFIRMED** - pixel changes visible in original game mode |
+| Expansion mode modding             | ❌ Expansion mode ignores base CAM file changes |
+| SPLT palette modification          | ❌ Crashes the game - palettes are read-only |
+| Full sprite replacement            | ⬜ Next step - replace artwork using existing palette indices |
+| New unit creation                   | ⬜ Requires new IMAG + TILE entries + unittype.cam definition |
 
 ## Files
 
@@ -65,13 +70,32 @@ checked against Barbarian's data).
 
 ## Next Steps (for next session)
 
-1. **Build the PNG injector** — Encode a PNG back into the RLE format:
-   - Quantize colors to the target SPLT palette (or create a new one)
-   - Encode rows as `[u16 x_pos][u8 count][u8 flags][pixel bytes]` segments
-   - Build the u32 offset table and TILE header
-   - Replace the TILE entry in the CAM archive and repack
-2. **CAM repacker** — Port or integrate the m-architek  pack logic
-   to write modified TILE/SPLT entries back into maindata.cam.
-3. **Test full round-trip** — Extract → modify PNG → re-inject → verify in-game.
-4. **New unit creation** — Requires creating new IMAG blob, TILE entries,
-   SPLT palette, and hooking into `unittype.cam` definitions.
+1. **Full sprite replacement** — Replace all Adept animation frames with
+   modified artwork using valid existing palette indices (no palette changes).
+2. **New unit creation** — Create a new unit with custom sprites by adding
+   IMAG/TILE entries to maindata.cam + a new entry in unittype.cam.
+3. **Quest-based modding** — Use the MyQuest framework to package mods
+   as distributable quest files.
+
+## Key Constraints Discovered
+
+- **Original game mode only** — Base CAM file modifications only take effect
+  in original game mode. Expansion mode uses its own compiled data.
+- **Palettes are read-only** — Modifying SPLT entries crashes the game.
+  Sprites must use colors already defined in their existing palette.
+- **unittype.cam is live** — Unit stats, ImageIDBase references, and other
+  properties in unittype.cam are read at runtime and can be freely modified.
+- **Pixel data in TILE entries is live** — Changing pixel byte values in
+  the TILE section produces visible in-game changes (confirmed: Adept walk
+  frames turned solid white when all pixels set to index 1).
+
+## File Relationships
+
+```
+unittype.cam (DUNT section)
+  └── ImageIDBase = "AVA1" ──→ maindata.cam IMAG section "AVA1Adept"
+                                  └── frame descriptors point to TILE indices
+                                        └── TILE[3547..3594] = Adept Walk frames
+                                              └── pixel bytes = palette indices
+                                                    └── SPLT[350] = palette (DO NOT MODIFY)
+```
