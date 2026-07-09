@@ -7,7 +7,7 @@ and unit definitions in Majesty Gold HD. Fully reverse-engineered and verified i
 
 | Component | Status |
 |-----------|--------|
-| CAM container format | ✅ Fully decoded (validated against  source) |
+| CAM container format | ✅ Fully decoded |
 | TILE sprite pixel format | ✅ **Cracked** — 8-bit paletted, per-row RLE, absolute x-positioning |
 | SPLT palette system | ✅ Decoded (854 palettes, 256 RGBA entries each) — **read-only** |
 | IMAG animation metadata | ✅ Image sets, frame descriptors, 8-direction blocks |
