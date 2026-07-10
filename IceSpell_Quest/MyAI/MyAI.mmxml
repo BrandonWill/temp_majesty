@@ -1,0 +1,21 @@
+<Majesty>
+	<Mod id="{2DC4F8CC-8108-47AC-BE5F-A4545176823B}">
+		<Name>MyAI</Name>
+		<DisplayName lang="en_US">MyAI</DisplayName>
+		<Description lang="en_US">
+			<Short>Currently only improves the AI on The Siege map</Short>
+			<Long/>
+		</Description>
+		<DataConfiguration>
+			<Dataset base="MajestyExpansion">
+				<Load>
+					<Descriptions>Data/MX_Buildings.xml</Descriptions>
+					<GPL>
+						<Target>Data\MyAI.bcd</Target>
+						<Source>GPL\Game\mx_Building_Data.dat</Source>
+					</GPL>
+				</Load>
+			</Dataset>
+		</DataConfiguration>
+	</Mod>
+</Majesty>

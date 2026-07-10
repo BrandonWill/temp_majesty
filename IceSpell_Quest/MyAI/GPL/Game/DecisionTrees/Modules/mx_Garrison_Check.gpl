@@ -1,0 +1,70 @@
+///////////////////////////////////////////////////////////////////////////////
+//Copyright (c) 1999 Cyberlore Studios, Inc. All rights Reserved.
+//CONFIDENTIAL MATERIAL
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+//Dwarfeh
+//This was updated so Solarus will only visit Guardhouses that are owned by the current player.
+//Previously, this would go for anyone in your team. Team members should've built Solarus!
+Function Garrison_Check (agent ThisAgent, integer Chance) is boolean
+Declare
+	list 		Potentials;
+	list 		NewList;
+	integer	Counter;
+	agent		Farthest;
+	agent 	Target;
+
+Begin
+	//See is I am interested enough
+	If ($RandomNumber (100) + 1 > Chance)
+		begin
+			$DebugOut ("No, not interested.");
+			return False;
+		end
+
+	//Find all buildings on my team
+	//$ListObjects (ThisAgent, "Building", -1, Potentials, #MyTeam);
+
+	//Find all guardhouses on potentials list
+   //Potentials = $ListTitles (Potentials, "Guardhouse");
+
+	$ListObjects (ThisAgent, "Building", -1, Potentials, #CheckTitles, "Guardhouse", #MyPlayer, #ATTRIB_FirstStageBuilt, 1 );
+
+	//Find all completed buildings
+	//Potentials = $ListCompleted (Potentials);
+
+	//Find the top #Max_Farthest_Building_Choices in the Potetials list, and put them on a list
+	While (Counter < #Max_Farthest_Building_Choices) do
+		begin
+			If ($ListSize (Potentials) > 0)
+				begin
+					Farthest = $ListMember (Potentials, $ListSize (Potentials));
+
+					NewList << Farthest;
+					Potentials -= Farthest;
+				end
+			Counter++;
+		end
+
+	If ($ListSize (NewList) > 0)
+		begin
+			//This picks a random target from NewList
+			ThisAgent's "Target" = $ListMember (NewList, $RandomNumber ($ListSize (NewList)) +1 );
+
+			Target = ThisAgent's "Target";
+
+			//This may get overwritten if they are visiting a Marketplace or a Trading_post - as that means they are up
+			//to something different (ie, entertaining)
+			ThisAgent's "Taskname" = "Visiting";
+
+			$SpecifyIntent (ThisAgent, #intent_garrisoning_guardhouse);
+
+			ThisAgent's "ActiveScript" = $Use_Building;
+
+
+			return True;
+		end
+
+	return False;
+End

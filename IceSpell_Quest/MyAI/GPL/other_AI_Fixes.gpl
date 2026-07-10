@@ -1,0 +1,55 @@
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+function TRM_RezChecker (agent ThisAgent) is boolean
+
+declare
+	list		MyGuilds, outposts, embassies, full_list, potentials;
+	string		MyGuildType;
+	agent		guild;
+begin
+	//Find all guilds that I can be a member of
+	if ( $IsValidGamePiece(ThisAgent) && $HasAttribute("title", ThisAgent))
+		begin
+			MyGuildType = $TRM_CheckMyGuildType (ThisAgent);
+			
+		end
+	else
+		begin
+			return false;
+		end
+
+	$ListObjects (ThisAgent, "Building", -1, MyGuilds, #MyPlayer, #ATTRIB_FirstStageBuilt, 1, #CheckTitles, MyGuildType);
+	$ListObjects (ThisAgent, "Building", -1, Outposts, #MyPlayer, #ATTRIB_FirstStageBuilt, 1, #CheckTitles, "Outpost");
+	$ListObjects (ThisAgent, "Building", -1, Embassies, #MyPlayer, #ATTRIB_FirstStageBuilt, 1, #CheckTitles, "Embassy");
+
+	full_list = $AddLists (myguilds, outposts, embassies);
+	$ClearList(potentials);
+
+	if ($ListSize(full_list) > 0)
+		begin
+			foreach guild in full_list do
+				begin
+					If ($IsDead (Guild) == False && $GuildHasOpenSlots (Guild) == True)
+						begin
+							potentials << guild;
+						end
+				end
+		end
+	else
+		begin
+			//No guilds exist of my type, so no need to rez me
+			return false;
+		end
+
+	if ($ListSize(potentials) > 0)
+		begin
+			//We do have a spot open in a guild, so we can rez me
+			return true;
+		end
+	else
+		begin
+			//No guilds of my type that have openings, so no need to rez me
+			return false;
+		end
+
+end

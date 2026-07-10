@@ -1,0 +1,41 @@
+[IceElemental]
+	{Monster
+		(type			monster)
+		(subtype		xx)
+		(title			IceElemental)
+		(original_type		Monster)
+		(EnemyType		Hero)
+		(idle_action		Monster_idle)
+		(attack_action		Ice_Freeze)
+		(special_splat		icebreath_hit)
+		(Friend			xx)
+		(raider_respond		1)
+		(speed			1)
+		(castingrange		200)
+		(attacktype		2)
+		(Guardian_Mod		5)
+		(activeScript		Wandering)
+		(basicScript		Wandering)
+		(backscript		Wandering)
+		(evaluationScript	monster_eval_enemies)
+		(birthScript		Monster_Birth)
+		(IGdeathscript		monster_gravestone)
+	}
+[end]
+
+[Ice_Cave]
+	{Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			Ice_Cave)
+		(difficulty 		3)
+		(Dispersion_Range	300)
+		(Spawn_Type		IceElemental)
+		(Special_Spawn_Type	IceElemental)
+		(Base_Spawn_Rate	30000)
+		(activeScript		Lair_Brains)
+		(Spawn_function 	Spawn)
+		(birthScript		Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]

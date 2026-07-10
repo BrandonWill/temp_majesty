@@ -1,0 +1,107 @@
+///////////////////////////////////////////////////////////////////////////////
+//Copyright (c) 1999 Cyberlore Studios, Inc. All rights Reserved.
+//CONFIDENTIAL MATERIAL
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+//Dwarfeh
+//This was updated so heroes will only visit buildings that are owned by the current player.
+//This stops gnomes/healers/elves/monks from running off and dying in PVP
+Function Visit_Building (agent ThisAgent, string Building, integer Chance) is boolean
+Declare
+	list 		Potentials;
+	list 		NewList;
+	integer	Counter;
+	agent		Farthest;
+	agent 	Target;
+
+Begin
+	$DebugOut ("Should I visit a",Building,"?");
+	//See is I am interested enough
+	If ($RandomNumber (100) + 1 > Chance)
+		begin
+			$DebugOut ("No, not interested.");
+			return False;
+		end
+
+	//Find all buildings of Title Building
+	//Potentials = $ListCompletedTitles (ThisAgent, "Building", Building, -1);
+	$ListObjects (ThisAgent, "Building", -1, Potentials, #MyPlayer, #CheckTitles, Building, #ATTRIB_FirstStageBuilt, 1);
+
+	//Find the top #Max_Farthest_Building_Choices in the Potetials list, and put them on a list
+	While (Counter < #Max_Farthest_Building_Choices) do
+		begin
+			If ($ListSize (Potentials) > 0)
+				begin
+					//Farthest = $Pick_Farthest (ThisAgent, Potentials);
+					Farthest = $ListMember (Potentials, $ListSize (Potentials));
+
+					NewList << Farthest;
+					Potentials -= Farthest;
+				end
+			Counter++;
+		end
+
+	If ($ListSize (NewList) > 0)
+		begin
+			//This picks a random target from NewList
+			$DebugOut ("I'm going to an",Building);
+			ThisAgent's "Target" = $ListMember (NewList, $RandomNumber ($ListSize (NewList)) +1 );
+
+			Target = ThisAgent's "Target";
+
+			//This may get overwritten if they are visiting a Marketplace or a Trading_post - as that means they are up
+			//to something different (ie, entertaining)
+			ThisAgent's "Taskname" = "Visiting";
+
+			ThisAgent's "ActiveScript" = $Use_Building;
+
+			//If the building is a Marketplace or TradingPost, and I have a target, then set my taskname so I know which
+			//script to request when I arrive
+			//This is a special case, and just for elves
+			If (Building == "Marketplace" || Building == "Trading_Post")
+				begin
+
+					ThisAgent's "TaskName" = "Entertain_Shop";
+					$SpecifyIntent (ThisAgent, #intent_going_to_bard);
+
+				end
+
+			Else
+				begin
+					//Specify the intent for gardens
+					If (Building == "Royal_Gardens")
+						begin
+
+							$SpecifyIntent (ThisAgent, #intent_visit_gardens);
+
+						end
+
+
+					else
+						begin
+							//The building is a gazebo or inn
+							if (ThisAgent's "Title" == "Elf")
+								begin
+									$SpecifyIntent (ThisAgent, #intent_going_to_bard);
+								end
+
+							else
+								begin
+
+									If (Target's "Subtype" == "Inn")
+										$SpecifyIntent (ThisAgent, #intent_visiting_an_inn);
+
+									Else
+										$SpecifyIntent (ThisAgent, #intent_visiting_gazebo);
+
+								end
+						end
+				end
+
+			return True;
+		end
+
+	$DebugOut ("No",building,"(s)");
+	return False;
+End

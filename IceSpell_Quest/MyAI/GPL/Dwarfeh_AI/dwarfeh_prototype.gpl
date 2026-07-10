@@ -1,0 +1,14 @@
+
+///////////////////////////////////////////////////////////////////////////////
+//Not all the spells were built in an easily accessible way for AI
+prototype Dwarfeh_AI_Spell()
+declare
+	string title;
+	
+	integer cost;
+	
+	function canCast;
+	function castSpell;
+
+begin
+end

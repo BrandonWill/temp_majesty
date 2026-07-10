@@ -1,0 +1,37 @@
+<Majesty>
+	<Quest id="{B7E3A21C-5F89-4D12-9A3E-7C6F2D8E1B04}">
+		<DataConfiguration>
+			<Dataset base="MajestyExpansion">
+				<Load>
+					<Template>Quest.q</Template>
+					<Constants>Quest.rgs</Constants>
+					<Descriptions>Data\IceSpell_Actions.xml</Descriptions>
+					<Descriptions>Data\IceSpell_Characters.xml</Descriptions>
+					<Descriptions>Data\IceSpell_Overlays.xml</Descriptions>
+					<Descriptions>MyAI\Data\M_Buildings.xml</Descriptions>
+					<Descriptions>MyAI\Data\MX_Buildings.xml</Descriptions>
+					<CAM>Data\Quest_maindata.cam</CAM>
+					<GPL>
+						<Target>Data\IceSpell_Quest.bcd</Target>
+						<Source>GPL\IceSpell.gpl</Source>
+						<Source>GPL\IceSpell_Globals.dat</Source>
+						<Source>MyAI\GPL\custom_rules.gpl</Source>
+						<Source>MyAI\GPL\Game\mx_Building_Data.dat</Source>
+						<Source>MyAI\GPL\Game\mx_Globals.gpl</Source>
+						<Source>MyAI\GPL\Game\mx_Hero_Data.dat</Source>
+						<Source>MyAI\GPL\Game\mx_prototype.gpl</Source>
+						<Source>MyAI\GPL\Game\DecisionTrees\Modules\mx_defend_home.gpl</Source>
+					</GPL>
+					<GPLSource>GPL</GPLSource>
+				</Load>
+			</Dataset>
+		</DataConfiguration>
+		<DisplayName lang="en_US">Ice Spell Test</DisplayName>
+		<Description lang="en_US">
+			<Short>Test quest for Ice Freeze spell with AI opponent and Ice Caves.</Short>
+			<Long>Test quest for Ice Freeze spell. Defeat the AI. Ice Caves spawn Ice Elementals with freeze attack.</Long>
+		</Description>
+		<Difficulty>Hard</Difficulty>
+		<Name>IceSpellTest</Name>
+	</Quest>
+</Majesty>

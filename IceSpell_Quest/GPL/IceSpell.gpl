@@ -1,0 +1,141 @@
+///////////////////////////////////////////////////////////////////////////////
+// Ice Freeze Spell - GPL Implementation (Debug version)
+///////////////////////////////////////////////////////////////////////////////
+
+expression #Freeze_Duration 19000
+expression #Freeze_DamagePerTick 5
+expression #Freeze_DamageInterval 2000
+expression #Freeze_ThawDuration 3000
+
+
+///////////////////////////////////////////////////////////////////////////////
+function Ice_Freeze_Begin ( agent ThisAgent, agent target )
+declare
+	integer time;
+begin
+	$DebugOut ( 911, "ICE: ===== Ice_Freeze_Begin ENTERED =====" );
+	$DebugOut ( 911, "ICE: Caster=", ThisAgent, " Target=", target );
+
+	$DebugOut ( 911, "ICE: Checking IsDead..." );
+	If ( $IsDead ( target ))
+		begin
+			$DebugOut ( 911, "ICE: Target is dead, returning" );
+			return;
+		end
+
+	$DebugOut ( 911, "ICE: Checking Type..." );
+	If (Target's "Type" == "Building")
+		begin
+			$DebugOut ( 911, "ICE: Target is Building, returning" );
+			return;
+		end
+	If (Target's "Type" == "Lair")
+		begin
+			$DebugOut ( 911, "ICE: Target is Lair, returning" );
+			return;
+		end
+
+	$DebugOut ( 911, "ICE: Checking HasEffectPetrify..." );
+	if ( $GetAttribute ( target, #ATTRIB_HasEffectPetrify ) == 1 )
+		begin
+			$DebugOut ( 911, "ICE: Target already petrified, returning" );
+			return;
+		end
+
+	$DebugOut ( 911, "ICE: Calculating duration..." );
+	time = #Freeze_Duration;
+	$DebugOut ( 911, "ICE: Base duration=", time );
+
+	$DebugOut ( 911, "ICE: Checking MagicResistance..." );
+	if ( $randomnumber ( 100 ) <= $getattribute ( target, #ATTRIB_MagicResistance ))
+		begin
+			time = time / 2;
+			$DebugOut ( 911, "ICE: Resisted! Duration halved to ", time );
+		end
+
+	$DebugOut ( 911, "ICE: About to createeffector freeze_effector..." );
+	$createeffector ( target, "freeze_effector", 0 );
+	$DebugOut ( 911, "ICE: freeze_effector created OK" );
+
+	$DebugOut ( 911, "ICE: About to createeffector freeze_icon..." );
+	$createeffector ( target, "freeze_icon", time );
+	$DebugOut ( 911, "ICE: freeze_icon created OK" );
+
+	$DebugOut ( 911, "ICE: About to SetAttribute HasEffectPetrify..." );
+	$SetAttribute ( target, #ATTRIB_HasEffectPetrify, 1 );
+	$DebugOut ( 911, "ICE: HasEffectPetrify set OK" );
+
+	$DebugOut ( 911, "ICE: About to GetProperUnitArt..." );
+	$GetProperUnitArt ( target );
+	$DebugOut ( 911, "ICE: GetProperUnitArt OK" );
+
+	$DebugOut ( 911, "ICE: About to StopMoving..." );
+	$StopMoving ( target );
+	$DebugOut ( 911, "ICE: StopMoving OK" );
+
+	$DebugOut ( 911, "ICE: About to SuspendThread ActiveScript..." );
+	$SuspendThread ( target's "ActiveScript" );
+	$DebugOut ( 911, "ICE: SuspendThread OK" );
+
+	$DebugOut ( 911, "ICE: About to SetAttribute IsFrozen..." );
+	$SetAttribute ( target, #ATTRIB_IsFrozen, 1 );
+	$DebugOut ( 911, "ICE: IsFrozen set OK" );
+
+	$DebugOut ( 911, "ICE: About to SpecifyIntent..." );
+	$SpecifyIntent ( target, #intent_petrified );
+	$DebugOut ( 911, "ICE: SpecifyIntent OK" );
+
+	$DebugOut ( 911, "ICE: ===== Ice_Freeze_Begin COMPLETE =====" );
+end
+
+
+///////////////////////////////////////////////////////////////////////////////
+function Ice_Freeze_End ( agent ThisAgent )
+declare
+begin
+	$DebugOut ( 911, "ICE: ===== Ice_Freeze_End ENTERED =====" );
+	$DebugOut ( 911, "ICE: Agent=", ThisAgent );
+
+	$DebugOut ( 911, "ICE: Checking IsDead..." );
+	If ( $IsDead ( ThisAgent ))
+		begin
+			$DebugOut ( 911, "ICE: Agent is dead, returning" );
+			return;
+		end
+
+	$DebugOut ( 911, "ICE: Clearing HasEffectPetrify..." );
+	$SetAttribute ( ThisAgent, #ATTRIB_HasEffectPetrify, 0 );
+	$DebugOut ( 911, "ICE: HasEffectPetrify cleared OK" );
+
+	$DebugOut ( 911, "ICE: About to GetProperUnitArt..." );
+	$GetProperUnitArt ( ThisAgent );
+	$DebugOut ( 911, "ICE: GetProperUnitArt OK" );
+
+	$DebugOut ( 911, "ICE: Checking other freeze locks..." );
+	if ( ($GetAttribute ( ThisAgent, #ATTRIB_HasEffectVines ) == 0) &&
+		 ($GetAttribute ( ThisAgent, #ATTRIB_HasEffectParalyticGaze ) == 0) &&
+		 ($GetAttribute ( ThisAgent, #ATTRIB_HasEffectLevelLeach ) == 0) )
+		begin
+			$DebugOut ( 911, "ICE: No other freeze locks, unfreezing..." );
+			If ( $IsDead ( ThisAgent ) == False )
+				begin
+					$DebugOut ( 911, "ICE: About to Reset_Tasks..." );
+					$Reset_Tasks ( ThisAgent );
+					$DebugOut ( 911, "ICE: Reset_Tasks OK" );
+
+					$DebugOut ( 911, "ICE: About to ResumeThread..." );
+					$ResumeThread ( ThisAgent's "ActiveScript" );
+					$DebugOut ( 911, "ICE: ResumeThread OK" );
+
+					$DebugOut ( 911, "ICE: About to clear IsFrozen..." );
+					$SetAttribute ( ThisAgent, #ATTRIB_IsFrozen, 0 );
+					$DebugOut ( 911, "ICE: IsFrozen cleared OK" );
+				end
+		end
+	else
+		begin
+			$DebugOut ( 911, "ICE: Other freeze locks still active, not unfreezing" );
+		end
+
+	$DebugOut ( 911, "ICE: ===== Ice_Freeze_End COMPLETE =====" );
+end

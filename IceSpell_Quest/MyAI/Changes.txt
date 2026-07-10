@@ -1,0 +1,22 @@
+Dwarfeh AI
+
+Most human-like AI that exists to date
+
+* Follows EVERY rule that a player will. This means it will pay for all research required
+* No cheating trading post/outpost placements. AI knows what has been explored and will not be able to place these without exploring the map first
+* Supports any start. AI will work with any level blacksmith/marketplace/magic bazaar. If it starts with multiple factions (agrela and krypta for example) it will randomly decide a faction and destroy the other
+
+
+
+
+Overall Game Changes
+
+Goal is to make the game more player centric instead of team centric
+
+* Heroes will only visit buildings that are owned by the current player. This stops gnomes/healers/elves/monks from running off and dying. Previously they would visit anyone's buildings
+* Solarus will only visit Guardhouses that are owned by the current player. Previously they would go to anyone on their team's guardhouse. This helps ensure Solarus are protecting the owner's kingdom
+* Heroes will only defend buildings that are owned by the current player. Previously they would defend a building regardless of player/team
+* Corrected a rare guardhouse bug that ships with Majesty (Guards could rarely crash the game when a guardhouse was destroyed and the guard was exiting)
+* Corrected a rare mausoleum bug that ships with Majesty (if you revive a hero from mausoleum the second it's destroyed the game will crash)
+* Nerfed Plague to be barely noticable. It was causing huge problems with krypta late game
+* Nerfed player deaths. They've been updated to remove autobuildings (sewers and graveyards) of dead players

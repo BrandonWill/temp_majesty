@@ -1,0 +1,18 @@
+[Dwarfeh_AI_Rage_of_Krolm]
+	{Dwarfeh_AI_Spell
+		(title Rage_of_Krolm)
+		(cost 1500)
+		(canCast Dwarfeh_AI_canCast)
+		(castSpell DoRageOfKrolm)
+	}
+[end]
+
+[Dwarfeh_AI_Gate]
+	{Dwarfeh_AI_Spell
+		(title Gate)
+		(cost 2000)
+		(canCast Dwarfeh_AI_canCast)
+		(castSpell Dwarfeh_AI_castGate)
+	}
+[end]
+

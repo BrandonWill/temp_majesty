@@ -1,0 +1,3880 @@
+function basicAI()
+declare
+	agent AIRootAgent;
+	agent palace, enemypalace;
+	list palaces;
+	function player2AI;
+
+begin
+	AIRootAgent = $RetrieveAgent ( "GplAIRoot" );
+	
+	//$RevealWholeMap( #player_1 );
+
+	palace = $Dwarfeh_GetPlayerOnePalace ();
+	EnemyPalace = $Dwarfeh_GetPlayerTwoPalace();
+
+	$Setup_Quest_Music ( AiRootAgent );
+	//Start playing music
+
+	// what can't be used in this quest?
+	
+
+	// setup starting messages
+
+	// setup special things
+	
+	/////////////////////////////////////////////////////////////////////////
+	AIRootAgent's "Quest_Number" = #QNumber_Last_Palace;
+
+	AIRootAgent's "VictoryCondition" = $VictoryCondition_four;
+	$NewThread( AIRootAgent's "VictoryCondition", #VictoryCondition_callback_frequency );	
+
+	AIRootAgent's "Permanent_Hostility" = TRUE;
+	AIRootAgent's "Deathmatch_Rules" = TRUE;
+	/////////////////////////////////////////////////////////////////////////
+	
+
+	$SetPlayerTeamNumber ( EnemyPalace, $NewTeamNumber () );
+	
+	
+	//Player 2 start. It will create its own thread
+	$AddAttribute(AIRootAgent, "player2AI", "function", $enemy_player2_spawn);
+	$RunThreadOnce ( AIRootAgent's "player2AI", ( 1000 ));
+
+end
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+function Dwarfeh_GetPlayerOnePalace () is agent
+// Always return's player one's palace.
+declare
+	list palaces;
+	agent palace, temp_palace;
+
+begin
+	Palaces = $ListPalaces ();
+	//Get the Player 1 palace
+	Foreach Temp_Palace in Palaces do
+		begin
+			If ( $GetUnitPlayerNumber ( Temp_Palace ) == #Player_1 )
+		   	Palace = Temp_Palace;
+		end
+	return palace;
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function Dwarfeh_GetPlayerTwoPalace () is agent
+// Always return's player two's palace.
+declare
+	list palaces, outposts;
+	agent palace, temp_palace, outpost;
+
+begin
+	Palaces = $ListPalaces ();
+	//Get the Player 2 palace
+	
+	//$debugout(911, "Dwarfeh AI: List of palaces:", palaces);
+	
+	Foreach Temp_Palace in Palaces do
+		begin
+			If ( $GetUnitPlayerNumber ( Temp_Palace ) == #Player_2 )
+		   	Palace = Temp_Palace;
+		end
+	
+	
+	//$debugout(911, "Dwarfeh AI: Returning this for palace for player2", Palace);
+	
+	return palace;
+	
+end
+
+//This is used only when it's a mod instead of a quest. It requires a building to be constructed
+function playerOneAI( agent thisagent )
+declare
+	agent AIRootAgent, playerPalace;
+	list guilds, guildsName, guildsTitle, current;
+	integer members, max_members, gold, count;
+	string buildingName, buildingTitle;
+begin
+	AIRootAgent = $RetrieveAgent ( "GplAIRoot" );
+	
+	//NOTE: Threads are entirely off of the function being ran. Therefore additional players means additional functions that perform the same task!
+	
+	//playerPalace = $gettruepalace ( thisagent );
+	
+	//AIRootAgent's "Deathmatch_Rules" = TRUE;
+	
+	playerPalace = $Dwarfeh_GetPlayerOnePalace ();
+	
+	$AdjustPlayerData ( playerPalace, "gold", 3000 );
+	
+	//Building variables for random builds
+	$AddAttribute(playerPalace, "build_gnomes", "boolean", FALSE);
+	$AddAttribute(playerPalace, "build_elves", "boolean", FALSE);
+	$AddAttribute(playerPalace, "build_dwarves", "boolean", FALSE);
+	$AddAttribute(playerPalace, "build_agrela", "boolean", FALSE);
+	$AddAttribute(playerPalace, "build_krypta", "boolean", FALSE);
+	$AddAttribute(playerPalace, "build_krolm", "boolean", FALSE);
+	$AddAttribute(playerPalace, "build_helia", "boolean", FALSE);
+	$AddAttribute(playerPalace, "build_lunord", "boolean", FALSE);
+	$setRandomBuildVariables(playerPalace);	
+	
+	$AddAttribute(playerPalace, "playerAI_build", "function", $enemyPlayer2Build);
+	$NewThread ( playerPalace's "playerAI_build", ( 1000 ), playerPalace);
+	
+	$AddAttribute(playerPalace, "playerAI_resurrect", "function", $AI_Check_Resurrect);
+	$NewThread ( playerPalace's "playerAI_resurrect", ( 15000 ), playerPalace);
+
+	$AddAttribute(playerPalace, "playerAI_guild_recruit", "function", $enemyPlayer2GuildSpawn);
+	$NewThread ( playerPalace's "playerAI_guild_recruit", ( 30000 ), playerPalace);
+	
+	$AddAttribute(playerPalace, "playerAI_research", "function", $performEnemyPlayer2Research);
+	$NewThread ( playerPalace's "playerAI_research", ( 60000 ), playerPalace);
+	
+	$AddAttribute(playerPalace, "playerAI_building_upgrade", "function", $performEnemyPlayer2BuildingUpgrade);
+	$NewThread ( playerPalace's "playerAI_building_upgrade", ( 45000 ), playerPalace);
+	
+	$AddAttribute(playerPalace, "playerAI_flag_adder", "function", $AI_Post_Enemy_Reward);
+	$NewThread ( playerPalace's "playerAI_flag_adder", ( 30000 ), playerPalace);
+	
+	$AddAttribute(playerPalace, "playerAI_flag_remover", "function", $AI_Flag_Remover);
+	$NewThread ( playerPalace's "playerAI_flag_remover", ( 90000 ), playerPalace);
+
+	$AddAttribute(playerPalace, "playerAI_cast_spells", "function", $Dwarfeh_AI_castSpells);
+	$NewThread ( playerPalace's "playerAI_cast_spells", ( 30000 ), playerPalace);
+	
+	$AddAttribute(playerPalace, "flag_value", "integer", 0);
+	$AddAttribute(playerPalace, "AI_Reward_Flags", "list");
+	
+	$basic_birth( thisagent );
+	
+end
+
+
+function enemy_player2_spawn()
+declare
+	agent AIRootAgent, playerTwoPalace;
+	list guilds, guildsName, guildsTitle, current;
+	integer members, max_members, gold, count;
+	string buildingName, buildingTitle;
+begin
+	
+	AIRootAgent = $RetrieveAgent ( "GplAIRoot" );
+	
+	//NOTE: Threads are entirely off of the function being ran. Therefore additional players means additional functions that perform the same task!
+	
+	playerTwoPalace = $Dwarfeh_GetPlayerTwoPalace();
+	
+	//Building variables for random builds
+	$AddAttribute(playerTwoPalace, "build_gnomes", "boolean", FALSE);
+	$AddAttribute(playerTwoPalace, "build_elves", "boolean", FALSE);
+	$AddAttribute(playerTwoPalace, "build_dwarves", "boolean", FALSE);
+	$AddAttribute(playerTwoPalace, "build_agrela", "boolean", FALSE);
+	$AddAttribute(playerTwoPalace, "build_krypta", "boolean", FALSE);
+	$AddAttribute(playerTwoPalace, "build_krolm", "boolean", FALSE);
+	$AddAttribute(playerTwoPalace, "build_helia", "boolean", FALSE);
+	$AddAttribute(playerTwoPalace, "build_lunord", "boolean", FALSE);
+	$setRandomBuildVariables(playerTwoPalace);	
+	
+	$AddAttribute(playerTwoPalace, "playerAI_build", "function", $enemyPlayer2Build);
+	$NewThread ( playerTwoPalace's "playerAI_build", ( 1000 ), playerTwoPalace);
+	
+	$AddAttribute(playerTwoPalace, "playerAI_resurrect", "function", $AI_Check_Resurrect);
+	$NewThread ( playerTwoPalace's "playerAI_resurrect", ( 15000 ), playerTwoPalace);
+
+	$AddAttribute(playerTwoPalace, "playerAI_guild_recruit", "function", $enemyPlayer2GuildSpawn);
+	$NewThread ( playerTwoPalace's "playerAI_guild_recruit", ( 30000 ), playerTwoPalace);
+	
+	$AddAttribute(playerTwoPalace, "playerAI_research", "function", $performEnemyPlayer2Research);
+	$NewThread ( playerTwoPalace's "playerAI_research", ( 60000 ), playerTwoPalace);
+	
+	$AddAttribute(playerTwoPalace, "playerAI_building_upgrade", "function", $performEnemyPlayer2BuildingUpgrade);
+	$NewThread ( playerTwoPalace's "playerAI_building_upgrade", ( 45000 ), playerTwoPalace);
+	
+	$AddAttribute(playerTwoPalace, "playerAI_flag_adder", "function", $AI_Post_Enemy_Reward);
+	$NewThread ( playerTwoPalace's "playerAI_flag_adder", ( 30000 ), playerTwoPalace);
+	
+	$AddAttribute(playerTwoPalace, "playerAI_flag_remover", "function", $AI_Flag_Remover);
+	$NewThread ( playerTwoPalace's "playerAI_flag_remover", ( 90000 ), playerTwoPalace);
+	
+	$AddAttribute(playerTwoPalace, "playerAI_cast_spells", "function", $Dwarfeh_AI_castSpells);
+	$NewThread ( playerTwoPalace's "playerAI_cast_spells", ( 30000 ), playerTwoPalace);
+	
+	$AddAttribute(playerTwoPalace, "flag_value", "integer", 0);
+	$AddAttribute(playerTwoPalace, "AI_Reward_Flags", "list");
+	
+	
+
+	
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function enemyPlayer2GuildSpawn(agent palace)
+declare
+	agent guild, AIRootAgent, enemy_hero;
+	list guilds, helia_guilds, new_helia_guilds;
+	integer members, max_members, gold, count;
+	string type;
+
+begin
+	AIRootAgent = $RetrieveAgent ( "GplAIRoot" );
+
+	//$NewThread ( AIRootAgent's "SpecialSpawnScript", ( 30000 ));
+	
+	// build list of guilds.
+	$ListObjects ( palace, "Building", -1, Guilds, #MyPlayer, #NoHiddenMap, #CheckSubtypes, "Guild" );
+
+	foreach guild in guilds do // Generate a hero from each guild that needs one, if enough money is available.
+		begin
+			gold = $GetPlayerData ( palace, "gold" );
+			//hack method of just generating heroes without caring. Most expensive unit is 1000 gold
+			if ( gold >= 1000 && $getAttribute ( guild, #ATTRIB_FirstStageBuilt ) == 1 && guild's "title" != "Embassy") // Only spawn if you still have at least 1000 gold and the guild is actually built
+				begin
+					members = $ListSize ( guild's "members" );
+					max_members = $getAttribute ( guild, #ATTRIB_MaxGuildMembers );
+					if ( members < max_members ) // Only spawn if there is room in guild.
+						begin
+						
+							if (guild's "title" == "Warriors_Guild")
+								begin
+									type = $Dwarfeh_AI_warriorGuildSpawn(palace);
+								end
+							else
+								begin
+									type = Guild's "Member_Title";							
+								end
+
+							enemy_hero = $SpawnUnit ( Guild, type, $LocationOf ( guild ));	
+							
+							$Generate_Character_Attributes ( enemy_hero ); 	// This is necessary for heroes that are not generated
+																							// via an interface call.
+																							
+							//$debugout(911, "Dwarfeh AI: hero cost", type, enemy_hero's "cost");
+							$AdjustPlayerData ( Guild, "gold", -enemy_hero's "cost" );																						
+																							
+							gold = $GetPlayerData ( palace, "gold" );
+							$DebugOut ( 911, "AI Player #", $GetUnitPlayerNumber ( palace ), "Recruited", type, "for", enemy_hero's "cost"  ,"gold.", gold, "gold remaining." );
+						end
+				end
+			else if ( gold >= 1000 && $getAttribute ( guild, #ATTRIB_FirstStageBuilt ) == 1 && guild's "title" == "Embassy")
+				begin
+					$Embassy_Spawn(guild);
+				end
+		end
+end
+
+function Dwarfeh_AI_warriorGuildSpawn(agent palace) is string
+declare
+	list		dauros_list, fervus_list;
+	integer random;
+	string type;
+begin
+		$ListObjects (palace, "building", -1, dauros_list, #MyPlayer, #ATTRIB_FirstStageBuilt, 1, #CheckTitles, "Temple_Dauros");
+		$ListObjects (palace, "building", -1, fervus_list, #MyPlayer, #ATTRIB_FirstStageBuilt, 1, #CheckTitles, "Temple_Fervus");	
+		if (palace's "build_agrela" && $ListSize ( dauros_list ) >= 1)
+			begin						
+				random = $RandomNumber(2) + 1;
+				if (random == 1)
+					begin
+						type = "Warrior";
+					end
+				else if (random == 2)
+					begin
+						type = "Paladin";
+				end			
+			end
+		else if (palace's "build_krypta" && $ListSize ( fervus_list ) >= 1)
+			begin
+				random = $RandomNumber(2) + 1;
+				if (random == 1)
+					begin
+						type = "Warrior";
+					end
+				else if (random == 2)
+					begin
+						type = "Warrior_of_Discord";
+				end					
+			end
+		else
+			begin
+				type = "Warrior";
+			end
+		
+	return type;
+end
+
+function enemyPlayer2Build(agent palace)
+declare
+	agent guild, AIRootAgent, enemy_hero, spawnedBuilding;
+	list guilds, guildsName, guildsTitle, current;
+	integer random, members, max_members, gold, count;
+	string buildingName, buildingTitle;
+begin
+
+	$randomPalaceBuild(palace);
+	
+	
+
+end
+
+function setRandomBuildVariables(agent palace)
+declare
+	list listGnomes, listElves, listDwarves, listAgrela, listDauros, listKrypta, listFervus, listKrolm, listLunord, listHelia;
+	integer random;
+	boolean hasGnomes, hasElves, hasDwarves, hasAgrela, hasDauros, hasKrypta, hasFervus, hasKrolm, hasLunord, hasHelia;
+begin
+	//Assume we have nothing
+	hasGnomes = FALSE;
+	hasElves = FALSE;
+	hasDwarves = FALSE;
+	hasAgrela = FALSE;
+	hasDauros = FALSE;
+	hasKrypta = FALSE;
+	hasFervus = FALSE;
+	hasKrolm = FALSE;
+	hasLunord = FALSE;
+	hasHelia = FALSE;
+
+	//We may have been given buildings at the start of the game. We need to choose a faction and destroy others
+	$ListObjects ( palace, "building", -1, listGnomes, #MyPlayer, #CheckTitles, "Gnome_Hovel" );
+	$ListObjects ( palace, "building", -1, listElves, #MyPlayer, #CheckTitles, "Elven_Bungalow" );
+	$ListObjects ( palace, "building", -1, listDwarves, #MyPlayer, #CheckTitles, "Dwarven_Settlement" );
+	
+	$ListObjects ( palace, "building", -1, listAgrela, #MyPlayer, #CheckTitles, "Temple_Agrela" );
+	$ListObjects ( palace, "building", -1, listDauros, #MyPlayer, #CheckTitles, "Temple_Dauros" );
+	$ListObjects ( palace, "building", -1, listKrypta, #MyPlayer, #CheckTitles, "Temple_Krypta" );
+	$ListObjects ( palace, "building", -1, listFervus, #MyPlayer, #CheckTitles, "Temple_Fervus" );
+	$ListObjects ( palace, "building", -1, listKrolm, #MyPlayer, #CheckTitles, "Temple_Krolm" );
+	
+	$ListObjects ( palace, "building", -1, listLunord, #MyPlayer, #CheckTitles, "Temple_Lunord" );
+	$ListObjects ( palace, "building", -1, listHelia, #MyPlayer, #CheckTitles, "Temple_Helia" );
+	
+	
+	
+	if ($ListSize ( listGnomes ) >= 1)
+		hasGnomes = TRUE;
+	if ($ListSize ( listElves ) >= 1)
+		hasElves = TRUE;
+	if ($ListSize ( listDwarves ) >= 1)
+		hasDwarves = TRUE;
+	
+	//Started with 1 of the factions
+	if (hasGnomes && hasElves == FALSE && hasDwarves == FALSE)
+		begin
+			palace's "build_gnomes" = TRUE;
+		end
+	if (hasGnomes == FALSE && hasElves && hasDwarves == FALSE)
+		begin
+			palace's "build_elves" = TRUE;
+		end
+	if (hasGnomes == FALSE && hasElves == FALSE && hasDwarves)
+		begin
+			palace's "build_dwarves" = TRUE;
+		end
+
+	//Started with 2 of the factions. Need to choose 1
+	if (hasGnomes && hasElves && hasDwarves == FALSE)
+		begin
+			random = $RandomNumber ( 2 ) + 1; // Randomly choose number 1-3
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Chose gnomes", palace);
+					palace's "build_gnomes" = TRUE;
+					$destroyBuildingsInList(listElves);
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose elves", palace);
+					palace's "build_elves" = TRUE;
+					$destroyBuildingsInList(listGnomes);
+				end	
+		end
+	if (hasGnomes == FALSE && hasElves && hasDwarves)
+		begin
+			random = $RandomNumber ( 2 ) + 1; // Randomly choose number 1-2
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Chose elves", palace);
+					palace's "build_elves" = TRUE;
+					$destroyBuildingsInList(listDwarves);
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose dwarves", palace);
+					palace's "build_dwarves" = TRUE;
+					$destroyBuildingsInList(listElves);
+				end	
+		end
+	if (hasGnomes && hasElves == FALSE && hasDwarves)
+		begin
+			random = $RandomNumber ( 2 ) + 1; // Randomly choose number 1-3
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Chose gnomes", palace);
+					palace's "build_gnomes" = TRUE;
+					$destroyBuildingsInList(listDwarves);
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose dwarves", palace);
+					palace's "build_dwarves" = TRUE;
+					$destroyBuildingsInList(listGnomes);
+				end	
+		end	
+	
+	//Started with 3 of the factions. Need to choose 1
+	if ( (hasGnomes && hasElves && hasDwarves))
+		begin
+			random = $RandomNumber ( 3 ) + 1; // Randomly choose number 1-3
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Chose gnomes", palace);
+					palace's "build_gnomes" = TRUE;
+					$destroyBuildingsInList(listElves);
+					$destroyBuildingsInList(listDwarves);
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose elves", palace);
+					palace's "build_elves" = TRUE;
+					$destroyBuildingsInList(listGnomes);
+					$destroyBuildingsInList(listDwarves);					
+				end
+			else if ( random == 3)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose dwarves", palace);
+					palace's "build_dwarves" = TRUE;
+					$destroyBuildingsInList(listGnomes);
+					$destroyBuildingsInList(listElves);	
+				end	
+		end	
+
+	if ($ListSize ( listAgrela ) >= 1 || $ListSize ( listDauros ) >= 1)
+		hasAgrela = TRUE;
+	if ($ListSize ( listKrypta ) >= 1 || $ListSize ( listFervus ) >= 1)
+		hasKrypta = TRUE;
+	if ($ListSize ( listKrolm ) >= 1)
+		hasKrolm = TRUE;
+		
+	//Started with 1 of the factions
+	if (hasAgrela && hasKrypta == FALSE && hasKrolm == FALSE)
+		begin
+			$debugout(911, "Dwarfeh AI: Started with Agrela/Dauros", palace);
+			palace's "build_agrela" = TRUE;
+		end
+	if (hasAgrela == FALSE && hasKrypta && hasKrolm == FALSE)
+		begin
+			$debugout(911, "Dwarfeh AI: Started with Krypta/Fervus", palace);
+			palace's "build_krypta" = TRUE;
+		end
+	if (hasAgrela == FALSE && hasKrypta == FALSE && hasKrolm)
+		begin
+			$debugout(911, "Dwarfeh AI: Started with Krolm");
+			palace's "build_krolm" = TRUE;
+		end
+		
+	//Started with 2 of the factions. Need to choose 1
+	if (hasAgrela && hasKrypta && hasKrolm == FALSE)
+		begin
+			random = $RandomNumber ( 2 ) + 1; // Randomly choose number 1-3
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Agrela");
+					palace's "build_agrela" = TRUE;
+					$destroyBuildingsInList(listKrypta);
+					$destroyBuildingsInList(listFervus);
+					$destroyBuildingsInList(listKrolm);
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Krypta");
+					palace's "build_krypta" = TRUE;
+					$destroyBuildingsInList(listAgrela);
+					$destroyBuildingsInList(listDauros);
+					$destroyBuildingsInList(listKrolm);
+				end	
+		end
+	if (hasAgrela == FALSE && hasKrypta && hasKrolm)
+		begin
+			random = $RandomNumber ( 2 ) + 1; // Randomly choose number 1-2
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Krypta");
+					palace's "build_krypta" = TRUE;
+					$destroyBuildingsInList(listAgrela);
+					$destroyBuildingsInList(listDauros);
+					$destroyBuildingsInList(listKrolm);
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Krolm over other temples");
+					palace's "build_krolm" = TRUE;
+					$destroyBuildingsInList(listKrypta);
+					$destroyBuildingsInList(listFervus);
+					$destroyBuildingsInList(listAgrela);
+					$destroyBuildingsInList(listDauros);
+					$destroyBuildingsInList(listLunord);
+					$destroyBuildingsInList(listHelia);
+				end	
+		end
+	if (hasAgrela && hasKrypta == FALSE && hasKrolm)
+		begin
+			random = $RandomNumber ( 2 ) + 1; // Randomly choose number 1-3
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Agrela");
+					palace's "build_agrela" = TRUE;
+					$destroyBuildingsInList(listKrypta);
+					$destroyBuildingsInList(listFervus);
+					$destroyBuildingsInList(listKrolm);
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Krolm over other temples");
+					palace's "build_krolm" = TRUE;
+					$destroyBuildingsInList(listKrypta);
+					$destroyBuildingsInList(listFervus);
+					$destroyBuildingsInList(listAgrela);
+					$destroyBuildingsInList(listDauros);
+					$destroyBuildingsInList(listLunord);
+					$destroyBuildingsInList(listHelia);
+				end	
+		end	
+
+	//Started with 3 of the factions. Need to choose 1
+	if ( (hasAgrela && hasKrypta && hasKrolm))
+		begin
+			random = $RandomNumber ( 3 ) + 1; // Randomly choose number 1-3
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Agrela");
+					palace's "build_agrela" = TRUE;
+					$destroyBuildingsInList(listKrypta);
+					$destroyBuildingsInList(listFervus);
+					$destroyBuildingsInList(listKrolm);
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Krypta");
+					palace's "build_krypta" = TRUE;
+					$destroyBuildingsInList(listAgrela);
+					$destroyBuildingsInList(listDauros);
+					$destroyBuildingsInList(listKrolm);				
+				end
+			else if ( random == 3)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Krolm over other temples");
+					palace's "build_krolm" = TRUE;
+					$destroyBuildingsInList(listKrypta);
+					$destroyBuildingsInList(listFervus);
+					$destroyBuildingsInList(listAgrela);
+					$destroyBuildingsInList(listDauros);
+					$destroyBuildingsInList(listLunord);
+					$destroyBuildingsInList(listHelia);
+				end	
+		end	
+
+	if ($ListSize ( listLunord ) >= 1)
+		hasLunord = TRUE;
+	if ($ListSize ( listHelia ) >= 1)
+		hasHelia = TRUE;
+	
+	//Started with 1 of the factions
+	if (hasLunord && hasHelia == FALSE && palace's "build_krolm" == FALSE)
+		begin
+			$debugout(911, "Dwarfeh AI: Started with Helia");
+			palace's "build_lunord" = TRUE;
+		end
+	if (hasLunord == FALSE && hasHelia && palace's "build_krolm" == FALSE)
+		begin
+			$debugout(911, "Dwarfeh AI: Started with Lunord");
+			palace's "build_helia" = TRUE;
+		end
+		
+	//Started with both of the factions. Need to choose 1
+	if (hasLunord && hasHelia && palace's "build_Krolm" == FALSE)
+		begin
+			random = $RandomNumber ( 2 ) + 1; // Randomly choose number 1-3
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Lunord over Helia");
+					palace's "build_lunord" = TRUE;
+					$destroyBuildingsInList(listHelia);
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Chose Helia over Lunord");
+					palace's "build_helia" = TRUE;
+					$destroyBuildingsInList(listLunord);
+				end	
+		end		
+
+	//Gnomes can only be built if palace is level 1
+	if (hasGnomes == FALSE && hasElves == FALSE && hasDwarves == FALSE)
+		begin
+			if ( palace's "level" == 1 )
+				begin
+					random = $RandomNumber ( 3 ) + 1; // Randomly choose number 1-3
+					if ( random == 1 )
+						begin
+							$debugout(911, "Dwarfeh AI: Random Build choice (palace level 1): gnomes");
+							palace's "build_gnomes" = TRUE;
+						end
+					else if ( random == 2)
+						begin
+							$debugout(911, "Dwarfeh AI: Random Build choice (palace level 1): elves");
+							palace's "build_elves" = TRUE;
+						end
+					else if ( random == 3)
+						begin
+							$debugout(911, "Dwarfeh AI: Random Build choice (palace level 1): dwarves");
+							palace's "build_dwarves" = TRUE;
+						end				
+				end	
+			else
+				begin
+					random = $RandomNumber ( 2 ) + 1; // Randomly choose number 1-2
+					if ( random == 1 )
+						begin
+							$debugout(911, "Dwarfeh AI: Random Build choice (palace level 2 or higher): elves");
+							palace's "build_elves" = TRUE;
+						end
+					else if ( random == 2)
+						begin
+							$debugout(911, "Dwarfeh AI: Random Build choice (palace level 2 or higher): dwarves");
+							palace's "build_dwarves" = TRUE;
+						end			
+				end
+		end
+	
+	if (hasAgrela == FALSE && hasKrypta == FALSE && hasKrolm == FALSE)
+		begin
+			//We can only randomly choose krolm if we also don't have lunord and helia
+			if (hasLunord == FALSE && hasHelia == FALSE)
+				begin
+					random = $RandomNumber ( 3 ) + 1; // Randomly choose number 1-3
+				end
+			else
+				begin
+					random = $RandomNumber ( 2 ) + 1; // Randomly choose number 1-2
+				end
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Random Build choice: agrela");
+					palace's "build_agrela" = TRUE;
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Random Build choice: krypta");
+					palace's "build_krypta" = TRUE;
+				end
+			else if ( random == 3)
+				begin
+					$debugout(911, "Dwarfeh AI: Random Build choice: krolm");
+					palace's "build_krolm" = TRUE;
+				end
+		end
+
+	if (palace's "build_krolm" == FALSE && hasLunord == FALSE && hasHelia == FALSE)
+		begin
+			random = $RandomNumber ( 2 ) + 1; // Randomly choose number 1-2
+			if ( random == 1 )
+				begin
+					$debugout(911, "Dwarfeh AI: Random Build choice: helia");
+					palace's "build_helia" = TRUE;
+				end
+			else if ( random == 2)
+				begin
+					$debugout(911, "Dwarfeh AI: Random Build choice: lunord");
+					palace's "build_lunord" = TRUE;
+				end
+		end
+	
+end
+
+function destroyBuildingsInList(list buildings)
+declare
+	agent building;
+begin
+	foreach building in buildings do
+		begin
+			$building_death(building);
+		end
+	
+end
+
+function randomPalaceBuild(agent palace)
+declare
+	agent guild, AIRootAgent, enemy_hero, spawnedBuilding, tempMarket, tempFairGrounds;
+	list guilds, guildsName, guildsTitle, current, tempMarketList, tempMagicBazaarList, tempFairGroundsList;
+	integer members, max_members, gold, count, totalHeroCount;
+	string buildingName, buildingTitle;
+begin
+
+	AIRootAgent = $RetrieveAgent ( "GplAIRoot" );
+	totalHeroCount = $getTotalHeroLevel(palace);
+	
+	$NewThread ( palace's "playerAI_build", ( 30000 ));
+	
+	
+	buildingName = "Gnome_Hovel";
+	buildingTitle = buildingName;
+	$ListObjects ( palace, "building", -1, guilds, #MyPlayer );
+	current = $RemoveTitles ( guilds, buildingTitle );
+	count = $ListSize ( current );
+	
+	if ( count < 1 && palace's "level" == 1 && palace's "build_gnomes" == TRUE)
+		begin			
+			if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+				begin
+					$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+					spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );
+				end
+		end	
+
+	buildingName = "GuardHouse1";
+	buildingTitle = "GuardHouse";	
+	current = $RemoveTitles ( guilds, buildingTitle );
+	count = $ListSize ( current );		
+	
+	//TODO: Rewrite this to assign a specific attribute to the marketplace guardhouse with agent id
+	//If agentid doesn't exist make another one for a marketplace guardhouse
+	//This was old way of ensuring marketplace was protected by guardhouse. Now trading posts are protected too!
+	if ( count < 1 )
+		begin
+			if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+				begin
+					$ListObjects ( palace, "building", -1, tempMarketList, #MyPlayer, #CheckTitles, "Marketplace" );
+					if ($ListSize (tempMarketList) >= 1)
+						begin		
+							tempMarket = $listmember ( tempMarketList, 1 );
+							$buildGuardhouse(palace, tempMarket);
+						end
+				end
+		end
+
+	buildingName = "Marketplace1";
+	buildingTitle = "Marketplace";
+	current = $RemoveTitles ( guilds, buildingTitle );
+	count = $ListSize ( current );
+	
+	if ( count < 1 )
+		begin
+			if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+				begin
+					$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+					spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );
+					$buildGuardhouse(palace, spawnedBuilding);
+				end
+		end
+
+
+		
+	
+	buildingName = "Rangers_Guild";
+	buildingTitle = buildingName;
+	current = $RemoveTitles ( guilds, buildingTitle );
+	count = $ListSize ( current );
+	
+	if ( count < 2 )
+		begin
+			if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+				begin
+					$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+					spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );
+				end
+		end
+		
+	buildingName = "Rogues_Guild1";
+	buildingTitle = "Rogues_Guild";
+	current = $RemoveTitles ( guilds, buildingTitle );
+	count = $ListSize ( current );
+	
+	if ( count < 1 )
+		begin
+			if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+				begin
+					$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+					spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );
+				end
+		end
+		
+	buildingName = "Blacksmith1";
+	buildingTitle = "Blacksmith";
+	current = $RemoveTitles ( guilds, buildingTitle );
+	count = $ListSize ( current );
+	
+	if ( count < 1 )
+		begin
+			if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+				begin
+					$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+					spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );					
+				end
+		end
+		
+	buildingName = "Trading_Post";
+	buildingTitle = "Trading_Post";
+	current = $RemoveTitles ( guilds, buildingTitle );
+	count = $ListSize ( current );
+	
+	if ( count < 3 )
+		begin
+			if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+				begin
+					//gold adjustment is handled in the method itself
+					$buildTradingPost(palace, buildingName, buildingTitle);
+				end
+		end
+	else if ( (count == 3 && totalHeroCount >= 100) || (count == 4 && totalHeroCount >= 200) || (count == 5 && totalHeroCount >= 300) || (count == 6 && totalHeroCount >= 400) )
+		begin
+			if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+				begin
+					//gold adjustment is handled in the method itself
+					$buildTradingPost(palace, buildingName, buildingTitle);
+				end
+		end
+	
+	if ( palace's "level" == 2 && $getAttribute ( palace, #ATTRIB_currentstagebuilt ) == 1)
+		begin
+		
+		
+			//We only want to expand if we have more than 5000 gold because we want to afford heroes/basic buildings/upgrades
+			
+			if ($GetPlayerData ( palace, "gold" ) >= 5000)
+				begin
+			
+					buildingName = "Inn";
+					buildingTitle = buildingName;
+					current = $RemoveTitles ( guilds, buildingTitle );
+					count = $ListSize ( current );
+					
+					if ( palace's "build_elves" && count < 1)
+						begin
+							if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );				
+								end
+						end
+
+					buildingName = "Elven_Bungalow";
+					buildingTitle = buildingName;
+					current = $RemoveTitles ( guilds, buildingTitle );
+					count = $ListSize ( current );
+			
+					if (palace's "build_elves" && count < 2)
+						begin
+							if ($canBuild(palace, "Elven_Bungalow", "Elven_Bungalow") && $canAffordBuilding( buildingName, buildingTitle, palace ))
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );	
+								end
+						end
+
+					buildingName = "Dwarven_Settlement";
+					buildingTitle = buildingName;
+					current = $RemoveTitles ( guilds, buildingTitle );
+					count = $ListSize ( current );
+							
+					if (palace's "build_dwarves" && count < 1)
+						begin
+							if ($canBuild(palace, "Dwarven_Settlement", "Dwarven_Settlement") && $canAffordBuilding( buildingName, buildingTitle, palace ))
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );	
+								end
+						end			
+
+					buildingName = "Ballista_Tower";
+					buildingTitle = buildingName;
+					current = $RemoveTitles ( guilds, buildingTitle );
+					count = $ListSize ( current );
+
+					if (palace's "build_dwarves" && count < 1)
+						begin
+							if ($canBuild(palace, "Ballista_Tower", "Ballista_Tower") && $canAffordBuilding( buildingName, buildingTitle, palace ))
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );	
+								end
+						end		
+			
+					buildingName = "Temple_Agrela1";
+					buildingTitle = "Temple_Agrela";
+					current = $RemoveTitles ( guilds, buildingTitle );
+					count = $ListSize ( current );
+
+					if (palace's "build_agrela" && count < 1)
+						begin
+							if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );				
+								end
+						end
+
+					buildingName = "Temple_Krypta1";
+					buildingTitle = "Temple_Krypta";
+					current = $RemoveTitles ( guilds, buildingTitle );
+					count = $ListSize ( current );			
+					
+					if (palace's "build_krypta" && count < 1)
+						begin
+							if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );				
+								end
+						end					
+
+					buildingName = "Temple_Dauros1";
+					buildingTitle = "Temple_Dauros";
+					current = $RemoveTitles ( guilds, buildingTitle );
+					count = $ListSize ( current );
+					
+					if (palace's "build_agrela" && count < 1)
+						begin
+							if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );				
+								end
+						end
+					
+					buildingName = "Temple_Fervus1";
+					buildingTitle = "Temple_Fervus";
+					current = $RemoveTitles ( guilds, buildingTitle );
+					count = $ListSize ( current );
+					
+					if (palace's "build_krypta" && count < 1)
+						begin
+							if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );				
+								end
+						end	
+
+			end
+	
+		end		
+	
+	//Looks like we made it to an important stepping stone lets expand more
+	if ( (palace's "level" == 3 && $getAttribute ( palace, #ATTRIB_currentstagebuilt ) == 1) || palace's "subtype" == "Outpost")
+		begin
+	
+			buildingName = "Elven_Bungalow";
+			buildingTitle = buildingName;
+			current = $RemoveTitles ( guilds, buildingTitle );
+			count = $ListSize ( current );
+		
+			if (palace's "build_elves" && count < 2)
+				begin
+					if ($canBuild(palace, "Elven_Bungalow", "Elven_Bungalow") && $canAffordBuilding( buildingName, buildingTitle, palace ))
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+							spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );	
+						end
+				end
+		
+			buildingName = "Dwarven_Settlement";
+			buildingTitle = buildingName;
+			current = $RemoveTitles ( guilds, buildingTitle );
+			count = $ListSize ( current );
+					
+			if (palace's "build_dwarves" && count < 1)
+				begin
+					if ($canBuild(palace, "Dwarven_Settlement", "Dwarven_Settlement") && $canAffordBuilding( buildingName, buildingTitle, palace ))
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+							spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );	
+						end
+				end		
+
+			buildingName = "SorcerersAbode";
+			buildingTitle = "SorcerersAbode";	
+			current = $RemoveTitles ( guilds, buildingTitle );
+			count = $ListSize ( current );		
+			
+			if ( count < 1 )
+				begin
+					if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+						begin
+							$ListObjects ( palace, "building", -1, tempMagicBazaarList, #MyPlayer, #CheckTitles, "Magic_Bazaar" );
+							$ListObjects ( palace, "building", -1, tempFairGroundsList, #MyPlayer, #CheckTitles, "Fairgrounds" );
+							if ($ListSize (tempMagicBazaarList) >= 1 && $ListSize(tempFairGroundsList) >= 1)
+								begin
+									tempFairGrounds = $listmember ( tempFairGroundsList, 1 );
+									$buildSorcerersAbode(palace, tempFairGrounds);
+								end
+						end
+				end		
+		
+			buildingName = "Fairgrounds";
+			buildingTitle = buildingName;
+			current = $RemoveTitles ( guilds, buildingTitle );
+			count = $ListSize ( current );
+			
+			if ( count < 1 && totalHeroCount >= 20 )
+				begin
+					if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+						begin
+							gold = $getBuildingCost( buildingName, buildingTitle, palace );
+							//$debugout(911, "Dwarfeh AI: Getting price for fairgrounds right before purchase", gold);
+							$AdjustPlayerData ( palace, "gold", -gold );
+							spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );							
+						end
+				end		
+			
+			if (palace's "build_helia" == TRUE)
+				begin
+					buildingName = "Temple_Helia1";
+					buildingTitle = "Temple_Helia";
+				end
+			else if (palace's "build_lunord" == TRUE)
+				begin
+					buildingName = "Temple_Lunord1";
+					buildingTitle = "Temple_Lunord";
+				end			
+			else if (palace's "build_krolm" == TRUE)
+				begin
+					buildingName = "Temple_Krolm";
+					buildingTitle = "Temple_Krolm";
+				end				
+
+			current = $RemoveTitles ( guilds, buildingTitle );
+			count = $ListSize ( current );
+			
+			if ( count < 2 )
+				begin
+					if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+							spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );
+						end
+				end
+				
+			buildingName = "MagicBazaar";
+			buildingTitle = "Magic_Bazaar";
+			current = $RemoveTitles ( guilds, buildingTitle );
+			count = $ListSize ( current );
+			
+			if ( count < 1 )
+				begin
+					if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+							spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );
+						end
+				end
+				
+			buildingName = "Library1";
+			buildingTitle = "Library";
+			current = $RemoveTitles ( guilds, buildingTitle );
+			count = $ListSize ( current );
+			
+			if ( count < 1 )
+				begin
+					if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+						begin
+							//Costs are handled in the method
+							$buildLibrary( palace, buildingName, buildingTitle );					
+						end
+				end	
+				
+			buildingName = "Statue";
+			buildingTitle = buildingName;
+			current = $RemoveTitles ( guilds, buildingTitle );
+			count = $ListSize ( current );
+			
+			if ( count < 4 && totalHeroCount >= 100 )
+				begin
+					if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+							spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );				
+						end
+				end
+				
+			buildingName = "Royal_gardens";
+			buildingTitle = buildingName;
+			current = $RemoveTitles ( guilds, buildingTitle );
+			count = $ListSize ( current );
+			
+			if ( count < 3 && totalHeroCount >= 200 )
+				begin
+					if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+							spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );				
+						end
+				end	
+				
+			buildingName = "Inn";
+			buildingTitle = buildingName;
+			current = $RemoveTitles ( guilds, buildingTitle );
+			count = $ListSize ( current );
+			
+			if ( (count < 4 && totalHeroCount >= 100) || (count < 1 && palace's "build_elves") )
+				begin
+					if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+							spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );				
+						end
+				end	
+			
+			//Lets build a build order that focuses more on strength for auto expanding
+			if (palace's "build_helia" == TRUE)
+				begin
+					guildsName << "Temple_Helia1";
+					guildsTitle << "Temple_Helia";
+				end
+			else if (palace's "build_lunord" == TRUE)
+				begin
+					guildsName << "Temple_Lunord1";
+					guildsTitle << "Temple_Lunord";
+				end			
+			else if (palace's "build_krolm" == TRUE)
+				begin
+					guildsName << "Temple_Krolm";
+					guildsTitle << "Temple_Krolm";
+				end				
+			//One of the above will always be true, so we need to turn it into an array now
+			
+			guildsName = $AddLists(guildsName, $Concatenate( "Outpost", "Wizards_Guild1"));
+			guildsTitle = $AddLists(guildsTitle, $Concatenate( "Outpost", "Wizards_Guild"));
+
+			if (palace's "build_elves" == TRUE)
+				begin
+					if ($canBuild(palace, "Elven_Bungalow", "Elven_Bungalow"))
+						begin
+							guildsName << "Elven_Bungalow";
+							guildsTitle << "Elven_Bungalow";
+						end
+				end
+			else if (palace's "build_dwarves" == TRUE)
+				begin
+					if ($canBuild(palace, "Dwarven_Settlement", "Dwarven_Settlement"))
+						begin
+							guildsName << "Dwarven_Settlement";
+							guildsTitle << "Dwarven_Settlement";
+						end
+					if ($canBuild(palace, "Ballista_Tower", "Ballista_Tower"))
+						begin
+							guildsName << "Ballista_Tower";
+							guildsTitle << "Ballista_Tower";
+						end
+				end				
+			
+			if (palace's "build_agrela" == TRUE)
+				begin
+					guildsName << "Temple_Agrela1";
+					guildsTitle << "Temple_Agrela";
+				end
+			else if (palace's "build_krypta" == TRUE)
+				begin
+					guildsName << "Temple_Krypta1";
+					guildsTitle << "Temple_Krypta";
+				end					
+			
+			guildsName = $AddLists(guildsName, $Concatenate("Warriors_Guild", "Rangers_Guild", "Rogues_Guild1", "Embassy"));
+			guildsTitle = $AddLists(guildsTitle, $Concatenate( "Warriors_Guild", "Rangers_Guild", "Rogues_Guild", "Embassy"));
+			
+			if (palace's "build_agrela" == TRUE)
+				begin
+					guildsName << "Temple_Dauros1";
+					guildsTitle << "Temple_Dauros";
+				end
+			else if (palace's "build_krypta" == TRUE)
+				begin
+					guildsName << "Temple_Fervus1";
+					guildsTitle << "Temple_Fervus";
+				end	
+		
+			//Arrays start at 1 in GPL code, so we start this at 1.
+			count = 1;
+			//Start with a brand new building list for auto expanding. Maybe better to go to a brand new thread instead?
+			$ListObjects ( palace, "Building", -1, guilds, #MyPlayer);
+			
+			foreach buildingName in guildsName do
+				begin
+					buildingTitle = $ListMember(guildsTitle, count);										
+					
+					current = $RemoveTitles ( guilds, buildingTitle );
+	
+					//$debugout(911, "Dwarfeh AI: pre canAffordBuilding");
+					//$debugout(911, "Dwarfeh AI: canAffordBuilding", $canAffordBuilding( buildingName, buildingTitle, palace ));
+					//$debugout(911, "Dwarfeh AI: count:", count, "buildingName", buildingName, "buildingTitle", buildingTitle, "Guilds found with title:", current, "Guilds found without title:", guilds);
+					//$debugout(911, "Dwarfeh AI: pre ListSize");
+					//$debugout(911, "Dwarfeh AI: ListSize", $ListSize ( current ));
+
+					//We want to require 10k gold to auto expand beyond the first building so the AI has gold to upgrade/revive stuff early
+					if ($ListSize ( current ) == 0 && $GetPlayerData ( palace, "gold" ) >= 5000 && totalHeroCount >= 20)
+						begin
+							if ($canAffordBuilding( buildingName, buildingTitle, palace ) && (buildingName != "Embassy" && buildingName != "Outpost"))
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );
+								end
+							else if ($canAffordBuilding( buildingName, buildingTitle, palace ) && buildingName == "Outpost" && totalHeroCount >= 100)
+								begin
+									//Costs are handled directly in method
+									$buildOutpost( palace, buildingName, buildingTitle);
+								end
+							else if ($canAffordBuilding( buildingName, buildingTitle, palace ) && buildingName == "Embassy" && totalHeroCount >= 100)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );
+								end
+						end
+					else
+						begin
+							if ($canAffordBuilding( buildingName, buildingTitle, palace ) && $GetPlayerData ( palace, "gold" ) >= 10000 && totalHeroCount >= 20)
+								begin
+									if (buildingName != "Outpost")
+										begin
+											//$debugout(911, "Dwarfeh AI: cost for above building: ", $getBuildingCost( buildingName, buildingTitle, palace ), "canAffordBuilding:", $canAffordBuilding( buildingName, buildingTitle, palace ));
+											$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+											spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );
+										end
+									else if (buildingName == "Outpost" && totalHeroCount >= 100)
+										begin
+											//Costs are handled directly in method
+											$buildOutpost( palace, buildingName, buildingTitle);										
+										end
+									else if (buildingName == "Embassy" && totalHeroCount >= 100)
+										begin
+											$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+											spawnedBuilding = $SpawnUnit (palace , buildingName , "clear" );
+										end
+								end							
+							
+						end
+					
+					count += 1;				
+				end
+		end
+end
+
+//Puts a guardhouse as close to possible to a building. 
+function buildGuardhouse(agent palace, agent building)
+declare
+	string buildingName, buildingTitle;
+begin
+	buildingName = "GuardHouse1";
+	buildingTitle = "GuardHouse";
+	if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+		begin
+			$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+			$SpawnUnit (building , buildingName , "clear" );
+		end
+
+end
+
+function buildSorcerersAbode(agent palace, agent fairgrounds)
+declare
+	string buildingName, buildingTitle;
+begin
+	buildingName = "SorcerersAbode";
+	buildingTitle = "SorcerersAbode";
+	if ($canAffordBuilding( buildingName, buildingTitle, palace ))
+		begin
+			$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+			$SpawnUnit (fairgrounds , buildingName , "clear" );
+		end
+
+end
+
+//Check for cost is handled beforehand
+function buildLibrary(agent palace, string buildingName, string buildingTitle)
+declare
+	list buildings;
+	agent building;
+begin
+	$ListObjects ( palace, "building", -1, buildings, #MyPlayer, #CheckTitles, "Wizards_Guild", #ATTRIB_FirstStageBuilt, 1 );
+	
+	//This means a wizard's guild is already fully built
+	if ($ListSize ( buildings) >= 1)
+		begin
+			$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ));
+			$SpawnUnit (palace , "Library1" , "clear" );
+		end
+
+end
+
+function getTotalHeroLevel(agent palace) is integer
+declare
+	list heroes;
+	integer total_level;
+	agent hero;
+begin
+	total_level = 0;
+	$ListObjects ( palace, "hero", -1, heroes, #CheckSubtypes, "hero", #MyPlayer, #InsideOtherUnits );
+
+	foreach hero in heroes do // Add up the total level of your heroes.
+		begin
+			total_level += $GetAttribute ( hero, #ATTRIB_ExperienceLevel );
+		end
+	
+	return total_level;
+end
+
+function canBuild(agent palace, string buildingName, string buildingTitle) is boolean
+declare
+	list buildingList;
+	agent building;
+	integer buildingCount;
+	boolean hasRequirements, hasMarket, hasInn;
+	
+begin
+	hasRequirements = FALSE;
+	if (buildingName == "Dwarven_Settlement")
+		begin
+			$ListObjects ( palace, "Building", -1, buildingList, #MyPlayer, #CheckTitles, "Blacksmith" );
+			
+			buildingCount = $ListSize ( buildingList );
+			//$debugout(911, "Dwarfeh AI: Current list of blacksmiths", buildingList, "count:", buildingCount);
+			
+			foreach building in buildingList do
+				begin
+					//$debugout(911, "Dwarfeh AI: #ATTRIB_FirstStageBuilt", $getAttribute ( building, #ATTRIB_FirstStageBuilt ), "building level:", building's "level");
+					if ($getAttribute ( building, #ATTRIB_FirstStageBuilt ) == 1 && building's "level" == 3 && palace's "level" >= 2)
+						begin
+							//$debugout(911, "Dwarfeh AI: Returning true for blacksmith being built");
+							hasRequirements = TRUE;
+							
+						end
+				end
+		end
+	else if (buildingName == "Ballista_Tower")
+		begin
+			$ListObjects ( palace, "Building", -1, buildingList, #MyPlayer, #CheckTitles, "Dwarven_Settlement", #ATTRIB_FirstStageBuilt, 1 );
+			buildingCount = $ListSize ( buildingList );
+			
+			if (buildingCount >= 1)
+				begin
+					hasRequirements = TRUE;
+				end
+			
+		end
+	else if (buildingName == "Elven_Bungalow")
+		begin
+			$ListObjects ( palace, "Building", -1, buildingList, #MyPlayer, #CheckTitles, "Inn", #ATTRIB_FirstStageBuilt, 1 );
+			buildingCount = $ListSize ( buildingList );
+			//$debugout(911, "Dwarfeh AI: Current list of Inns", buildingList, "count:", buildingCount);
+			
+			if (buildingCount >= 1)
+				begin
+					hasInn = TRUE;
+				end		
+			
+			$ListObjects ( palace, "Building", -1, buildingList, #MyPlayer, #CheckTitles, "Marketplace", #ATTRIB_FirstStageBuilt, 1 );
+			buildingCount = $ListSize ( buildingList );
+			//$debugout(911, "Dwarfeh AI: Current list of marketplaces", buildingList, "count:", buildingCount);
+			
+			if (buildingCount >= 1)
+				begin
+					hasMarket = TRUE;
+				end
+
+			if (hasInn && hasMarket && palace's "level" >= 2)
+				begin
+					hasRequirements = TRUE;
+				end
+			
+			
+		end 
+
+	return hasRequirements;
+end
+
+
+
+function buildOutpost(agent palace, string BuildingName, string buildingTitle)
+declare
+	list outpostList;
+	integer distance, boardX, boardY;
+	coordinate boardSize, outpostLocation;
+	boolean canBuildOutpost;
+	agent building;
+begin
+	boardSize = $getBoardExtents();
+	boardX = $getX ( boardSize );
+	boardY = $getY ( boardSize );
+
+	outpostLocation = $randomCoord( palace , #Min_Dist_To_Palace_for_Outpost, 2000);
+	//There is no check to SpawnUnit. If you spawn the unit off the map the game crashes. This should never happen in this scenario but I've had weird bugs
+	if ($getX(outpostLocation) < boardX && $getY(outpostLocation) < boardY)
+		begin
+			//The coordinate is spawned a minimum distance from palace above so no need to check distance to palace
+			$ListObjects ( palace, "building", -1, outpostList, #MyPlayer, #CheckTitles, "Outpost" );
+			
+			canBuildOutpost = TRUE;
+			
+			foreach building in outpostList do
+				begin
+					if ($DistanceBetweenCoords($LocationOf( building ), outpostLocation) < #Min_Dist_To_Palace_for_Outpost)
+						begin
+							//$debugout(911, "Dwarfeh AI: Random coordinate for building outpost failed. Distance between coords:", $DistanceBetweenCoords($LocationOf( building ), outpostLocation), "Building coord:", $LocationOf( building ), "Outpost coord:", outpostLocation);
+							canBuildOutpost = FALSE;
+						end
+				end			
+			
+			if (canBuildOutpost)
+				begin
+					$constructBuilding( palace, buildingName, buildingTitle, outpostLocation);
+					//$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+					//$SpawnUnit (palace , "Outpost" , outpostLocation, "clear" );				
+				end
+					
+		end
+	else
+		begin
+			$debugout(911, "Dwarfeh AI: Failed to generate outpost within map coordinates");
+		end
+end
+
+//Check for cost is handled beforehand
+function buildTradingPost(agent palace, string BuildingName, string buildingTitle)
+declare
+	list marketplaceList, tradingPostList, closedMarketplaceList, combinedList;
+	integer distance, boardX, boardY;
+	coordinate boardSize, tradingPostLocation;
+	boolean canBuildTradingPost;
+	agent AIRootAgent, building;
+begin
+
+	boardSize = $getBoardExtents();
+	boardX = $getX ( boardSize );
+	boardY = $getY ( boardSize );
+
+	//original values is 2800, 3400 search. However, I tied it to variable case so the AI distance is also updated
+	
+	AIRootAgent = $RetrieveAgent ( "GplAIRoot" );
+	if (AIRootAgent's "Deathmatch_Rules")
+		begin
+			if ( boardX > 5000 )
+				distance = #Deathmatch_Large_Trade_Radius;
+			else
+				distance = #Deathmatch_Small_Trade_Radius;
+			tradingPostLocation = $RandomCoord( palace , distance, (distance + 600));
+		end
+	else
+		begin
+			distance = #Min_Dist_to_Market_For_Caravan_Spawn;
+			tradingPostLocation = $RandomCoord( palace , #Min_Dist_to_Market_For_Caravan_Spawn, (#Min_Dist_to_Market_For_Caravan_Spawn + 2400));
+		end
+	
+	
+	//$debugout(911, "Dwarfeh AI: Random coordinate generated for trading post:", tradingPostLocation);
+	
+	//There is no check to SpawnUnit. If you spawn the unit off the map the game crashes. This should never happen in this scenario but I've had weird bugs
+	if ($getX(tradingPostLocation) < boardX && $getY(tradingPostLocation) < boardY)
+		begin
+			//Lets perform all the human checks which is getting all marketplaces & trading posts within distance
+			$ListObjects ( palace, "building", -1, marketplaceList, #MyPlayer );
+			closedMarketplaceList = $ListTitles ( marketplaceList, "closed" );
+			marketplaceList = $ListTitles ( marketplaceList, "marketplace" );
+
+			marketplaceList = $addLists ( marketplaceList, closedMarketplaceList );
+			
+			//Trading Posts require a marketplace to exist before building one at all
+			if ($ListSize ( marketplaceList) > 0)
+				begin
+					canBuildTradingPost = TRUE;
+					
+					foreach building in marketplaceList do
+						begin
+							//check to see if the market level 1 has been fully built which is a requirement for trading post
+							if ($getAttribute ( building, #ATTRIB_FirstStageBuilt ) == 0)
+								begin
+									canBuildTradingPost = FALSE;
+								end
+						end
+								
+					$ListObjects ( palace, "building", -1, tradingPostList, #MyPlayer, #CheckTitles, "trading_post");
+					
+					combinedList = $addlists ( marketplaceList, tradingPostList );
+						
+					foreach building in combinedList do
+						begin
+							if ($DistanceBetweenCoords($LocationOf( building ), tradingPostLocation) < distance)
+								begin
+									//$debugout(911, "Dwarfeh AI: Random coordinate for building trading post failed. Distance between coords:", $DistanceBetweenCoords($LocationOf( building ), tradingPostLocation), "Building coord:", $LocationOf( building ), "TradingPost coord:", tradingPostLocation);
+									canBuildTradingPost = FALSE;
+								end
+						end
+					
+					//So we can technically build a trading post in this location, but do we have vision?
+					if (canBuildTradingPost)
+						begin
+							if ($constructBuilding( palace, buildingName, buildingTitle, tradingPostLocation))
+								begin
+									if (palace's "build_dwarves")
+										begin
+											if ($canBuild(palace, "Ballista_Tower", "Ballista_Tower") && $canAffordBuilding( "Ballista_Tower", "Ballista_Tower", palace ))
+												begin
+													$AdjustPlayerData ( palace, "gold", -$getBuildingCost( "Ballista_Tower", "Ballista_Tower", palace ) );
+													$SpawnUnit (palace , "Ballista_Tower" , tradingPostLocation, "clear" );													
+												end
+											else if ($canAffordBuilding( "GuardHouse1", "GuardHouse", palace ))
+												begin
+													$AdjustPlayerData ( palace, "gold", -$getBuildingCost( "GuardHouse1", "GuardHouse", palace ) );
+													$SpawnUnit (palace , "GuardHouse1" , tradingPostLocation, "clear" );
+												end													
+										end	
+									else if ($canAffordBuilding( "GuardHouse1", "GuardHouse", palace ))
+										begin
+											$AdjustPlayerData ( palace, "gold", -$getBuildingCost( "GuardHouse1", "GuardHouse", palace ) );
+											$SpawnUnit (palace , "GuardHouse1" , tradingPostLocation, "clear" );
+										end							
+									//$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+									//$SpawnUnit (palace , "Trading_Post" , tradingPostLocation, "clear" );
+								end
+						end
+				end
+		end
+	else
+		begin
+			$debugout(911, "Dwarfeh AI: Failed to generate trading post within map coordinates");
+		end
+
+end
+
+//Dwarfeh
+//Oh what have we done. This is some hacked together bullshit
+//We have no fucking idea if we can place a building in a location with our current visibility. We can't check if a coordinate is visible. WE WANT TO BE HUMAN
+//Solution? We can place a building in the Monster name, make it invisible, and disable it
+//Then we search for the building with our vision. If we can find the damn thing it means we can build it.
+//If we can't find it, we destroy it. Easy stuff right?
+function constructBuilding(agent palace, string buildingName, string buildingTitle, coordinate buildingLocation) is boolean
+declare
+	agent tempBuilding;
+	list buildingList;
+begin
+	
+
+	tempBuilding = $SpawnUnit (palace , buildingName , buildingLocation, #Monster_Player, "maxhp",  $concatenate ( #ATTRIB_NotFlaggable, 1, #ATTRIB_NotSpellTarget, 1 ) );
+	$ShowMinimap (tempBuilding, False);
+	
+	//No funny business. We are completely disabling the damn building in this temporary state and putting the type to be unknown
+	tempBuilding's "type" = "unknown";
+	if (tempBuilding's "title" == "Dwarven_settlement" || tempBuilding's "title" == "ballista_tower")
+		begin
+			tempBuilding's "enemytype" = "nothing";
+		end
+	if (tempBuilding's "title" == "guardhouse")
+		tempBuilding's "enemytype" = "nothing";
+	else
+	if (tempBuilding's "title" == "outpost")
+		begin
+			$killThread( tempBuilding's "activeScript");
+			$killThread( tempBuilding's "Guard_Function");
+			$killThread ( tempBuilding's "Guard_Spawn_Function");
+			$killThread( tempBuilding's "Tax_spawn");
+			$killThread( tempBuilding's "peasant_spawn");
+			tempBuilding's "title" = "outpost_hidden";
+		end	
+	
+	//See remember when we changed the building type to unknown? Yeah now we get to search for it with our player's vision!
+	$ListObjects(palace,"unknown", -1, buildingList, #Monster_Player );
+
+	if ($listsize(buildingList) > 0)
+		begin
+			//This means we have visibility and can construct the building!
+			//Let's destroy the current one
+			//We don't want to use their own death script because it'll get real messy with outposts and everything. Let's just kill it and build our own
+			$building_death(tempBuilding);
+			
+			$AdjustPlayerData ( palace, "gold", -$getBuildingCost( buildingName, buildingTitle, palace ) );
+			$SpawnUnit (palace , buildingName , buildingLocation, "clear" );
+			return TRUE;
+		end
+	else
+		begin
+			//We don't have the visibility to construct the building. Just kill it
+			$building_death(tempBuilding);
+			return FALSE;
+		end
+	
+end
+
+function performEnemyPlayer2BuildingUpgrade(agent palace)
+declare
+	list buildings, current;
+	agent building, newPalace;
+	coordinate palaceCoord;
+begin
+
+	
+	//Palace upgrade section
+	if ($canUpgradeBuilding(palace, palace) == TRUE)
+		begin
+			if (palace's "level" == 1)
+				begin
+					//$debugout(911, "Dwarfeh AI: Upgrading palace to level 2 for the price", $getBuildingUpgradePrice( palace, palace ));
+					$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( palace, palace ) );
+					$ChangeUnitType( palace, "Palace2");
+					$setAttribute ( palace, #ATTRIB_currentstagebuilt, 0);
+					$adjustAttribute( palace,#attrib_MAXHP, 150);
+					$UpgradeAgentAttributes ( palace );
+					
+					//No idea why it's needed but game will crash after a few seconds if it isn't ran after changing unit type
+					$SetPalace( palace, $GetUnitPlayerNumber(palace));
+						
+					$palace_upgrade( palace );
+				end
+			else if (palace's "level" == 2)
+				begin
+					//$debugout(911, "Dwarfeh AI: Upgrading palace to level 3 for the price", $getBuildingUpgradePrice( palace, palace ));
+					$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( palace, palace ) );
+					$ChangeUnitType( palace, "Palace3");
+					$setAttribute ( palace, #ATTRIB_currentstagebuilt, 0);
+					$adjustAttribute( palace,#attrib_MAXHP, 300);
+					$UpgradeAgentAttributes ( palace );
+					
+					//No idea why it's needed but game will crash after a few seconds if it isn't ran after changing unit type
+					$SetPalace( palace, $GetUnitPlayerNumber(palace));
+							
+					$palace_upgrade( palace );
+				end
+		end	
+	
+	//Remaining buildings upgrade section
+	$ListObjects ( palace, "building", -1, buildings, #MyPlayer );
+	current = $RemoveTitles ( buildings, "marketplace" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace))
+				begin
+					if (building's "level" == 1)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							$ChangeUnitType( building, "Marketplace2");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 50);
+							$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );
+						end
+					else if (building's "level" == 2)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							$ChangeUnitType( building, "Marketplace3");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 50);
+							$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );						
+						end
+				end
+		end
+
+	current = $RemoveTitles ( buildings, "Blacksmith" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace))
+				begin
+					if (building's "level" == 1)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							$ChangeUnitType( building, "Blacksmith2");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 50);
+							$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );
+						end
+					else if (building's "level" == 2)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							$ChangeUnitType( building, "Blacksmith3");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 50);
+							$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );						
+						end
+				end
+		end
+	
+	current = $RemoveTitles ( buildings, "Rogues_Guild" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace))
+				begin
+					if (building's "level" == 1)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							
+							$ChangeUnitType( building, "Rogues_Guild2");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 100);
+							//This lets heroes poison before the building completes so disabled it to be more human like
+							//$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );
+						end
+				end
+		end
+
+	current = $RemoveTitles ( buildings, "Magic_Bazaar" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace))
+				begin
+					if (building's "level" == 1)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							$ChangeUnitType( building, "MagicBazaar2");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 50);
+							$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );
+						end
+					else if (building's "level" == 2)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							$ChangeUnitType( building, "MagicBazaar3");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 50);
+							$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );						
+						end
+				end
+		end
+		
+	current = $RemoveTitles ( buildings, "SorcerersAbode" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace) && $getTotalHeroLevel(palace) >= 200)
+				begin
+					if (building's "level" == 1)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							$ChangeUnitType( building, "SorcerersAbode2");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 50);
+							$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );
+						end
+					else if (building's "level" == 2)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							$ChangeUnitType( building, "SorcerersAbode3");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 50);
+							$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );						
+						end
+				end
+		end		
+		
+
+	current = $RemoveTitles ( buildings, "Wizards_Guild" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace) && $getTotalHeroLevel(palace) >= 100)
+				begin
+					if ($shouldUpgradeBuilding(building, palace))
+						begin
+							if (building's "level" == 1)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Wizards_Guild2");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 150);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );
+								end
+							else if (building's "level" == 2)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Wizards_Guild3");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 200);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );						
+								end
+						end
+				end
+		end
+
+	current = $RemoveTitles ( buildings, "Temple_Agrela" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace) && $getTotalHeroLevel(palace) >= 100)
+				begin
+					if ($shouldUpgradeBuilding(building, palace))
+						begin
+							if (building's "level" == 1)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Temple_Agrela2");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 50);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );
+								end
+							else if (building's "level" == 2)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Temple_Agrela3");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 100);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );						
+								end
+						end
+				end
+		end
+		
+	current = $RemoveTitles ( buildings, "Temple_Dauros" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace) && $getTotalHeroLevel(palace) >= 100)
+				begin
+					if ($shouldUpgradeBuilding(building, palace))
+						begin
+							if (building's "level" == 1)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Temple_Dauros2");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 100);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );
+								end
+							else if (building's "level" == 2)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Temple_Dauros3");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 200);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );						
+								end
+						end
+				end
+		end
+		
+	current = $RemoveTitles ( buildings, "Temple_Krypta" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace) && $getTotalHeroLevel(palace) >= 100)
+				begin
+					if ($shouldUpgradeBuilding(building, palace))
+						begin
+							if (building's "level" == 1)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Temple_Krypta2");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 75);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );
+								end
+							else if (building's "level" == 2)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Temple_Krypta3");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 50);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );						
+								end
+						end
+				end
+		end
+		
+	current = $RemoveTitles ( buildings, "Temple_Fervus" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace) && $getTotalHeroLevel(palace) >= 100)
+				begin
+					if ($shouldUpgradeBuilding(building, palace))
+						begin
+							if (building's "level" == 1)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Temple_Fervus2");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 101);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );
+								end
+							else if (building's "level" == 2)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Temple_Fervus3");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 108);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );						
+								end
+						end
+				end
+		end
+		
+	current = $RemoveTitles ( buildings, "Temple_Lunord" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace) && $getTotalHeroLevel(palace) >= 100)
+				begin
+					if ($shouldUpgradeBuilding(building, palace))
+						begin
+							if (building's "level" == 1)
+								begin
+									$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+									$ChangeUnitType( building, "Temple_Lunord2");
+									$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+									$adjustAttribute( building,#attrib_MAXHP, 150);
+									$UpgradeAgentAttributes ( building );
+									
+									$building_upgraded( building );
+								end
+						end
+				end
+		end
+
+	current = $RemoveTitles ( buildings, "Library" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace) && $getTotalHeroLevel(palace) >= 100)
+				begin
+					//Library doesn't have levels so we base their "level" on their maxhp				
+					if ($getAttribute( building ,#attrib_MAXHP) == 100)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							$ChangeUnitType( building, "Library2");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 100);
+							$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );
+						end
+				end
+		end
+
+	current = $RemoveTitles ( buildings, "Guardhouse" );
+	
+	foreach building in current do
+		begin
+			if ($canUpgradeBuilding(building, palace))
+				begin
+					//Guardhouse doesn't have levels so we base their "level" on their maxhp				
+					if ($getAttribute( building ,#attrib_MAXHP) == 200)
+						begin
+							$AdjustPlayerData ( palace, "gold", -$getBuildingUpgradePrice( building, palace ) );
+							$ChangeUnitType( building, "Guardhouse2");
+							$setAttribute ( building, #ATTRIB_currentstagebuilt, 0);
+							$adjustAttribute( building,#attrib_MAXHP, 75);
+							$UpgradeAgentAttributes ( building );
+							
+							$building_upgraded( building );
+						end
+				end
+		end
+
+end
+
+
+//Used to ensure one building gets to level 3
+//Cost of performing the upgrade should be done prior to this method
+function shouldUpgradeBuilding(agent building, agent palace) is boolean
+declare
+	list buildings;
+	boolean hasLevelTwoBuilding, hasLevelThreeBuilding;
+	agent potentialBuildingToUpgrade, buildingTemp;
+
+begin
+	$ListObjects ( palace, "building", -1, buildings, #MyPlayer, #CheckTitles, building's "title" );
+	
+	foreach buildingTemp in buildings do
+		begin
+			if (buildingTemp's "level" == 2)
+				begin
+					hasLevelTwoBuilding = TRUE;
+				end
+			else if (buildingTemp's "level" == 3)
+				begin
+					hasLevelThreeBuilding = TRUE;
+				end
+		end
+	
+	
+	//$GetPlayerData ( palace, "gold" );
+	//TODO: turn 20000 into an expression in globals to easily modify
+	if (hasLevelThreeBuilding && $GetPlayerData ( palace, "gold" ) >= 20000)
+		begin
+			return TRUE;
+		end
+	//We want to see if there's a level 2 building and if that building is the building we're checking
+	else if (hasLevelTwoBuilding && building's "level" == 2)
+		begin
+			if (hasLevelThreeBuilding && $GetPlayerData ( palace, "gold" ) >= 20000)
+				begin
+					return TRUE;
+				end
+			else if (hasLevelThreeBuilding == FALSE)
+				begin
+					return TRUE;
+				end
+			else
+				begin
+					//you only get here if you have level 3 building and not have 20k
+					return FALSE;
+				end
+		end
+	else if (hasLevelThreeBuilding == FALSE && hasLevelTwoBuilding == FALSE && building's "level" == 1)
+		begin
+			//Can afford to perform a building upgrade and no buildings have been upgraded
+			return TRUE;
+		end
+	else
+		begin
+			//Our goal is to only upgrade 1 building unless we have 20k+ gold. We reach here if we don't
+			return FALSE;
+		end
+	
+end
+
+
+
+
+function getBuildingBasePrice(string buildingName) is float
+declare
+
+begin
+	if (buildingName == "SorcerersAbode")
+		begin
+			return 2000.0;
+		end
+	else if (buildingName == "MagicBazaar")
+		begin
+			return 1400.0;
+		end
+	else if (buildingName == "HallOfChampions")
+		begin
+			return 1000.0;
+		end
+	else if (buildingName == "Outpost")
+		begin
+			return 3000.0;
+		end
+	else if (buildingName == "Embassy")
+		begin
+			return 3000.0;
+		end
+	else if (buildingName == "Ballista_Tower")
+		begin
+			return 1000.0;
+		end
+	else if (buildingName == "BlackSmith1")
+		begin
+			return 500.0;
+		end
+	else if (buildingName == "Fairgrounds")
+		begin
+			return 3000.0;
+		end
+	else if (buildingName == "GuardHouse1")
+		begin
+			return 500.0;
+		end
+	else if (buildingName == "Inn")
+		begin
+			return 400.0;
+		end
+	else if (buildingName == "Library1")
+		begin
+			return 600.0;
+		end
+	else if (buildingName == "Marketplace1")
+		begin
+			return 1500.0;
+		end
+	else if (buildingName == "Trading_Post")
+		begin
+			return 600.0;
+		end
+	else if (buildingName == "Wizards_Tower")
+		begin
+			return 500.0;
+		end
+	else if (buildingName == "Dwarven_Settlement")
+		begin
+			return 1250.0;
+		end
+	else if (buildingName == "Elven_Bungalow")
+		begin
+			return 750.0;
+		end
+	else if (buildingName == "Gnome_Hovel")
+		begin
+			return 100.0;
+		end
+	else if (buildingName == "Warriors_Guild")
+		begin
+			return 800.0;
+		end
+	else if (buildingName == "Rangers_Guild")
+		begin
+			return 700.0;
+		end
+	else if (buildingName == "Rogues_Guild1")
+		begin
+			return 600.0;
+		end
+	else if (buildingName == "Wizards_Guild1")
+		begin
+			return 1500.0;
+		end
+	else if (buildingName == "Temple_Agrela1")
+		begin
+			return 1000.0;
+		end
+	else if (buildingName == "Temple_Dauros1")
+		begin
+			return 1600.0;
+		end
+	else if (buildingName == "Temple_Fervus1")
+		begin
+			return 900.0;
+		end
+	else if (buildingName == "Temple_Helia1")
+		begin
+			return 1000.0;
+		end
+	else if (buildingName == "Temple_Krolm")
+		begin
+			return 900.0;
+		end
+	else if (buildingName == "Temple_Krypta1")
+		begin
+			return 1400.0;
+		end
+	else if (buildingName == "Temple_Lunord1")
+		begin
+			return 1000.0;
+		end
+	else if (buildingName == "Royal_gardens")
+		begin
+			return 1200.0;
+		end
+	else if (buildingName == "Statue")
+		begin
+			return 600.0;
+		end
+	else
+		begin
+			$debugout(911, "Dwarfeh AI: ERROR: Unable to find the price for the building", buildingName);
+			return 0;
+		end
+end
+
+//This returns the cost to upgrade the current building to the next level
+function getBuildingUpgradePrice(agent building, agent palace) is integer
+declare
+	integer buildingUpgradeCost;
+
+begin
+	if (building's "title" == "SorcerersAbode")
+			begin
+				if (building's "level" == 1)
+					begin
+						buildingUpgradeCost = 2500;
+					end
+				else if (building's "level" == 2)
+					begin
+						buildingUpgradeCost = 3000;
+					end
+			end
+	else if (building's "title" == "Magic_Bazaar")
+			begin
+				if (building's "level" == 1)
+					begin
+						buildingUpgradeCost = 1200;
+					end
+				else if (building's "level" == 2)
+					begin
+						buildingUpgradeCost = 1200;
+					end
+			end
+	else if (building's "title" == "Palace")
+		begin		
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 3000;
+				end
+			else if (building's "level" == 2)
+				begin
+					buildingUpgradeCost = 3750;
+				end
+		end		
+	else if (building's "title" == "Blacksmith")
+		begin
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 600;
+				end
+			else if (building's "level" == 2)
+				begin
+					buildingUpgradeCost = 800;
+				end
+		end
+	else if (building's "title" == "GuardHouse")
+		begin
+			//guardhouse doesn't have levels so we base it on their maxhp
+			if ($getAttribute( building ,#attrib_MAXHP) == 200)
+				begin
+					buildingUpgradeCost = 500;
+				end
+		end
+	else if (building's "title" == "Library")
+		begin
+			//Library doesn't have levels so we base it on their maxhp
+			if ($getAttribute( building ,#attrib_MAXHP) == 100)
+				begin
+					buildingUpgradeCost = 800;
+				end
+		end
+	else if (building's "title" == "Marketplace")
+		begin
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 1000;
+				end
+			else if (building's "level" == 2)
+				begin
+					buildingUpgradeCost = 1000;
+				end
+		end
+	else if (building's "title" == "Rogues_Guild")
+		begin
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 850;
+				end
+		end
+	else if (building's "title" == "Wizards_Guild")
+		begin
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 2500;
+				end
+			else if (building's "level" == 2)
+				begin
+					buildingUpgradeCost = 3500;
+				end
+		end
+	else if (building's "title" == "Temple_Agrela")
+		begin
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 1500;
+				end
+			else if (building's "level" == 2)
+				begin
+					buildingUpgradeCost = 2600;
+				end
+		end
+	else if (building's "title" == "Temple_Dauros")
+		begin
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 2200;
+				end
+			else if (building's "level" == 2)
+				begin
+					buildingUpgradeCost = 3400;
+				end
+		end
+	else if (building's "title" == "Temple_Fervus")
+		begin
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 1300;
+				end
+			else if (building's "level" == 2)
+				begin
+					buildingUpgradeCost = 2500;
+				end
+		end	
+	else if (building's "title" == "Temple_Helia")
+		begin
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 2000;
+				end
+		end	
+	else if (building's "title" == "Temple_Krypta")
+		begin
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 1800;
+				end
+			else if (building's "level" == 2)
+				begin
+					buildingUpgradeCost = 2200;
+				end
+		end
+	else if (building's "title" == "Temple_Lunord")
+		begin
+			if (building's "level" == 1)
+				begin
+					buildingUpgradeCost = 2000;
+				end
+		end
+	else
+		begin
+			$debugout(911, "Dwarfeh AI: ERROR: Unable to find the upgrade price for", building's "title");
+			buildingUpgradeCost = 100;
+		end
+
+	if ($hasBuiltBlacksmith(palace))
+		begin
+			//$debugout(911, "Dwarfeh AI: Calculating that the blacksmith exists");
+			buildingUpgradeCost = buildingUpgradeCost * 19 / 20;
+		end
+	
+	return buildingUpgradeCost;
+
+end
+
+//WHY ARE YOU SO SHIT MAJESTY
+//THIS ONLY HAS TO EXIST BECAUSE IT'S SHIT
+//PREVIOUS EXAMPLE:
+//YOU'D EXPECT IF PLAYER HAD 1 Ballista_Tower, THEIR BUILDING WOULD BE Ballista_Tower * BELOW VALUE RIGHT???
+//HOWEVER, FOR SOME FUCKED UP REASON, YOU CAN'T MULTIPLY BY FLOATS!!!!
+//BUT GAME HAS NO PROBLEM DOING IT IN ONE STATEMENT. FOR INSTANCE, 100 * 1.5 IS BAD!!! BUT 100 * 3 / 2 IS GOOD!!!
+//HOWEVER, YOU CAN'T RETURN 3 / 2 HERE. COMPILER IS SMART. IT SAVES TIME! IT TURNS YOUR 3 / 2 INTO 1.5 FOR YOU PUTTING YOU IN ABOVE POSITION TO CRY
+//FUCK COMPILER! We store multiplication and division separately!
+function getBuildingCostMultiplier(string buildingName) is float
+declare
+
+begin
+
+	if (buildingName == "MagicBazaar")
+		begin
+			return 3.0;
+		end
+	else if (buildingName == "Outpost")
+		begin
+			return 4.0;
+		end
+	else if (buildingName == "Embassy")
+		begin
+			return 7.0;
+		end
+	else if (buildingName == "Ballista_Tower")
+		begin
+			return 5.0;
+		end
+	else if (buildingName == "BlackSmith1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Fairgrounds")
+		begin
+			return 3.0;
+		end
+	else if (buildingName == "GuardHouse1")
+		begin
+			return 3.0;
+		end
+	else if (buildingName == "Inn")
+		begin
+			return 6.0;
+		end
+	else if (buildingName == "Library1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Marketplace1")
+		begin
+			return 13.0;
+		end
+	else if (buildingName == "Trading_Post")
+		begin
+			return 7.0;
+		end
+	else if (buildingName == "Wizards_Tower")
+		begin
+			return 9.0;
+		end
+	else if (buildingName == "Dwarven_Settlement")
+		begin
+			return 4.0;
+		end
+	else if (buildingName == "Elven_Bungalow")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Gnome_Hovel")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Warriors_Guild")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Rangers_Guild")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Rogues_Guild1")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Wizards_Guild1")
+		begin
+			return 4.0;
+		end
+	else if (buildingName == "Temple_Agrela1")
+		begin
+			return 3.0;
+		end
+	else if (buildingName == "Temple_Dauros1")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Temple_Fervus1")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Temple_Helia1")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Temple_Krolm")
+		begin
+			return 3.0;
+		end
+	else if (buildingName == "Temple_Krypta1")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Temple_Lunord1")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Royal_gardens")
+		begin
+			return 6.0;
+		end
+	else if (buildingName == "Statue")
+		begin
+			return 1.0;
+		end
+	else
+		begin
+			$debugout(911, "Dwarfeh AI: ERROR: Unable to find the cost MULTIPLIER for the building", buildingName);
+			return 1.0;
+		end
+end
+
+function getBuildingCostDivisor(string buildingName) is float
+declare
+
+begin
+
+	if (buildingName == "MagicBazaar")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Outpost")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Embassy")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Ballista_Tower")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "BlackSmith1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Fairgrounds")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "GuardHouse1")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Inn")
+		begin
+			return 5.0;
+		end
+	else if (buildingName == "Library1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Marketplace1")
+		begin
+			return 10.0;
+		end
+	else if (buildingName == "Trading_Post")
+		begin
+			return 4.0;
+		end
+	else if (buildingName == "Wizards_Tower")
+		begin
+			return 5.0;
+		end
+	else if (buildingName == "Dwarven_Settlement")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Elven_Bungalow")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Gnome_Hovel")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Warriors_Guild")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Rangers_Guild")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Rogues_Guild1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Wizards_Guild1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Temple_Agrela1")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Temple_Dauros1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Temple_Fervus1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Temple_Helia1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Temple_Krolm")
+		begin
+			return 2.0;
+		end
+	else if (buildingName == "Temple_Krypta1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Temple_Lunord1")
+		begin
+			return 1.0;
+		end
+	else if (buildingName == "Royal_gardens")
+		begin
+			return 5.0;
+		end
+	else if (buildingName == "Statue")
+		begin
+			return 1.0;
+		end		
+	else
+		begin
+			$debugout(911, "Dwarfeh AI: ERROR: Unable to find the cost DIVISOR for the building", buildingName);
+			return 1.0;
+		end
+end
+
+
+function canAffordBuilding(string buildingName, string buildingTitle, agent palace) is boolean
+declare
+	integer gold, buildingCost;
+	list buildings;
+begin	
+
+	//$debugout(911, "Dwarfeh AI: In canAffordBuilding for:", buildingTitle);
+	buildingCost = $getBuildingCost ( buildingName, buildingTitle, palace);
+	gold = $GetPlayerData ( palace, "gold" );
+	
+	if (gold >= buildingCost)
+		return TRUE;
+	else
+		return FALSE;
+end
+
+function getBuildingCost(string buildingName, string buildingTitle, agent palace) is integer
+declare
+	integer currentPlayer, buildingCount, counter;
+	float maxIntegerNum, buildingCost;
+	list buildings;
+	agent building;
+begin
+	//currentPlayer = $GetUnitPlayerNumber ( palace );
+	maxIntegerNum = 400000.0;
+	$ListObjects ( palace, "building", -1, buildings, #MyPlayer, #NoHiddenMap, #CheckTitles, buildingTitle);
+	buildingCount = $ListSize ( buildings );
+	
+	//$debugout(911, "Dwarfeh AI: In building cost for:", buildingTitle, " and found building count:", buildingCount);
+	
+	buildingCost = $getBuildingBasePrice(buildingName);
+	
+	if (buildingCount >= 1)
+		begin
+			foreach building in buildings do
+				begin
+					//If we go above MAX_INT game crashes without error. Lets prevent that
+					if (buildingCost > (maxIntegerNum / $getBuildingCostMultiplier(buildingName)))
+						begin
+							//$debugout(911, "Dwarfeh AI: BuildingCost (", buildingCost, ") would be bigger than (", maxIntegerNum, ") with the calculation for max int (", (maxIntegerNum / $getBuildingCostMultiplier(buildingName)), ") this was calculated with below buildings.");
+							//$debugout(911, "Dwarfeh AI: BuildingCost (", buildingCost, ") would be bigger than (", maxIntegerNum, ") with the calculation for max int (", (maxIntegerNum / 100.0), ") this was calculated with below buildings.");
+							//$debugout(911, "Dwarfeh AI: Terrible bug that would cause game crash (MAX INT). ", buildingTitle, "building name:", buildingName, "buildingCost", buildingCost, "Multiplier:", $getBuildingCostMultiplier(buildingName), "buildings:", buildings);
+							buildingCost = maxIntegerNum;
+						end
+					else
+						begin
+							buildingCost = buildingCost * $getBuildingCostMultiplier(buildingName) / $getBuildingCostDivisor(buildingName);
+							//$debugout(911, "Dwarfeh AI: Increasing building costs for Building title:", buildingTitle, "building name:", buildingName, "buildingCost", buildingCost, "Multiplier:", $getBuildingCostMultiplier(buildingName), "buildings:", buildings);
+						end
+				end
+			
+		end
+	//$debugout(911, "Dwarfeh AI: getBuildingCost Building title:", buildingTitle, "Building count:", buildingCount, "buildingCost", buildingCost, "buildings:", buildings);
+	
+	//$debugout(911, "Dwarfeh AI: Cost before blacksmith", buildingName, "as", buildingCost); 
+	if ($hasBuiltBlacksmith(palace))
+		begin
+			$debugout(911, "Dwarfeh AI: Calculating that the blacksmith exists");
+			buildingCost = buildingCost * 0.95;
+		end
+	
+	//$debugout(911, "Dwarfeh AI: Returning the price for", buildingName, "as", buildingCost); 
+	return buildingCost;
+	
+end
+
+
+function hasBuiltBlacksmith(agent palace) is boolean
+declare
+	list currentBlacksmithList;
+	agent building;
+	integer buildingCount;
+	boolean hasCompletedBlacksmith;
+	
+begin
+	$ListObjects ( palace, "Building", -1, currentBlacksmithList, #MyPlayer, #CheckTitles, "Blacksmith" );
+	
+	buildingCount = $ListSize ( currentBlacksmithList);
+	//$debugout(911, "Dwarfeh AI: Current list of blacksmiths", currentBlacksmithList, "count:", buildingCount);
+	hasCompletedBlacksmith = FALSE;
+	
+	foreach building in currentBlacksmithList do
+		begin
+			//$debugout(911, "Dwarfeh AI: #ATTRIB_FirstStageBuilt", $getAttribute ( building, #ATTRIB_FirstStageBuilt ), "building level:", building's "level");
+			if ($getAttribute ( building, #ATTRIB_FirstStageBuilt ) == 1)
+				begin
+					//$debugout(911, "Dwarfeh AI: Returning true for blacksmith being built");
+					hasCompletedBlacksmith = TRUE;
+					//break; Whoops this will actually cause it to break other methods. Lets not use it!
+				end
+		end
+	
+	return hasCompletedBlacksmith;
+end
+
+
+
+function canUpgradeBuilding(agent building, agent palace) is boolean
+declare
+	list heroesList;
+begin
+	if (building's "title" == "Blacksmith")
+		begin
+			if (building's "level" == 1 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchArmorLevel_2 ) == 1 && $getAttribute ( building, #ATTRIB_ResearchWeaponLevel_2 ) == 1 )
+						begin
+							return TRUE;
+						end
+				end
+			else if (building's "level" == 2  && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchArmorLevel_3 ) == 1 && $getAttribute ( building, #ATTRIB_ResearchWeaponLevel_3 ) == 1)
+						begin
+							return TRUE;
+						end
+				end
+		end
+	else if (building's "title" == "Marketplace")
+		begin
+			if (building's "level" == 1 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchMarketDay ) == 1 && $getAttribute ( building, #ATTRIB_ResearchHealingPotions ) == 1)
+						begin
+							return TRUE;
+						end
+				end
+			else if (building's "level" == 2 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP)  && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchRingsOfProtection ) == 1)
+						begin
+							//$DebugOut ( 911, "Returning true to upgrade marketplace to level 3");
+							return TRUE;
+						end
+				end
+		end
+	else if (building's "title" == "Rogues_Guild")
+		begin
+			if (building's "level" == 1 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+						return TRUE;
+				end
+		end
+	else if (building's "title" == "Palace" && building's "subtype" == "Palace")
+		begin
+			if (building's "level" <= 2)
+				begin
+					$ListObjects (palace, "Hero", -1, heroesList, #InsideOtherUnits, #MyPlayer);
+					//$DebugOut ( 911, "List before removing", heroesList);
+					$RemoveTitles ( heroesList, "Gnome" );
+					$RemoveTitles ( heroesList, "Peasant" );
+					$RemoveTitles ( heroesList, "Tax_Collector" );
+					$RemoveTitles ( heroesList, "Palace_Guard" );
+					
+					//$DebugOut ( 911, "List after removing", heroesList);
+					//$DebugOut ( 911, "List size", $ListSize(heroesList));
+					
+					if (building's "level" == 1 && $ListSize(heroesList) >= 4 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+						begin
+							return TRUE;
+						end
+					else if (building's "level" == 2 && $ListSize(heroesList) >= 12 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+						begin
+							return TRUE;
+						end
+				end
+		end
+	else if (building's "title" == "Magic_Bazaar")
+		begin
+			if (building's "level" == 1 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					//$debugout( 911, "Checking for magic bazaar upgrade for level 1 to level 2");
+					if ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_One ) == 1 && $getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Two ) == 1)
+						begin
+							//$debugout( 911, "returning true that we can upgrade magic bazaar to level 2");
+							return TRUE;
+						end
+				end
+			else if (building's "level" == 2 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP)  && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Three ) == 1 && $getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Four ) == 1)
+						begin
+							return TRUE;
+						end
+				end
+		end
+	else if (building's "title" == "SorcerersAbode")
+		begin
+			if (building's "level" == 1 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+			else if (building's "level" == 2 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP)  && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+		end		
+	else if (building's "title" == "Wizards_Guild")
+		begin
+			if (building's "level" == 1 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+			else if (building's "level" == 2 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP)  && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+		end
+	else if (building's "title" == "Temple_Agrela")
+		begin
+			if (building's "level" == 1 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+			else if (building's "level" == 2 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP)  && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+		end
+	else if (building's "title" == "Temple_Dauros")
+		begin
+			if (building's "level" == 1 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+			else if (building's "level" == 2 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP)  && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+		end
+	else if (building's "title" == "Temple_Fervus")
+		begin
+			if (building's "level" == 1 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+			else if (building's "level" == 2 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP)  && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+		end
+	else if (building's "title" == "Temple_Krypta")
+		begin
+			if (building's "level" == 1 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+			else if (building's "level" == 2 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP)  && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+		end
+	else if (building's "title" == "Library")
+		begin
+			//Library doesn't have level so we use MaxHP
+			if ($getAttribute (building, #ATTRIB_MaxHP) == 100 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ))
+				begin
+					return TRUE;
+				end
+		end
+	else if (building's "title" == "GuardHouse")
+		begin
+			//GuardHouse doesn't have level so we use MaxHP
+			if ($getAttribute (building, #ATTRIB_MaxHP) == 200 && $getAttribute (building, #ATTRIB_HP) == $getAttribute (building, #ATTRIB_MaxHP) && $GetPlayerData ( palace, "gold" ) >= $getBuildingUpgradePrice( building, palace ) && $getAttribute ( building, #ATTRIB_ResearchArrows ) == 1)
+				begin
+					return TRUE;
+				end
+		end
+	else
+		begin	
+			return FALSE;		
+		end
+		
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function performEnemyPlayer2Research(agent palace)
+// This function sets the research levels for all of the enemy city buildings at startup.
+declare
+	list buildings, current;
+	agent building;
+
+begin
+	//$Debugout ( 911, "Setting enemy research levels." );
+
+	$ListObjects ( palace, "building", -1, buildings, #MyPlayer );
+
+	// Set blacksmith research.
+	current = $RemoveTitles ( buildings, "blacksmith" );
+	
+	//$Debugout ( 911, "current list", current );
+
+	foreach building in current do
+		begin
+			//TODO: Future scope is to create separate functions for the research.
+			// Maybe tie it to the building itself as researchScript and handling it like that would solve this issue. Is that possible?
+			//The goal in the future is to actually require time to perform research instead of being instant
+			//Research times are already defined in mx_Globals.gpl. Thread would take argument (integer) for attribute
+			//This can cause weird issues since threads that use same functions will just reset the timer when called again.
+			//Example failure case: 2 blacksmiths trying to research same item will just make them reset before it's done researching. Bleh!
+			
+			//This function check's the building's level and checks to ensure that it is built
+			if (building's "level" >= 1 && $getAttribute ( building, #ATTRIB_FirstStageBuilt ) == 1 && $getTotalHeroLevel(palace) >= 10 && ($getAttribute ( building, #ATTRIB_ResearchArmorLevel_2 ) == 0 || $getAttribute ( building, #ATTRIB_ResearchWeaponLevel_2 ) == 0) )
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchArmorLevel_2 ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostArmorLevel_2)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostArmorLevel_2 );
+							$setAttribute ( building, #ATTRIB_ResearchArmorLevel_2, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchWeaponLevel_2 ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostWeaponLevel_2)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostWeaponLevel_2 );
+							$setAttribute ( building, #ATTRIB_ResearchWeaponLevel_2, 1 );
+						end
+				end
+			else if (building's "level" >= 2 && $getAttribute ( building, #ATTRIB_currentstagebuilt ) == 1 && $getTotalHeroLevel(palace) >= 20 && ($getAttribute ( building, #ATTRIB_ResearchArmorLevel_3 ) == 0 || $getAttribute ( building, #ATTRIB_ResearchWeaponLevel_3 ) == 0))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchArmorLevel_3 ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostArmorLevel_3)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostArmorLevel_3 );
+							$setAttribute ( building, #ATTRIB_ResearchArmorLevel_3, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchWeaponLevel_3 ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostWeaponLevel_3)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostWeaponLevel_3 );
+							$setAttribute ( building, #ATTRIB_ResearchWeaponLevel_3, 1 );
+						end
+				end
+			else if (building's "level" == 3 && $getAttribute ( building, #ATTRIB_currentstagebuilt ) == 1 && $getTotalHeroLevel(palace) >= 30 && ($getAttribute ( building, #ATTRIB_ResearchArmorLevel_4 ) == 0 || $getAttribute ( building, #ATTRIB_ResearchWeaponLevel_4 ) == 0) )
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchArmorLevel_4 ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostArmorLevel_4)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostArmorLevel_4 );
+							$setAttribute ( building, #ATTRIB_ResearchArmorLevel_4, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchWeaponLevel_4 ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostWeaponLevel_4)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostWeaponLevel_4 );
+							$setAttribute ( building, #ATTRIB_ResearchWeaponLevel_4, 1 );
+						end
+				end
+		end
+
+	// Set marketplace research.
+	current = $RemoveTitles ( buildings, "marketplace" );
+
+	foreach building in current do
+		
+		begin
+			if (building's "level" >= 1 && $getAttribute ( building, #ATTRIB_FirstStageBuilt ) == 1 && ($getAttribute ( building, #ATTRIB_ResearchMarketDay ) == 0 || $getAttribute ( building, #ATTRIB_ResearchHealingPotions ) == 0))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchMarketDay ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostMarketDay)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostMarketDay );
+							$setAttribute ( building, #ATTRIB_ResearchMarketDay, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchHealingPotions ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostHealPotions)
+						begin
+							//$Debugout ( 911, "researching healing potions");
+							$adjustPlayerData ( palace, "gold", -#ResearchCostHealPotions );
+							$setAttribute ( building, #ATTRIB_ResearchHealingPotions, 1 );
+						end
+				end
+			else if (building's "level" >= 2 && $getAttribute ( building, #ATTRIB_currentstagebuilt ) == 1 && $getAttribute ( building, #ATTRIB_ResearchRingsOfProtection ) == 0)
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchRingsOfProtection ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostRingsofProtection)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostRingsofProtection);
+							$setAttribute ( building, #ATTRIB_ResearchRingsOfProtection, 1 );
+						end
+				end
+			else if (building's "level" == 3 && $getAttribute ( building, #ATTRIB_currentstagebuilt ) == 1 && $getTotalHeroLevel(palace) >= 100 && $getAttribute ( building, #ATTRIB_ResearchPowerfulItem ) == 0)
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchPowerfulItem ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostPowerfulItem)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostPowerfulItem);
+							$setAttribute ( building, #ATTRIB_ResearchPowerfulItem, 1 ); // this is the amulet. :P
+						end
+				end
+		end
+
+
+	// Set magic bazaar research.
+	current = $RemoveTitles ( buildings, "Magic_Bazaar" );
+
+	foreach building in current do
+		begin
+			if (building's "level" >= 1 && $getAttribute ( building, #ATTRIB_FirstStageBuilt ) == 1 && $getTotalHeroLevel(palace) >= 10 && ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_One ) == 0 || $getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Two ) == 0))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_One ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostMagicBazaar_Item_One)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostMagicBazaar_Item_One);
+							$setAttribute ( building, #ATTRIB_ResearchBazaar_Item_One, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Two ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostMagicBazaar_Item_Two)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostMagicBazaar_Item_Two);
+							$setAttribute ( building, #ATTRIB_ResearchBazaar_Item_Two, 1 );
+						end
+				end
+			else if (building's "level" >= 2 && $getAttribute ( building, #ATTRIB_currentstagebuilt ) == 1 && $getTotalHeroLevel(palace) >= 20 && ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Three ) == 0 || $getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Four ) == 0))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Three ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostMagicBazaar_Item_Three)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostMagicBazaar_Item_Three);
+							$setAttribute ( building, #ATTRIB_ResearchBazaar_Item_Three, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Four ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostMagicBazaar_Item_Four)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostMagicBazaar_Item_Four);
+							$setAttribute ( building, #ATTRIB_ResearchBazaar_Item_Four, 1 );
+						end
+				end
+			else if (building's "level" >= 3 && $getAttribute ( building, #ATTRIB_currentstagebuilt ) == 1 && $getTotalHeroLevel(palace) >= 30 && ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Five ) == 0 || $getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Six ) == 0))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Five ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostMagicBazaar_Item_Five)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostMagicBazaar_Item_Five);
+							$setAttribute ( building, #ATTRIB_ResearchBazaar_Item_Five, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchBazaar_Item_Six ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostMagicBazaar_Item_Six)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostMagicBazaar_Item_Six);
+							$setAttribute ( building, #ATTRIB_ResearchBazaar_Item_Six, 1 );
+						end
+				end		
+		end
+
+	// Set guardhouse research.
+	current = $RemoveTitles ( buildings, "guardhouse" );
+
+	foreach building in current do
+		begin
+			//Guardhouse does not have levels so we base it on their maxhp to determine their level
+			if ($getAttribute ( building, #ATTRIB_FirstStageBuilt ) >= 1 && $getAttribute( building ,#attrib_MAXHP) >= 200 && $getAttribute ( building, #ATTRIB_ResearchArrows ) == 0)
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchArrows ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostArrows)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostArrows);
+							$setAttribute ( building, #ATTRIB_ResearchArrows, 1 );
+						end
+				end
+			else if ($getAttribute ( building, #ATTRIB_currentstagebuilt ) == 1 && $getAttribute( building ,#attrib_MAXHP) == 275 && $getAttribute ( building, #ATTRIB_ResearchGoodGuard ) == 0)
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchGoodGuard ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostGoodGuard)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostGoodGuard);
+							$setAttribute ( building, #ATTRIB_ResearchGoodGuard, 1 );
+						end
+				end
+		end
+
+	// Set fairgrounds research and activate the building.
+	current = $RemoveTitles ( buildings, "fairgrounds" );
+
+	foreach building in current do
+		begin
+			if ($getAttribute ( building, #ATTRIB_FirstStageBuilt ) == 1 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostTournament)
+				begin
+					$adjustPlayerData ( palace, "gold", -#ResearchCostTournament);
+					$setAttribute ( building, #ATTRIB_ResearchTournament, 1 );
+					$setAttribute ( building, #ATTRIB_CurrentEvent, 4 );				
+				end
+
+		end
+
+
+	// Set library research
+	current = $ListTitles ( buildings, "library" );
+
+	foreach building in current do
+		begin
+			//Library does not have levels so we base it on their maxhp to determine their level
+			if ($getAttribute ( building, #ATTRIB_FirstStageBuilt ) >= 1 && $getAttribute( building ,#attrib_MAXHP) >= 100 && ($getAttribute ( building, #ATTRIB_ResearchTrainIntelligence ) == 0 || $getAttribute ( building, #ATTRIB_ResearchMagicResistance ) == 0 || $getAttribute ( building, #ATTRIB_ResearchWizardFireBlast ) == 0))
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchTrainIntelligence ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostTrainIntelligence)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostTrainIntelligence);
+							$setAttribute ( building, #ATTRIB_ResearchTrainIntelligence, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchMagicResistance ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostMagicResistance)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostMagicResistance);
+							$setAttribute ( building, #ATTRIB_ResearchMagicResistance, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchWizardFireBlast ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostWizardFireBlast)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostWizardFireBlast);
+							$setAttribute ( building, #ATTRIB_ResearchWizardFireBlast, 1 );
+						end
+				end
+			else if ($getAttribute ( building, #ATTRIB_currentstagebuilt ) == 1 && $getAttribute( building ,#attrib_MAXHP) == 200)
+				begin
+					if ($getAttribute ( building, #ATTRIB_ResearchWizardMeteorStorm ) == 0  && $GetPlayerData ( palace, "gold" ) >= #ResearchCostWizardMeteorStorm)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostWizardMeteorStorm);
+							$setAttribute ( building, #ATTRIB_ResearchWizardMeteorStorm, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchEnergyBlast ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostEnergyBlast)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostEnergyBlast);
+							$setAttribute ( building, #ATTRIB_ResearchEnergyBlast, 1 );
+						end
+					if ($getAttribute ( building, #ATTRIB_ResearchFireShield ) == 0 && $GetPlayerData ( palace, "gold" ) >= #ResearchCostFireShield)
+						begin
+							$adjustPlayerData ( palace, "gold", -#ResearchCostFireShield);
+							$setAttribute ( building, #ATTRIB_ResearchFireShield, 1 );
+						end
+				end
+		end
+
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function Check_Lightning_Defense () is boolean
+// This function lets a non-player kindgom look for enemy heroes intruding within it's
+// wizard's guild cast radius.  It checks the closest enemy, and if it detects a cluster
+// of them within range, it will fry them all with a lightning storm. Otherwise it will
+// smack the single target with a lightning bolt.
+
+declare
+	agent palace, hero, zaptarget, building, guild;
+	list enemy_heroes, buildings;
+	boolean flag;
+	integer gold;
+
+begin
+
+	$Debugout ( 911, "Checking for Lightning Storm." );
+
+	palace = $Dwarfeh_GetPlayerTwoPalace ();
+
+	// build list of wizguilds.
+	$ListObjects ( palace, "building", -1, buildings, #CheckTitles, "Wizards_Guild", #MyPlayer, #NoHiddenMap );
+
+	// Check to make sure if you have a valid guild of the level required.
+	flag = FALSE;
+	if ( $ListSize ( buildings ) > 0 )
+		begin
+			foreach building in buildings do
+				begin
+					if ( building's "level" >= 2 )
+						begin
+							flag = TRUE;
+							guild = building;
+						end
+				end
+		end
+
+	// If no valid guild has been found, the function will cease here.
+	if ( flag == FALSE )
+		return FALSE;
+
+	// Build a list of enemy heroes in range of guild.
+	$ListObjects ( guild, "hero", 1200, enemy_heroes, #NotMyPlayer, #NoHiddenMap );
+
+	// Target the closest hero, if any.
+	if ( $ListSize ( enemy_heroes ) > 0 )
+		begin
+			ZapTarget = $ListMember ( enemy_heroes, 1 );
+			$ListObjects ( ZapTarget, "hero", 150, enemy_heroes, #MyPlayer, #NoHiddenMap );
+			// if there is MORE than one other hero (three total) within storm radius,
+			// blast them with a lightning storm.
+			if ( $ListSize ( enemy_heroes ) > 1 )
+				begin
+					$CreateSpellUnit ( guild, "Lightning_Storm", ZapTarget );
+					$AdjustPlayerData ( palace, "gold", -1600 );
+
+					gold = $GetPlayerData ( palace, "gold" );
+					$DebugOut ( 911, "AI lightning stormed ", ZapTarget, ". ", gold, " gold remaining." );
+					return TRUE; // AI may NOT consider another action after throwing storm.
+				end
+  			else // Otherwise hit the one guy with a lightning bolt instead.
+				begin
+					if (( $RandomNumber ( 4 ) + 1 ) > 2 )
+						begin
+							$AdjustPlayerData ( palace, "gold", -400 );
+							$lightning_bolt_hit ( ZapTarget );
+
+							gold = $GetPlayerData ( palace, "gold" );
+							$DebugOut ( 911, "AI lightning bolted ", ZapTarget, ". ", gold, " gold remaining." );
+							Return FALSE; // AI MAY consider another action after throwing a bolt.
+						end
+				end
+		end
+	// If the function falls through to here, no valid targets were found.
+	return FALSE;
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function AI_Check_Resurrect (agent palace)
+// This function lets a non-player kindgom look for friendly dead heroes and evaluate
+// them as targets for an agrella resurrect spell.  It will not work if the player
+// does not control a level 3 agrella temple. The function will return TRUE if
+// it resurrects someone, FALSE otherwise.
+declare
+	agent hero, restarget, building;
+	list heroes, dead_heroes, buildings;
+	boolean hasKrypta, hasAgrela;
+	integer gold, costToRevive;
+
+begin
+	hasKrypta = FALSE;
+	hasAgrela = FALSE;
+
+	//$Debugout ( 911, "Checking for resurrection." );
+
+	// build list of temples.
+	$ListObjects ( palace, "building", -1, buildings, #CheckTitles, "Temple_Krypta", #MyPlayer );
+
+	// Make sure a valid level 3 temple is available.
+	
+	if ( $ListSize ( buildings ) > 0 )
+		begin
+			foreach building in buildings do
+				begin
+					if ( building's "level" == 3 )
+						begin
+							hasKrypta = TRUE;
+							costToRevive = 2000;
+						end
+				end
+		end
+	
+	$ListObjects ( palace, "building", -1, buildings, #CheckTitles, "Temple_Agrela", #MyPlayer );
+	
+	if ( $ListSize ( buildings ) > 0 )
+		begin
+			foreach building in buildings do
+				begin
+					if ( building's "level" == 3 )
+						begin
+							hasAgrela = TRUE;
+							costToRevive = 1500;
+						end
+				end
+		end
+
+	// If no valid temple has been found, the function will cease here.
+	if ( hasKrypta == FALSE && hasAgrela == FALSE )
+		return;
+
+	// Build a list of dead heroes.
+	$ListObjects ( palace, "dead", -1, dead_heroes, #MyPlayer, #NoHiddenMap );
+
+	foreach hero in dead_heroes do
+		begin
+			if ( $IsDead ( hero ) == FALSE )
+				dead_heroes -= hero;
+		end
+
+	// Sort through the list of dead heroes, choose the highest level dead hero.
+	if ( $ListSize ( dead_heroes ) > 0 )
+		begin
+			ResTarget = $ListMember ( dead_heroes, 1 );
+			foreach hero in dead_heroes do
+				begin
+				//	if ( $GetAttribute ( hero, #ATTRIB_ExperienceLevel ) > $GetAttribute ( ResTarget, #ATTRIB_ExperienceLevel ))
+				//		ResTarget = hero;
+				//end
+					// If that hero is >= level 10, then resurrect him.
+					if ( $GetAttribute ( hero, #ATTRIB_ExperienceLevel ) >= 10 )
+						begin
+							if (hasKrypta && $GetPlayerData ( palace, "gold" ) >= 2000)
+								begin
+									$Reanimate_Begin ( hero );
+									$AdjustPlayerData ( palace, "gold", -2000 );
+
+									gold = $GetPlayerData ( palace, "gold" );
+									//$DebugOut ( 911, "AI Resurrected ", hero, ". ", gold, " gold remaining." );
+								end
+							else if (hasAgrela && $GetPlayerData ( palace, "gold" ) >= 1500)
+								begin
+									$Resurrection_Begin ( hero );
+									$AdjustPlayerData ( palace, "gold", -1500 );
+
+									gold = $GetPlayerData ( palace, "gold" );
+									//$DebugOut ( 911, "AI Resurrected ", hero, ". ", gold, " gold remaining." );								
+								end
+						end
+				end
+		end
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function Check_Heal () is boolean
+// This function lets a non-player kindgom look for friendly heroes and evaluate
+// them as targets for an agrella heal spell.  It will not work if the player
+// does not control a level 1 or higher agrella temple. The function will return TRUE if
+// it heals someone, FALSE otherwise.
+declare
+	agent palace, hero, HealTarget, building;
+	list heroes, buildings;
+	boolean flag;
+	integer gold;
+
+begin
+
+	$Debugout ( 911, "Checking for heal." );
+
+	palace = $Dwarfeh_GetPlayerTwoPalace ();
+
+	// First build a list of temples and make sure at least one level three temple
+	// is under the AI player's control.
+	$ListObjects ( palace, "building", -1, buildings, #CheckTitles, "Temple_Fervus", #MyPlayer, #NoHiddenMap );
+
+	// If no valid temple has been found, the function will cease here.
+	if ( $ListSize ( buildings ) < 1 )
+		Return FALSE;
+
+	// Build a list of heroes.
+	$ListObjects ( palace, "hero", -1, heroes, #MyPlayer, #NoHiddenMap );
+
+	// Sort through the list of heroes, choose an injured hero.
+	if ( $ListSize ( heroes ) > 0 )
+		begin
+			flag = FALSE;
+			foreach hero in heroes do
+				begin
+					if ( $IsDead ( hero ) == FALSE )
+						begin
+							if ( $GetAttribute ( hero, #ATTRIB_HP ) < ( $GetAttribute ( hero, #ATTRIB_MaxHP ) * 0.5 ))
+								begin
+									HealTarget = hero;
+									flag = TRUE;
+								end
+						end
+				end
+			// If a valid hero was found, heal him.
+			if ( flag == TRUE )
+				begin
+					$Fervus_Heal_Effect ( HealTarget );
+					$AdjustPlayerData ( palace, "gold", -400 );
+
+					gold = $GetPlayerData ( palace, "gold" );
+					$DebugOut ( 911, "AI Healed ", HealTarget, ". ", gold, " gold remaining." );
+					return TRUE;
+				end
+		end
+	// If the function falls through to here, no valid heal target was found.
+	return FALSE;
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function AI_Post_Enemy_Reward (agent palace)
+// Causes the AI player to decide whether or how to place a reward flag.
+declare
+	agent target, hero;
+	integer random, total_level, avg_level, num_heroes;
+	list heroes, tempheroes;
+
+
+begin
+	//$Debugout ( 911, "Checking for reward flag targets." );
+
+	if ( $CountPlacedFlags ( palace ) < 2 ) // Only consider if 2 are not placed
+		begin
+			total_level = $getTotalHeroLevel(palace);
+			if (( $randomnumber ( 100 ) + 1 ) <  total_level ) // Decide if you have enough levels to attack with.
+				begin
+					random = $RandomNumber ( 3 ) + 1; // Randomly choose a target type and flag it.
+					if ( random == 1 )
+						$AI_FlagEconomicTarget ( total_level, palace );
+					else if ( random == 2 )
+						$AI_FlagGuildTarget ( total_level, palace );
+					else if ( random == 3 )
+						$AI_FlagClosestBuilding ( total_level, palace );
+
+				end
+		end
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function CountPlacedFlags ( agent palace ) is integer
+// Returns the number of reward flags currently in play belonging to the agent's player.
+declare
+	list flags;
+	integer number;
+begin
+	$listobjects ( palace, "RewardFlag", -1, flags, #Rewardflags, #Myplayer, #NoHiddenMap );
+	number = $ListSize ( flags );
+	return number;
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function AI_FlagEconomicTarget ( integer levels, agent palace ) is agent
+// This function will cause a computer player to place a reward flag on the closest enemy marketplace or trade post.
+declare
+	agent target, flagtarget, flag, AIRootAgent;
+	list t1, t2, targets, buildings;
+	integer distance, newdistance, gold;
+
+begin
+	//$Debugout ( 911, "Flagging Economic Target." );
+
+	// Build  a list of all markets and tradeposts.
+	$ListObjects ( palace, "building", -1, buildings, #NotMyTeam );
+	t1 = $RemoveTitles ( buildings, "marketplace" );
+	t2 = $ListTitles ( buildings, "trading_post" );
+	targets = $AddLists ( t1, t2 );
+	
+	if ( $ListSize ( targets ) == 0 )
+		begin
+			//Assume economic targets have all been destroyed and they are struggling. Go for the kill
+			t1 = $ListTitles ( buildings, "Outpost" );
+			t2 = $ListTitles ( buildings, "Palace" );
+			targets = $AddLists ( t1, t2 );
+		end
+		
+	if ( $ListSize ( targets ) == 0 )
+		begin
+			//Not seeing anything resourceful near us. Lets attack the nearest
+			$AI_FlagClosestBuilding( levels, palace );
+		end
+	
+	// Select the closest item on the list.
+	if ( $ListSize ( targets ) > 0 )
+		begin
+			flagtarget = $ListMember ( targets, 1 );
+			distance = $DistanceBetweenAgents ( palace, flagtarget );
+
+			foreach target in targets do
+				begin
+					newdistance = $DistanceBetweenAgents ( palace, target );
+					if ( newdistance < distance )
+						begin
+							flagtarget = target;
+							distance = newdistance;
+						end
+				end
+
+			AIRootAgent = $RetrieveAgent ( "GplAIRoot" );
+
+			// Set the flag value based on the power of the computer player's heroes.
+			if ( levels < 30 && $GetPlayerData ( palace, "gold" ) >= 100 )
+				begin
+					gold = 100;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 45 && $GetPlayerData ( palace, "gold" ) >= 200)
+				begin
+					gold = 200;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 55 && $GetPlayerData ( palace, "gold" ) >= 300 )
+				begin
+					gold = 300;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 65 && $GetPlayerData ( palace, "gold" ) >= 400 )
+				begin
+					gold = 400;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 75 && $GetPlayerData ( palace, "gold" ) >= 500 )
+				begin
+					gold = 500;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels >= 75 && $GetPlayerData ( palace, "gold" ) >= #AI_max_reward_flag)
+				begin
+					gold = #AI_max_reward_flag;
+					palace's "flag_value" = #AI_max_reward_flag;
+				end
+
+			// Place the flag if the target is valid.
+			if ( $IsValidGamePiece ( flagtarget ) && gold > 0)
+				flag = $PlaceRewardFlag ( flagtarget, $GetUnitPlayerNumber(palace), gold );
+
+			if ( flag != $nullagent ())
+				palace's "AI_Reward_Flags" << flag;
+
+			gold = $GetPlayerData ( palace, "gold" );
+			$DebugOut ( 911, "AI Flagged ", flagtarget, ". ", gold, " gold remaining." );
+		end
+	else
+		$DebugOut ( 911, "AI unable to find appropriate flag target." );
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function AI_FlagGuildTarget ( integer levels, agent palace ) is agent
+// This function will cause a computer player to place a reward flag on the closest enemy Guild.
+declare
+	agent target, flagtarget, flag, AIRootAgent;
+	list guilds, lairs, targets;
+	integer distance, newdistance, gold;
+
+begin
+	//$Debugout ( 911, "Flagging Guild Target." );
+
+	// Build a list of all enemy guilds.
+	$ListObjects ( palace, "building", -1, guilds, #NotMyTeam, #CheckSubtypes, "Guild");
+	$ListObjects ( palace, "lair", -1, lairs, #NotMyTeam );
+	targets = $AddLists ( guilds, lairs );
+	//targets = $ListSubTypes ( buildings, "guild" );
+
+	// Target the closest guild.
+	if ( $ListSize ( targets) > 0 )
+		begin
+			flagtarget = $ListMember ( targets, 1 );
+			distance = $DistanceBetweenAgents ( palace, flagtarget );
+
+			foreach target in targets do
+				begin
+					newdistance = $DistanceBetweenAgents ( palace, target );
+					if ( newdistance < distance )
+						begin
+							flagtarget = target;
+							distance = newdistance;
+						end
+				end
+			AIRootAgent = $RetrieveAgent ( "GplAIRoot" );
+
+			// Set the flag value based on the power of the computer player's heroes.
+			
+			//TODO: Update this and actually subtract gold
+			if ( levels < 30 && $GetPlayerData ( palace, "gold" ) >= 100 )
+				begin
+					gold = 100;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 45 && $GetPlayerData ( palace, "gold" ) >= 200)
+				begin
+					gold = 200;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 55 && $GetPlayerData ( palace, "gold" ) >= 300 )
+				begin
+					gold = 300;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 65 && $GetPlayerData ( palace, "gold" ) >= 400 )
+				begin
+					gold = 400;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 75 && $GetPlayerData ( palace, "gold" ) >= 500 )
+				begin
+					gold = 500;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels >= 75 && $GetPlayerData ( palace, "gold" ) >= #AI_max_reward_flag)
+				begin
+					gold = #AI_max_reward_flag;
+					palace's "flag_value" = #AI_max_reward_flag;
+				end
+
+			if ( $IsValidGamePiece ( flagtarget ) && gold > 0)
+				flag = $PlaceRewardFlag ( flagtarget, $GetUnitPlayerNumber(palace), gold );
+
+			if ( flag != $nullagent ())
+				palace's "AI_Reward_Flags" << flag;
+
+			gold = $GetPlayerData ( palace, "gold" );
+			$DebugOut ( 911, "AI Flagged ", flagtarget, ". ", gold, " gold remaining." );
+		end
+	else
+		$DebugOut ( 911, "AI unable to find appropriate flag target." );
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function AI_FlagClosestBuilding ( integer levels, agent palace ) is agent
+// This function will cause a computer player to place a reward flag on the closest enemy building.
+declare
+	agent target, flagtarget, flag;
+	list t1, t2, targets;
+	integer distance, newdistance, gold;
+
+begin
+	//$Debugout ( 911, "Flagging Closest Building." );
+
+	$ListObjects ( palace, "building", -1, t1, #NotMyTeam );
+	$ListObjects ( palace, "lair", -1, t2, #NotMyTeam);
+	targets = $AddLists ( t1, t2 );
+
+	if ( $ListSize ( targets ) > 0 )
+		begin
+			flagtarget = $ListMember ( targets, 1 );
+			distance = $DistanceBetweenAgents ( palace, flagtarget );
+
+			foreach target in targets do
+				begin
+					newdistance = $DistanceBetweenAgents ( palace, target );
+					if ( newdistance < distance )
+						begin
+							flagtarget = target;
+							distance = newdistance;
+						end
+				end
+
+			// Set the flag value based on the power of the computer player's heroes.
+			if ( levels < 30 && $GetPlayerData ( palace, "gold" ) >= 100 )
+				begin
+					gold = 100;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 45 && $GetPlayerData ( palace, "gold" ) >= 200)
+				begin
+					gold = 200;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 55 && $GetPlayerData ( palace, "gold" ) >= 300 )
+				begin
+					gold = 300;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 65 && $GetPlayerData ( palace, "gold" ) >= 400 )
+				begin
+					gold = 400;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels < 75 && $GetPlayerData ( palace, "gold" ) >= 500 )
+				begin
+					gold = 500;
+					palace's "flag_value" = gold;
+				end
+			else if ( levels >= 75 && $GetPlayerData ( palace, "gold" ) >= #AI_max_reward_flag)
+				begin
+					gold = #AI_max_reward_flag;
+					palace's "flag_value" = #AI_max_reward_flag;
+				end
+
+			if ( $IsValidGamePiece ( flagtarget ) && gold > 0)
+				flag = $PlaceRewardFlag ( flagtarget, $GetUnitPlayerNumber(palace), gold );
+
+			if ( flag != $nullagent ())
+				palace's "AI_Reward_Flags" << flag;
+
+			gold = $GetPlayerData ( palace, "gold" );
+			$DebugOut ( 911, "AI Flagged ", flagtarget, ". ", gold, " gold remaining." );
+		end
+	else
+		$DebugOut ( 911, "AI unable to find appropriate flag target." );
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function AI_Flag_Remover (agent palace)
+// Each time this function runs, it takes the first flag on the AIRootAgent's list
+// (the oldest), and checks the status of the agent it is attached to. If that agent is
+// in full repair it assumes that it has been unable to attack it effectively and
+// removes the flag.
+declare
+	agent flag, target, AIRootAgent;
+	list flags;
+
+begin
+	flags = palace's "AI_Reward_Flags";
+
+	if ( $ListSize ( flags ) > 0 )
+		begin
+			flag = $ListMember ( flags, 1 );
+			if ( $IsValidGamePiece ( flag ) )
+				begin
+					target = $AgentNumber ( $GetAttribute ( flag, #ATTRIB_TargetID ));
+					if ( $GetAttribute ( target, #ATTRIB_HP ) == $GetAttribute ( target, #ATTRIB_MaxHP ) )
+						begin
+							$deletegamepiece ( flag );
+							palace's "AI_Reward_Flags" -= flag;
+						end
+				end
+			else
+				$Dwarfeh_AI_cleanupOldFlags(palace);
+		end
+end
+
+function Dwarfeh_AI_cleanupOldFlags(agent palace)
+// Each time this function runs, it removes all old game flags
+declare
+	agent flag, target, AIRootAgent;
+	list flags;
+
+begin
+	flags = palace's "AI_Reward_Flags";
+
+	if ( $ListSize ( flags ) > 0 )
+		begin
+			foreach flag in flags do
+				begin
+					if ( $IsValidGamePiece ( flag ) == false )
+						begin
+							palace's "AI_Reward_Flags" -= flag;
+						end
+				end
+		end
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function End_Flag_Remover ()
+// This function removes any and all flags active when the game ends.
+declare
+	agent flag, palace;
+	list flags;
+
+begin
+	palace = $Dwarfeh_GetPlayerOnePalace ();
+
+	$ListObjects ( palace, "RewardFlag", -1, flags, #RewardFlags );
+
+	foreach flag in flags do
+		begin
+			$deletegamepiece ( flag );
+		end
+end
+
+//This deals with searching for the outpost, so the player transitions to it as their seat-of-power rather than losing
+//when the palace dies
+//It is also run by the Outpost if there are no palaces left on the map that belong to the local player
+function Palace_Death ( agent ThisAgent )
+
+declare
+	agent AIRootAgent;
+	integer gold;
+	list flags, Outposts;
+	agent	flag, Outpost;
+	boolean startAI;
+
+begin
+	AIRootAgent = $RetrieveAgent ( "GplAIRoot" );
+	startAI = FALSE;
+	
+
+	if ($isRunning(ThisAgent's "playerAI_build"))
+		begin
+			$KillThread ( ThisAgent's "playerAI_build" );
+			$KillThread ( ThisAgent's "playerAI_resurrect" );
+			$KillThread ( ThisAgent's "playerAI_guild_recruit" );
+			$KillThread ( ThisAgent's "playerAI_research" );
+			$KillThread ( ThisAgent's "playerAI_building_upgrade" );
+			$KillThread ( ThisAgent's "playerAI_flag_adder" );
+			$KillThread ( ThisAgent's "playerAI_flag_remover" );
+			startAI = TRUE;
+		end
+
+  	thisagent's "type" = "Dead";
+
+	
+	$Dump_Contained_Units (ThisAgent);
+
+	$performaction( thisagent,"Become_Rubble",thisagent );
+
+	//Find the outposts
+	$ListObjects (ThisAgent, "Building", -1, Outposts, #MyPlayer, #CheckSubtypes, "Outpost", #ATTRIB_FirstStageBuilt, 1);
+
+	If ($ListSize (Outposts) > 0)
+		begin
+
+			Outpost = $ListMember (Outposts, 1);
+
+			//Set the outpost as the new palace so it gets returned by $ListPalaces ();
+			//Make sure to set it as ThisAgent's player number's palace
+			if (startAI)
+				begin
+					$AddAttribute(Outpost, "build_gnomes", "boolean", ThisAgent's "build_gnomes");
+					$AddAttribute(Outpost, "build_elves", "boolean", ThisAgent's "build_elves");
+					$AddAttribute(Outpost, "build_dwarves", "boolean", ThisAgent's "build_dwarves");
+					$AddAttribute(Outpost, "build_agrela", "boolean", ThisAgent's "build_agrela");
+					$AddAttribute(Outpost, "build_krypta", "boolean", ThisAgent's "build_krypta");
+					$AddAttribute(Outpost, "build_krolm", "boolean", ThisAgent's "build_krolm");
+					$AddAttribute(Outpost, "build_helia", "boolean", ThisAgent's "build_helia");
+					$AddAttribute(Outpost, "build_lunord", "boolean", ThisAgent's "build_lunord");			
+					$AddAttribute(Outpost, "flag_value", "integer", ThisAgent's "flag_value");
+					$AddAttribute(Outpost, "AI_Reward_Flags", "list", ThisAgent's "AI_Reward_Flags");
+				end
+			
+			$SetPalace (Outpost, $GetUnitPlayerNumber (ThisAgent) );
+
+			//Change "Title" to palace, so $GetTruePalace starts to return the Outpost
+			Outpost's "Title" = "Palace";
+
+			$Transfer_Palace_Data (ThisAgent, Outpost);
+			
+			//Restart AI threads
+			if (startAI)
+				begin
+					$debugout(911, "Dwarfeh AI: Starting AI back up because we have an outpost");
+					$AddAttribute(Outpost, "playerAI_build", "function", $enemyPlayer2Build);
+					$AddAttribute(Outpost, "playerAI_resurrect", "function", $AI_Check_Resurrect);
+					$AddAttribute(Outpost, "playerAI_guild_recruit", "function", $enemyPlayer2GuildSpawn);
+					$AddAttribute(Outpost, "playerAI_research", "function", $performEnemyPlayer2Research);
+					$AddAttribute(Outpost, "playerAI_building_upgrade", "function", $performEnemyPlayer2BuildingUpgrade);
+					$AddAttribute(Outpost, "playerAI_flag_adder", "function", $AI_Post_Enemy_Reward);
+					$AddAttribute(Outpost, "playerAI_flag_remover", "function", $AI_Flag_Remover);
+				
+					
+					$NewThread ( Outpost's "playerAI_build", ( 1000 ), Outpost);
+					$NewThread ( Outpost's "playerAI_resurrect", ( 15000 ), Outpost);
+					$NewThread ( Outpost's "playerAI_guild_recruit", ( 30000 ), Outpost);
+					$NewThread ( Outpost's "playerAI_research", ( 60000 ), Outpost);
+					$NewThread ( Outpost's "playerAI_building_upgrade", ( 45000 ), Outpost);
+					$NewThread ( Outpost's "playerAI_flag_adder", ( 30000 ), Outpost);
+					$NewThread ( Outpost's "playerAI_flag_remover", ( 90000 ), Outpost);	
+				end			
+
+		end
+
+	Else
+		begin
+			gold = $getplayerdata ( thisagent,"gold" );
+			$adjustplayerdata ( thisagent, "gold", 0 - gold );
+			$dropgoldeveryone ( thisagent, gold );
+
+			$Player_Dead_Cleanup ( thisagent );
+
+			$declareloss ( thisagent );
+
+		end
+
+	$deleteagent(thisagent);
+
+end
+
+///////////////////////////////////////////////////////////////////////////////
+//Dwarfeh
+//This was updated to remove AutoBuilding's as well - sewers and graveyards
+function Player_Dead_Cleanup ( agent thisagent )
+// This function removes flags and destroys all buildings belonging to the player.
+declare
+	agent unit, palace;
+	list units;
+
+begin
+
+	$listobjects ( thisagent, "rewardFlag", -1, units, #rewardflags, #Myplayer, #NoHiddenMap );
+	foreach unit in units do
+		begin
+			$deletegamepiece ( unit );
+		end
+
+	$ListObjects ( thisagent, "building", -1, units, #Myplayer, #NoHiddenMap );
+	foreach unit in units do
+		begin
+			if ( $IsDead ( unit ) == FALSE )
+				$SetAttribute ( unit, #ATTRIB_HP, -1 );
+		end
+
+	$ListObjects ( thisagent, "lair", -1, units, #Myplayer, #NoHiddenMap );
+	foreach unit in units do
+		begin
+			if ( $IsDead ( unit ) == FALSE )
+				( unit's "IGDeathScript" )( unit );
+		end
+		
+	$ListObjects ( thisagent, "AutoBuilding", -1, units, #Myplayer, #NoHiddenMap );
+	foreach unit in units do
+		begin
+			if ( $IsDead ( unit ) == FALSE )
+				( unit's "IGDeathScript" )( unit );
+		end		
+		
+end

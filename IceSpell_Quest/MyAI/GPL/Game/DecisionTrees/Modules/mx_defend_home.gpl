@@ -1,0 +1,93 @@
+///////////////////////////////////////////////////////////////////////////////
+//Copyright (c) 1999 Cyberlore Studios, Inc. All rights Reserved.
+//CONFIDENTIAL MATERIAL
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+function defend_home(agent thisagent) is boolean
+
+declare
+
+begin
+//	$debugout("Is home under attack?");
+	if ($is_in_danger(thisagent's "home",thisagent))
+		begin
+			$SpecifyIntent (ThisAgent, #Intent_Defending_Home);
+			return TRUE;
+		end
+
+	if ($is_in_danger($gettruepalace(thisagent),thisagent))
+		begin
+			$SpecifyIntent (ThisAgent, #intent_Defending_Palace);
+			return TRUE;
+		end
+
+	return FALSE;
+end
+
+//MY AI change - only defend buildings that belong to me!
+
+function defend_building(agent thisagent,string whatbuilding) is boolean
+
+declare
+	list bldgs;
+	agent bldg;
+	boolean Flag;
+
+begin
+	// make a list of all buildings of type string
+	// then see if any are under attack.
+	// if so, send the hero to the closest one to defend
+	if ( $ListObjects( thisagent,"building",-1, bldgs, #MyPlayer , #CheckTitles, WhatBuilding ) > 0 )
+		begin
+
+			Foreach Bldg in Bldgs do
+				begin
+
+					If (Flag == False)
+						begin
+
+							if ($is_in_danger(bldg,thisagent))
+								begin
+
+									$SpecifyIntent (ThisAgent, #Intent_Defending_Building);
+									Flag = True;
+
+								end
+
+						end
+
+				end
+
+		end
+
+	return Flag;
+end
+
+///////////////////////////////////////////////////////////////////////////////
+function is_in_danger(agent thisbuilding,agent thisagent) is boolean
+
+declare
+	list enemies_near_home;
+
+begin
+//	$debugout(thisbuilding's "in_danger");
+	if ($isvalidgamepiece(thisbuilding) == FALSE)
+		return FALSE;
+
+	if (thisbuilding's "In_danger")
+		begin
+			enemies_near_home = $list_enemies_seen(thisbuilding,300);
+			if ($listsize(enemies_near_home) > 0)
+				begin
+					thisagent's "activescript" = $defend_home_task;
+					thisagent's "target" = thisbuilding;
+//					$debugout("I'm rushing to defend",thisbuilding's "title","!");
+					return TRUE;
+				end
+			else
+				thisbuilding's "in_danger" = FALSE;
+		end
+
+	return FALSE;
+end
