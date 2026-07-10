@@ -1,41 +1,46 @@
 # Ice Spell Visual Verification Guide
 
-## What to look for in a screenshot
+## Test Results — 2026-07-09 20:45 (IceSpell_Quest)
 
-Take a screenshot of a hero that has been frozen by the Ice Elemental's attack. The agent analyzing the image should check:
+### CONFIRMED WORKING ✓
 
-### Expected visuals when freeze is applied:
+The full freeze/unfreeze cycle works end-to-end:
 
-1. **Grey/stone recolor** — The hero's sprite turns grey (this is the built-in petrify engine effect from `#ATTRIB_HasEffectPetrify`). This is expected and confirms the freeze mechanic is working.
+**From gpl.log:**
+1. ✓ `IceElemental#166` spawns from Ice Cave and casts at heroes
+2. ✓ `Ice_Freeze_Begin` fires on `Rogue#74` — all guards pass (not dead, not building, not already petrified)
+3. ✓ `$createeffector("freeze_effector")` succeeds — **no crash** (Quest_maindata.cam loaded correctly)
+4. ✓ `$createeffector("freeze_icon")` succeeds (timer effector with duration)
+5. ✓ `HasEffectPetrify` set, `GetProperUnitArt`, `StopMoving`, `SuspendThread`, `IsFrozen`, `SpecifyIntent` — all OK
+6. ✓ Re-freeze guard works — subsequent casts say "Target already petrified, returning"
+7. ✓ `Ice_Freeze_End` fires after timer expires — clears attributes, resets tasks, resumes thread
+8. ✓ Hero unfreezes and gets re-frozen again (second complete cycle confirmed)
+9. ✓ Multiple IceElementals active (IceElemental#166, IceElemental#458)
+10. ✓ Dead target guard works (`Ice_Freeze_End` on dead `Rogue#268` — "Agent is dead, returning")
 
-2. **Ice border overlay** — ON TOP of the grey hero, there should be a semi-transparent blue/cyan border effect rendered around or over the unit. This is our custom sprite from `Quest_maindata.cam` (IMAG record IR01). The overlay:
-   - Is approximately 43x57 pixels (cropped content area)
-   - Uses blues, cyans, and white pixels from palette 423
-   - Should appear as a shimmering/sparkling border around the frozen unit
-   - Animates through 6 frames in a loop
-   - Rendered on top of the hero sprite
+**From err.log:**
+- `Quest_maindata.cam` loaded without crash
+- All description XMLs loaded
+- No script errors or missing attribute errors
+- Game ran stably for 14000+ frames
 
-3. **Unit is stationary** — The frozen hero should not be moving.
+### Visual Observations (from screenshot)
 
-### What to compare against:
+- **Grey recolor visible** ✓ — frozen unit clearly turns stone/grey (from `#ATTRIB_HasEffectPetrify` triggering the engine's built-in petrify shader)
+- **Unit is stationary** ✓ — frozen hero does not move
+- **Ice overlay (IR01 sprite)** — NOT visibly distinguishable from the screenshot. The `freeze_effector` was created successfully (log confirms), so either:
+  - The overlay IS rendering but is too subtle/small to see at this zoom level
+  - The overlay is rendering but blends with the grey petrify recolor
+  - The IMAG record in Quest_maindata.cam, while not crashing, may not point to valid TILE frame data (the overlay could be rendering as 0-pixel transparent frames)
 
-- **Petrify (base game Medusa)**: Unit turns grey/stone with NO additional border overlay. If this is what you see, the overlay is NOT rendering.
-- **Our freeze**: Unit turns grey/stone AND has an additional blue/cyan shimmer border overlay on top. If you see any blue/icy coloring around the edges of the grey unit, the custom CAM sprites ARE rendering.
+### Known Issues
 
-### The overlay sprites look like:
+1. **Targeting spam** — IceElemental keeps casting on the same already-frozen target every frame instead of switching to a new target. The guard clause catches it, but it wastes AI cycles. Need to either:
+   - Add a `SpellTarget` constraint in `IceSpell_Actions.xml` to filter to non-frozen units
+   - Or have the IceElemental's AI decision tree pick a different target when the current one is frozen
 
-The ice_frame PNGs in `IceSpell_Quest/sprite_preview/` show exactly what should render. They are blue-white sparkle/crystal patterns about 43x57 pixels — roughly the size of a hero unit. They overlay transparently on top of whatever is beneath them.
+2. **Overlay visibility unknown** — Need a closer zoom screenshot or a comparison against standard Medusa petrify to confirm whether the ice overlay sprite is rendering on top
 
-### If the overlay is NOT visible:
+### Performance Note
 
-It may be too subtle against the grey petrify recolor, or it might not be rendering at all. Possible reasons:
-- The overlay is very small (pixel-sized at the game's render scale)
-- The blue pixels blend with the grey background
-- The IMAG record isn't being resolved to IR01 properly
-
-### Verification steps for the agent:
-
-1. Look at the frozen hero closely — is there ANY blue/cyan/white shimmer that differs from a standard petrify?
-2. Compare against a Medusa petrify if possible — does the freeze look identical or does it have extra visual elements?
-3. Check the edges of the frozen unit for any sparkle/crystal overlay pixels
-4. The overlay renders at the unit's position — look directly on/around the hero sprite
+The err.log shows many frames taking 200-470ms (floating average 30-140). This is partly the debug output spam but also the aggressive AI re-casting loop. Removing the `$DebugOut` calls and fixing the targeting will improve performance significantly.
