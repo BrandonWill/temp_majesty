@@ -35,10 +35,10 @@ begin
 			return;
 		end
 
-	$DebugOut ( 911, "ICE: Checking IsFrozen..." );
-	if ( $GetAttribute ( target, #ATTRIB_IsFrozen ) == 1 )
+	$DebugOut ( 911, "ICE: Checking HasEffectPetrify..." );
+	if ( $GetAttribute ( target, #ATTRIB_HasEffectPetrify ) == 1 )
 		begin
-			$DebugOut ( 911, "ICE: Target already frozen, returning" );
+			$DebugOut ( 911, "ICE: Target already petrified, returning" );
 			return;
 		end
 
@@ -60,6 +60,14 @@ begin
 	$DebugOut ( 911, "ICE: About to createeffector freeze_icon..." );
 	$createeffector ( target, "freeze_icon", time );
 	$DebugOut ( 911, "ICE: freeze_icon created OK" );
+
+	$DebugOut ( 911, "ICE: About to SetAttribute HasEffectPetrify..." );
+	$SetAttribute ( target, #ATTRIB_HasEffectPetrify, 1 );
+	$DebugOut ( 911, "ICE: HasEffectPetrify set OK" );
+
+	$DebugOut ( 911, "ICE: About to GetProperUnitArt..." );
+	$GetProperUnitArt ( target );
+	$DebugOut ( 911, "ICE: GetProperUnitArt OK" );
 
 	$DebugOut ( 911, "ICE: About to StopMoving..." );
 	$StopMoving ( target );
@@ -95,9 +103,13 @@ begin
 			return;
 		end
 
-	$DebugOut ( 911, "ICE: Clearing IsFrozen..." );
-	$SetAttribute ( ThisAgent, #ATTRIB_IsFrozen, 0 );
-	$DebugOut ( 911, "ICE: IsFrozen cleared OK" );
+	$DebugOut ( 911, "ICE: Clearing HasEffectPetrify..." );
+	$SetAttribute ( ThisAgent, #ATTRIB_HasEffectPetrify, 0 );
+	$DebugOut ( 911, "ICE: HasEffectPetrify cleared OK" );
+
+	$DebugOut ( 911, "ICE: About to GetProperUnitArt..." );
+	$GetProperUnitArt ( ThisAgent );
+	$DebugOut ( 911, "ICE: GetProperUnitArt OK" );
 
 	$DebugOut ( 911, "ICE: Checking other freeze locks..." );
 	if ( ($GetAttribute ( ThisAgent, #ATTRIB_HasEffectVines ) == 0) &&
