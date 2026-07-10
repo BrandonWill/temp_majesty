@@ -38,3 +38,14 @@ loads without crashing). Compare against XR47 which DID render.
 
 The biggest risk: our TILE encoding (from sprite_injector.py) might produce 
 data the engine can't render, even though it passes our round-trip tests.
+
+
+## In-Game Screenshot Observations
+
+**Screenshot — Grassland/Goblin Camp area (2026-07-09 22:08 session):**
+The Ice Dragon (IceElemental) is visible as a blue/white flying creature in the center of the screen, hovering over Goblin Camp structures. Directly beneath/beside it is its frozen target — a unit that appears grey/stone-colored from the petrify shader, standing completely still while the dragon keeps casting on it. The grey tint from `#ATTRIB_HasEffectPetrify` + `GetProperUnitArt` IS visible in this version, confirming the petrify visual is working. However, no blue/cyan ice overlay is visible on top of the grey unit — only the base petrify grey recolor.
+
+**Conclusion from all screenshots:**
+- Grey petrify tint: ✓ visible (when HasEffectPetrify + GetProperUnitArt are used)
+- Brief "hands up" petrify start animation: ✓ visible
+- Custom ice overlay sprite (IR01 from Quest_maindata.cam): ✗ NOT visible — either not rendering or too small/transparent to see
