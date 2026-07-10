@@ -22,7 +22,6 @@
 						<Source>MyAI\GPL\Game\mx_prototype.gpl</Source>
 						<Source>MyAI\GPL\Game\DecisionTrees\Modules\mx_defend_home.gpl</Source>
 					</GPL>
-					<GPLSource>GPL</GPLSource>
 				</Load>
 			</Dataset>
 		</DataConfiguration>
