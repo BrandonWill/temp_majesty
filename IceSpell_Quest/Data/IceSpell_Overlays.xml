@@ -21,7 +21,7 @@
 			<Info value="DontBlock"/>
 			<Info value="NotVisibleInISOView"/>
 			<Menu value="11"/>
-			<ImageIDBase value="IR02"/>
+			<ImageIDBase value="XR47"/>
 			<Script type="0" cProc="0" GPLFunction="Ice_Freeze_End"/>
 			<DefaultSound value="0"/>
 		</Engine>
@@ -36,7 +36,7 @@
 			<Info value="Directionless"/>
 			<Info value="DontBlock"/>
 			<Menu value="11"/>
-			<ImageIDBase value="IR03"/>
+			<ImageIDBase value="XR47"/>
 			<DefaultSound value="0"/>
 		</Engine>
 		<Game version="1">
