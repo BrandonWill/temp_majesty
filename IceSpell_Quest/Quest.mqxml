@@ -31,6 +31,6 @@
 			<Long>Test quest for Ice Freeze spell. Defeat the AI. Ice Caves spawn Ice Elementals with freeze attack.</Long>
 		</Description>
 		<Difficulty>Hard</Difficulty>
-		<Name>IceSpellTest</Name>
+		<Name>basicAI</Name>
 	</Quest>
 </Majesty>
