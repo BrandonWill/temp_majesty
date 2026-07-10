@@ -1,46 +1,72 @@
-# Ice Spell Visual Verification Guide
+# Ice Spell Visual Verification — Results
 
-## Test Results — 2026-07-09 20:45 (IceSpell_Quest)
+## Status: Spell mechanics WORKING, visual overlay NOT rendering
 
-### CONFIRMED WORKING ✓
+### What works (confirmed via logs + in-game observation)
 
-The full freeze/unfreeze cycle works end-to-end:
+- IceElemental spawns from Ice Cave ✓
+- IceElemental casts freeze spell on nearby units (heroes, skeletons, anything in range) ✓
+- `$createeffector("freeze_effector")` succeeds without crash ✓
+- `$createeffector("freeze_icon")` succeeds (timer with duration) ✓
+- Target stops moving ✓
+- Target stays frozen for ~19000 game ticks ✓
+- `Ice_Freeze_End` fires and unfreezes the target ✓
+- Target resumes normal behavior after unfreeze ✓
+- Re-freeze guard works (already-frozen targets rejected) ✓
+- Dead target guard works ✓
+- Building/Lair guard works ✓
+- Multiple IceElementals active simultaneously ✓
+- Multiple freeze/unfreeze cycles confirmed ✓
 
-**From gpl.log:**
-1. ✓ `IceElemental#166` spawns from Ice Cave and casts at heroes
-2. ✓ `Ice_Freeze_Begin` fires on `Rogue#74` — all guards pass (not dead, not building, not already petrified)
-3. ✓ `$createeffector("freeze_effector")` succeeds — **no crash** (Quest_maindata.cam loaded correctly)
-4. ✓ `$createeffector("freeze_icon")` succeeds (timer effector with duration)
-5. ✓ `HasEffectPetrify` set, `GetProperUnitArt`, `StopMoving`, `SuspendThread`, `IsFrozen`, `SpecifyIntent` — all OK
-6. ✓ Re-freeze guard works — subsequent casts say "Target already petrified, returning"
-7. ✓ `Ice_Freeze_End` fires after timer expires — clears attributes, resets tasks, resumes thread
-8. ✓ Hero unfreezes and gets re-frozen again (second complete cycle confirmed)
-9. ✓ Multiple IceElementals active (IceElemental#166, IceElemental#458)
-10. ✓ Dead target guard works (`Ice_Freeze_End` on dead `Rogue#268` — "Agent is dead, returning")
+### What does NOT work
 
-**From err.log:**
-- `Quest_maindata.cam` loaded without crash
-- All description XMLs loaded
-- No script errors or missing attribute errors
-- Game ran stably for 14000+ frames
+1. **No ice overlay sprite visible** — The `freeze_effector` overlay is created (confirmed in logs) but produces NO visible output. Frozen units look like normal stopped units with no visual difference at all.
 
-### Visual Observations (from screenshot)
+2. **No grey/stone recolor** — This version removed the `#ATTRIB_HasEffectPetrify` + `GetProperUnitArt` calls, so there is no engine-level grey tint applied. The frozen unit has zero visual feedback.
 
-- **Grey recolor visible** ✓ — frozen unit clearly turns stone/grey (from `#ATTRIB_HasEffectPetrify` triggering the engine's built-in petrify shader)
-- **Unit is stationary** ✓ — frozen hero does not move
-- **Ice overlay (IR01 sprite)** — NOT visibly distinguishable from the screenshot. The `freeze_effector` was created successfully (log confirms), so either:
-  - The overlay IS rendering but is too subtle/small to see at this zoom level
-  - The overlay is rendering but blends with the grey petrify recolor
-  - The IMAG record in Quest_maindata.cam, while not crashing, may not point to valid TILE frame data (the overlay could be rendering as 0-pixel transparent frames)
+### Visual observation
 
-### Known Issues
+A frozen Skeleton looked identical to a normal stationary skeleton. No grey tint, no blue shimmer, no overlay of any kind. The only way to tell a unit is frozen is that it doesn't move.
 
-1. **Targeting spam** — IceElemental keeps casting on the same already-frozen target every frame instead of switching to a new target. The guard clause catches it, but it wastes AI cycles. Need to either:
-   - Add a `SpellTarget` constraint in `IceSpell_Actions.xml` to filter to non-frozen units
-   - Or have the IceElemental's AI decision tree pick a different target when the current one is frozen
+### Root cause
 
-2. **Overlay visibility unknown** — Need a closer zoom screenshot or a comparison against standard Medusa petrify to confirm whether the ice overlay sprite is rendering on top
+The `Quest_maindata.cam` file contains IMAG records (IR01, IR02, IR03) that the engine loads without crashing, but the IMAG records do not correctly point to renderable TILE frame data. Likely causes:
 
-### Performance Note
+- The IMAG record's frame table references TILE indices that resolve to transparent/empty pixels
+- The IMAG dimensions or offset fields are wrong, causing the engine to render nothing
+- The binary IMAG format differences identified earlier (see `IceSpell/TODO.md`) mean the engine can't locate the frame data even though it doesn't crash
 
-The err.log shows many frames taking 200-470ms (floating average 30-140). This is partly the debug output spam but also the aggressive AI re-casting loop. Removing the `$DebugOut` calls and fixing the targeting will improve performance significantly.
+### Comparison with IceSpell mod (separate from this quest)
+
+The `IceSpell/` mod version crashes when loading the zone because its `Quest_maindata.cam` has IMAG records that are MORE malformed (causes hard crash during zone load). The `IceSpell_Quest/` version doesn't crash, suggesting its IMAG records are partially correct — enough to not crash but not enough to render.
+
+### What the next agent needs to do
+
+1. **Fix IMAG record format** — The IMAG records need to correctly reference TILE frame data. Compare against real IMAG records (MRB1 petrify effector is 412 bytes with known-working structure) and match the binary layout exactly. Key differences identified in `IceSpell/TODO.md`:
+   - Offset 44: real has 256, ours has 0
+   - Offset 104: real has packed field 0x00240001, ours missing
+   - Frame table stride and header metadata differ
+
+2. **Consider re-adding grey tint as interim visual** — Adding back `$SetAttribute(target, #ATTRIB_HasEffectPetrify, 1)` and `$GetProperUnitArt(target)` would give an immediate visual cue (grey recolor) while the overlay sprite issue is fixed. This was present in an earlier version but removed.
+
+3. **Test with known-working ImageIDBase** — As a quick validation, change `IceSpell_Overlays.xml` to use `ImageIDBase value="MRB1"` (the base game's petrify effector sprite). If that renders visibly, it confirms the overlay system works and the problem is purely our custom IMAG/TILE data.
+
+### Log evidence (2026-07-09 20:59, IceSpell_Quest)
+
+```
+911 ICE: Caster= IceElemental#171  Target= Skeleton#321
+911 ICE: About to createeffector freeze_effector...
+911 ICE: freeze_effector created OK
+911 ICE: About to createeffector freeze_icon...
+911 ICE: freeze_icon created OK
+911 ICE: ===== Ice_Freeze_Begin COMPLETE =====
+
+911 ICE: ===== Ice_Freeze_End ENTERED =====
+911 ICE: Agent= Ranger#193
+911 ICE: No other freeze locks, unfreezing...
+911 ICE: Reset_Tasks OK
+911 ICE: ResumeThread OK
+911 ICE: ===== Ice_Freeze_End COMPLETE =====
+```
+
+No errors. No crashes. Spell logic is solid. Only the visual overlay needs fixing.
