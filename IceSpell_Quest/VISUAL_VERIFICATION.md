@@ -28,6 +28,14 @@
 
 A frozen Skeleton looked identical to a normal stationary skeleton. No grey tint, no blue shimmer, no overlay of any kind. The only way to tell a unit is frozen is that it doesn't move.
 
+**Update — petrify start animation IS playing:**
+When the freeze first hits a hero, there IS a brief grey "turning to stone" animation where the unit raises its arms (the engine's built-in petrify start sequence). This is visible as a grey/white figure with hands-up pose. However, this is just a brief animation at the moment of impact — after it plays, the unit returns to looking normal but stays stationary. There is no persistent grey tint or persistent overlay while frozen. The sequence is:
+1. Freeze hits → brief grey "hands up" petrify animation plays
+2. Unit returns to normal appearance but is stuck in place
+3. No ice overlay visible at any point
+
+This start animation is likely triggered by `#intent_petrified` or the petrify attribute being set. It confirms the engine recognizes the freeze state, but there's no persistent visual feedback during the frozen duration.
+
 ### Root cause
 
 The `Quest_maindata.cam` file contains IMAG records (IR01, IR02, IR03) that the engine loads without crashing, but the IMAG records do not correctly point to renderable TILE frame data. Likely causes:
