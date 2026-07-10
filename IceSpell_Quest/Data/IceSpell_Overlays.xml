@@ -10,7 +10,7 @@
 		</Engine>
 		<Game version="1">
 			<DialogID value="0"/>
-			<StackPriority value="0"/>
+			<StackPriority value="1"/>
 			<Flags value="TransparentToMouse"/>
 		</Game>
 	</Description>
