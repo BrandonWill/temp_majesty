@@ -1,102 +1,155 @@
-# Tasks
+# Implementation Plan: Quest Map Generator Refactoring
 
-## Task 1: Implement Q File Parser (Binary → Data Model)
+## Overview
 
-- [ ] Create `quest_map_generator.py` at workspace root with data model classes (QuestMap, MapParams, SpawnerEntry, SpawnerBlock, PlacedEntry, PlacedGroup, Faction)
-- [ ] Implement `parse_q_file(filepath)` that reads the 16-byte header and validates magic bytes (RGMa, RGM6, RGM9)
-- [ ] Parse quest name and pattern name (null-terminated strings after header)
-- [ ] Parse map parameters block (width, height, factions, gold, secondary resource) handling alignment differences between format versions
-- [ ] Parse spawner sections: find "NONEnone\0" markers, read u32 count, then count × 24-byte spawner entries
-- [ ] Parse placed-object groups: find `[4B terrain][u32 5][u32 count]` pattern, then read variable-length placed entries (ID + u32 + cstr + u32 position_count + position_count × u8 grid_pos)
-- [ ] Validate that position_count is 1-25 and each position byte is in range 65-89 ('A'-'Y')
-- [ ] Parse the metadata block after each placed group (resource limits, faction name)
-- [ ] Parse the player/faction section at end of file
-- [ ] Verify parser against MyQuest/Quest.q (known structure: 4 spawner blocks × 4 entries, placed groups with 8+25+1+1 entries)
-- [ ] Verify parser against at least 3 RGM6 files (fertile_plain.q, Brashnard.q, barren_waste.q)
+Refactor the existing working `QuestMapGenerator/quest_map_generator.py` to align with correct RGS terminology (PlacedGroup→UnitPattern, PlacedEntry→UnitInstance, positions→candidate_cells), add Team/Player and Region Pattern parsing, and update all docstrings. The template-based writer and overall architecture remain unchanged.
 
-## Task 2: Implement Grid Position Encoding/Decoding
+## Tasks
 
-- [ ] Implement `grid_to_byte(col, row)` → returns ASCII byte 65 + row*5 + col, validates 0 ≤ col < 5 and 0 ≤ row < 5
-- [ ] Implement `byte_to_grid(byte_val)` → returns (col, row) tuple, validates 65 ≤ byte ≤ 89
-- [ ] Implement `letter_to_byte(letter)` → converts 'A'-'Y' character to byte value
-- [ ] Implement `byte_to_letter(byte_val)` → converts byte 65-89 to 'A'-'Y' character
-- [ ] Add convenience: `CENTER = ord('M')`, position constants for common placements
-- [ ] Add auto-distribute function: given N lairs, return grid positions that spread them around the center avoiding the palace cell
-- [ ] Add uniqueness validation: raise error if any two buildings are assigned the same grid cell
+- [ ] 1. Rename data model classes and fields
+  - [ ] 1.1 Rename `PlacedEntry` class to `UnitInstance`, rename `positions` field to `candidate_cells`
+    - Update all references throughout the file (parser, writer, formatter, validator, CLI)
+    - Update docstring to explain candidate_cells semantics (RGS picks one randomly, NOT multiple placements)
+    - _Requirements: 1.5, 2.2, 2.3, 2.4_
+  - [ ] 1.2 Rename `PlacedGroup` class to `UnitPattern`, add `resolution` field (default 5)
+    - Update all references throughout the file
+    - Update docstring to explain Unit Pattern as mid-level placement structure with 5×5 grid
+    - _Requirements: 1.5, 2.1_
+  - [ ] 1.3 Rename `Faction` class to `ForceEntry`, rename `home_position` to `map_position`
+    - Update QuestMap field from `factions` to `force_pattern`
+    - Update docstring to explain Force Pattern as top-level map layout
+    - _Requirements: 1.7_
+  - [ ] 1.4 Rename `validate_unique_positions` to `validate_placements`
+    - Keep same logic, update parameter type from `list[PlacedEntry]` to `list[UnitInstance]`
+    - _Requirements: 5.1, 5.2, 5.3_
 
-## Task 3: Implement Q File Writer (Data Model → Binary)
+- [ ] 2. Add TeamDefinition and RegionPatternInfo data classes
+  - [ ] 2.1 Add `TeamDefinition` dataclass with name, active, team_id fields
+    - Add `teams: list[TeamDefinition]` field to QuestMap
+    - _Requirements: 1.1_
+  - [ ] 2.2 Add `RegionPatternInfo` dataclass with pattern_name, patch_count, terrain_codes fields
+    - Add `region_info: Optional[RegionPatternInfo]` field to QuestMap
+    - _Requirements: 1.1_
 
-- [ ] Implement `write_q_file(quest_map, output_path)` that serializes a QuestMap to binary
-- [ ] Write the 16-byte header with "RGMa" magic
-- [ ] Write quest name as null-terminated string
-- [ ] Write pattern name as 12 bytes + null (pad or truncate as needed)
-- [ ] Write map parameters block (aligned u32 values)
-- [ ] Write spawner sections with "NONEnone\0" separators and 24-byte entries
-- [ ] Write placed-object groups with terrain code + entries + metadata blocks
-- [ ] For each placed entry, write [4B ID][u32 0][cstr\0][u32 position_count][position_count × u8] where positions are 'A'-'Y'
-- [ ] Enforce uniqueness: raise a clear error if two placed entries share any grid cell position
-- [ ] Write player/faction section at end of file
-- [ ] Implement round-trip test: parse(MyQuest/Quest.q) → write(temp) → parse(temp) → assert structural equality
+- [ ] 3. Update parser to populate new fields
+  - [ ] 3.1 Add Team/Player definition parsing after spawner section
+    - Parse "Human Player\0", "player2_ai\0", etc. with active flags
+    - Populate `qmap.teams` list
+    - _Requirements: 1.1_
+  - [ ] 3.2 Add Region Pattern metadata extraction
+    - Parse pattern name reference and patch count
+    - Extract terrain codes from region patches
+    - Populate `qmap.region_info`
+    - _Requirements: 1.1_
+  - [ ] 3.3 Update placed group parsing to use UnitPattern/UnitInstance names
+    - Rename internal variables from `placed_groups`/`placed_entries` to `unit_patterns`/`unit_instances`
+    - Rename `_find_placed_groups` to `_find_unit_patterns`
+    - Rename `_parse_placed_entries` to `_parse_unit_instances`
+    - _Requirements: 1.5_
+  - [ ] 3.4 Update Force Pattern parsing to use ForceEntry
+    - Rename internal variables and ensure `qmap.force_pattern` is populated
+    - _Requirements: 1.7_
 
-## Task 4: Implement MQXML Generator
+- [ ] 4. Checkpoint — Verify parser still passes all 37 files
+  - Run `python QuestMapGenerator/test_all_quests.py` and ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] Implement `generate_mqxml(quest_name, dataset_base, rgs_filename, extra_loads, output_path)`
-- [ ] Generate valid XML with Quest id (UUID), dataset_base attribute
-- [ ] Include Template element referencing the .q file
-- [ ] Include Constants element referencing the .rgs file
-- [ ] Include Load entries for additional data files (GPL sources, CAM files, XML definitions)
-- [ ] Write to output path with UTF-8 encoding and XML declaration
+- [ ] 5. Update writer to use new terminology
+  - [ ] 5.1 Rename `_encode_placed_entry` to `_encode_unit_instance`
+    - Update parameter from `PlacedEntry` to `UnitInstance`, field access from `.positions` to `.candidate_cells`
+    - _Requirements: 2.2, 2.3, 2.4_
+  - [ ] 5.2 Rename `_encode_placed_group` to `_encode_unit_pattern`
+    - Update parameter from `PlacedGroup` to `UnitPattern`, field access from `.entries` to `.entries` (same)
+    - _Requirements: 2.1_
+  - [ ] 5.3 Update `write_q_file` signature and internals
+    - Parameter name from `placed_groups` to `unit_patterns` (or accept QuestMap)
+    - Update internal variable names and comments
+    - _Requirements: 2.1, 2.5, 2.6_
+  - [ ] 5.4 Update `write_q_file_simple` to use UnitInstance
+    - Parameter from `entries: list[PlacedEntry]` to `entries: list[UnitInstance]`
+    - _Requirements: 2.1_
 
-## Task 5: Implement Terrain File Handling
+- [ ] 6. Update formatter and validator
+  - [ ] 6.1 Update `format_q_text` to use new class names and field names
+    - Reference `.candidate_cells` instead of `.positions`
+    - Reference `.unit_patterns` instead of `.placed_groups`
+    - Reference `.force_pattern` instead of `.factions`
+    - Include teams and region_info in output when present
+    - _Requirements: 9.1, 9.2, 9.3_
+  - [ ] 6.2 Update `validate_q_file` to use new terminology
+    - Internal variable renames
+    - _Requirements: 10.1, 10.2, 10.3_
+  - [ ] 6.3 Update `compare_q_files` to use new terminology
+    - _Requirements: 10.5_
 
-- [ ] Implement `copy_terrain_template(output_dir, template_path=None)` that copies a .rgs file
-- [ ] Use MyQuest/Quest.rgs as the default template (256×256 flat grass terrain)
-- [ ] Validate that template file exists and has RGCB or RGCA magic bytes
-- [ ] Copy with appropriate naming (Quest_name.rgs) to output directory
+- [ ] 7. Update convenience API and CLI
+  - [ ] 7.1 Update `generate_test_quest` internals to use UnitInstance/UnitPattern
+    - Keep the same public API signature (dict-based lair specs)
+    - Internal construction uses UnitInstance instead of PlacedEntry
+    - _Requirements: 8.1, 8.2, 8.3_
+  - [ ] 7.2 Update CLI subcommand handlers to use new names
+    - `_cli_parse`, `_cli_validate`, `_cli_generate` internal variable names
+    - _Requirements: 11.1, 11.2, 11.3_
 
-## Task 6: Implement High-Level Convenience API
+- [ ] 8. Update test file to use new class names
+  - [ ] 8.1 Update `QuestMapGenerator/test_all_quests.py` imports and assertions
+    - Import `UnitInstance` instead of `PlacedEntry`
+    - Update `validate_unique_positions` calls to `validate_placements`
+    - Update assertions referencing `.placed_groups` to `.unit_patterns`
+    - Update assertions referencing `.positions` to `.candidate_cells`
+    - _Requirements: 1.5, 2.7_
 
-- [ ] Implement `generate_test_quest(quest_name, lairs, output_dir, **kwargs)` one-call API
-- [ ] Auto-place Palace at center ('M') when not explicitly specified
-- [ ] Auto-distribute lairs around center using the grid distribution function from Task 2
-- [ ] Generate default spawner blocks (4 generic monster types per lair)
-- [ ] Create output directory if it doesn't exist
-- [ ] Call the writer, MQXML generator, and terrain copier to produce complete package
-- [ ] Return the paths of all generated files
+- [ ] 9. Checkpoint — Full regression test
+  - Run `python QuestMapGenerator/test_all_quests.py` and verify all 37 files still parse
+  - Verify grid encoding tests still pass
+  - Verify auto-distribute and validation tests still pass
+  - Ensure all tests pass, ask the user if questions arise.
 
-## Task 7: Implement Pretty-Print (Structured Text Representation)
+- [ ]* 10. Write property tests for grid encoding
+  - [ ]* 10.1 Write property test for grid encoding bijectivity
+    - **Property 1: Grid encoding round-trip**
+    - For any (col, row) in [0,4]×[0,4], grid_to_byte then byte_to_grid returns original pair
+    - For any byte in 65-89, byte_to_grid then grid_to_byte returns original byte
+    - For any letter 'A'-'Y', letter_to_byte then byte_to_letter returns original letter
+    - **Validates: Requirements 3.1, 3.2, 3.3**
+  - [ ]* 10.2 Write property test for invalid grid input rejection
+    - **Property 4: Invalid grid input rejection**
+    - For any col or row outside [0,4], grid_to_byte raises ValueError
+    - For any byte outside 65-89, byte_to_grid raises ValueError
+    - For any character not in 'A'-'Y', letter_to_byte raises ValueError
+    - **Validates: Requirements 3.5, 3.6**
 
-- [ ] Implement `format_q_text(quest_map)` → human-readable multi-line string showing all fields
-- [ ] Show header info, map params, spawner counts, placed entries with grid visualization
-- [ ] Implement `parse_q_text(text)` → QuestMap (inverse of format_q_text)
-- [ ] Verify round-trip: format_q_text(parse_q_text(text)) == text for generated text
+- [ ]* 11. Write property tests for auto-distribute and validation
+  - [ ]* 11.1 Write property test for auto-distribute correctness
+    - **Property 3: Auto-distribution produces valid non-overlapping positions**
+    - For any N in [1,24], returns exactly N unique positions all in 65-89, none equal to CENTER
+    - For any N and exclusion set, no excluded positions appear in result
+    - **Validates: Requirements 4.1, 4.2, 4.5**
+  - [ ]* 11.2 Write property test for building conflict detection
+    - **Property 5: Validation detects all building conflicts**
+    - For any two UnitInstance entries with AB*/BB* prefixes sharing a candidate_cell, validate_placements raises ValueError
+    - For any BV*/AV*/BA* entry sharing a cell with AB*/BB*, no error raised
+    - **Validates: Requirements 5.1, 5.2, 5.3**
 
-## Task 8: Implement Validation
+- [ ]* 12. Write property test for write-parse round-trip
+  - [ ]* 12.1 Write property test for UnitPattern write-parse round-trip
+    - **Property 2: UnitPattern write-parse round-trip**
+    - For any valid list of UnitInstance entries (4-char IDs with valid prefixes, non-empty descriptions, candidate_cells in 65-89), writing via template and parsing back produces equivalent data
+    - **Validates: Requirements 2.1, 2.7**
+  - [ ]* 12.2 Write property test for parse produces valid position bytes
+    - **Property 6: Parse produces valid position bytes**
+    - For any .q file that parses successfully, every candidate_cell in every UnitInstance is in range 65-89
+    - **Validates: Requirements 1.5, 10.3**
 
-- [ ] Implement `validate_q_file(filepath)` that checks structural integrity
-- [ ] Verify magic bytes at offsets 0-3 and 8-11
-- [ ] Verify all Object_IDs are 4 ASCII characters matching known prefix patterns
-- [ ] Verify grid position bytes are in range 65-89
-- [ ] Verify file size consistency (no truncation, no trailing garbage beyond expected structure)
-- [ ] Verify spawner entry format (24 bytes each, active flag = 1)
-- [ ] Implement `compare_q_files(generated, reference)` for structural comparison
-- [ ] Return list of ValidationIssue objects with byte offsets and descriptions
+- [ ] 13. Final checkpoint — Complete validation
+  - Run all tests and verify everything passes
+  - Verify `python QuestMapGenerator/test_all_quests.py` reports 37/37 files pass
+  - Ensure all tests pass, ask the user if questions arise.
 
-## Task 9: Implement CLI Interface
+## Notes
 
-- [ ] Add argparse-based CLI with subcommands: parse, generate, validate
-- [ ] `parse` subcommand: takes .q file path, prints formatted text to stdout
-- [ ] `generate` subcommand: takes quest name, lair specifications (comma-separated ID:desc:position), output directory
-- [ ] `validate` subcommand: takes .q file path, prints issues, exits non-zero on failure
-- [ ] Add `--help` with usage examples for each subcommand
-- [ ] Add `--reference` option to validate subcommand for comparison against known-good file
-- [ ] Handle errors gracefully with descriptive messages (no stack traces for user errors)
-
-## Task 10: Integration Testing and Documentation
-
-- [ ] Parse ALL 23 quest files in Quests/ folder without errors
-- [ ] Generate a test quest, validate it, and verify it matches expected structure
-- [ ] Round-trip test: parse → write → parse all RGMa files (MyQuest, Krolm, Freestyle)
-- [ ] Add docstrings to all public functions with usage examples
-- [ ] Update workspace README.md with quest_map_generator.py documentation
-- [ ] Update RESEARCH_NOTES.md with the complete .q format specification findings
+- Tasks marked with `*` are optional and can be skipped for faster delivery
+- The refactoring is purely internal — no behavioral changes to the tool's output
+- Property tests require `hypothesis` library (`pip install hypothesis`)
+- Each task builds on previous ones — do NOT skip the checkpoint tasks
+- The writer's template approach is correct and unchanged — only names/types change
