@@ -374,3 +374,89 @@ Snow terrain patterns are NOT in the base `Data/constants.rgs`. They exist only 
 | `Data/constants_down.rgs` | RGCA | 28,016 B | Base game downgrade variant |
 | `DataMX/mx_constants.rgs` | RGCB | 49,833 B | Expansion: adds Snow/Ice + quest-specific patterns |
 | `DataMX/mx_constants_down.rgs` | RGCB | 49,515 B | Expansion downgrade variant |
+
+
+## Terrain Tile Format (tilesetdata.cam)
+
+The actual terrain ground textures are stored in `Data/tilesetdata.cam`.
+
+**File structure:**
+- IMAG section: 1 entry ("GRITTileset", 16956 bytes — tileset metadata/animation)
+- TILE section: 808 entries, all exactly 2074 bytes each
+
+**Tile format (TILE version 1):**
+```
+Header (26 bytes):
+  [u16] version = 1
+  [u16] width = 32 (pixels)
+  [u16] height = 32 (pixels)
+  [u16] stride = 64 (bytes per row = width × 2)
+  [u16] field4 = 5 (unknown, always 5)
+  [16 bytes] zeros/reserved
+
+Pixel data (2048 bytes):
+  32 × 32 pixels, 2 bytes per pixel
+  Format: RGB565 (little-endian u16)
+    R = bits 15-11 (5 bits, shift left 3 for 8-bit)
+    G = bits 10-5 (6 bits, shift left 2 for 8-bit)
+    B = bits 4-0 (5 bits, shift left 3 for 8-bit)
+```
+
+**Tile organization (~80 tiles per terrain type):**
+
+| Tile Range | Avg Color | Terrain Type |
+|---|---|---|
+| 0-79 | Brown (87,67,42) | GR00 Dirt |
+| 80-159 | Light green (63,78,32) | GR01 Plains parent |
+| 160-239 | Dark green (56,65,26) | GR02 Plains child |
+| 240-319 | Yellow-brown (89,84,41) | GR03 Arid parent |
+| 320-399 | Dry (estimated) | GR04 Arid child |
+| 400-479 | Gray-brown (94,83,66) | GR05 Scorch parent |
+| 480-559 | Dark gray (estimated) | GR06 Scorch child |
+| 560-639 | Blue-green (estimated) | GR07 Swamp parent |
+| 640-719 | Deep green (35,101,38) | GR08 Swamp child |
+| 720-807 | White/gray (estimated) | GR09 Snow |
+
+Each terrain type needs ~80 tiles: base variations + edge transitions to adjacent types.
+
+**Terrain type definitions (Data/terrtype.cam):**
+
+DTPT section with 10 entries (one per terrain type):
+```
+"DTPT" [u32 size] [u32 0] [u32 1]
+"DATA" [u32 data_size] [u32 0] [u32 2]
+"HEAD" [u32 head_size] [u32 0] [u32 0] [u32 0]
+[4B GR code\0] [u32 0] [name\0] [display_name\0]
+"PRIM" [u32 29] [u32 1] [29 bytes zeros — material properties?]
+```
+
+| Code | Name | Size |
+|------|------|------|
+| GR00 | Dirt | 111 B |
+| GR01 | Plains_parent | 129 B |
+| GR02 | Plains_child | 127 B |
+| GR03 | Arid_parent | 125 B |
+| GR04 | Arid_child | 123 B |
+| GR05 | Scorch_parent | 129 B |
+| GR06 | Scorch_child | 127 B |
+| GR07 | Swamp_parent | 127 B |
+| GR08 | Swamp_child | 125 B |
+| GR09 | Snow | 111 B |
+
+DTRN section: 1 entry ("GRITGritty", 259 bytes) — tileset transition rules.
+
+## Creating Custom Terrain (Theoretical Pipeline)
+
+Custom terrain creation is **theoretically feasible** via mod CAM loading:
+
+1. **Create tile artwork**: Paint 32×32 pixel tiles with transitions (~80 tiles needed)
+2. **Encode tiles**: Convert to RGB565, prepend 26-byte TILE v1 header, pack into CAM as TILE section
+3. **Create type definition**: New DTPT entry (e.g., "GR10") following the binary structure above
+4. **Update constants**: Add terrain pattern entry referencing the new GR code in a custom .rgs
+5. **Load via mod**: Add `<CAM>custom_terrain.cam</CAM>` to .mqxml
+
+**Unknown/risks:**
+- Whether the engine supports GR codes beyond GR09 (might be hardcoded to 10 types)
+- How tile transitions between custom and existing types work
+- Whether constants.rgs entries can be added via mods or require file replacement
+- The DTRN section (transition rules) may need updating for new terrain types

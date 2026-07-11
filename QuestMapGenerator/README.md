@@ -1,46 +1,56 @@
 # Quest Map Generator
 
-Programmatic .q binary quest map generator for Majesty Gold HD.
+Programmatic .q binary quest template generator for Majesty Gold HD.
+Generates quest packages for the Random Generation System (RGS) without requiring RGSEditor.
 
 ## Status
 
-**All 10 tasks COMPLETE.** Full parser + writer + CLI + validation working.
+**All tasks COMPLETE.** Full parser + writer + CLI + validation working with correct RGS terminology.
 
-- Parser: 37/37 quest files parse (100%)
-- Writer: Round-trip verified
+- Parser: 37/37 quest files parse (100%) — supports RGMa, RGM6, RGM9
+- Writer: Template-based, round-trip verified
 - CLI: parse, validate, generate subcommands
 - Validation: 37/37 files pass with 0 errors
 - Convenience API: One-call quest generation
+- Data model: Uses correct RGS terminology (UnitPattern, UnitInstance, ForceEntry, etc.)
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `quest_map_generator.py` | Main tool — parser, grid encoding, data model |
-| `test_mapInfo.py` | Test suite — validates parser against all 37 quest files |
+| `quest_map_generator.py` | Main tool — parser, writer, grid encoding, CLI |
+| `test_all_quests.py` | Test suite — validates parser against all 37 quest files |
+| `constants_rgs_reference.md` | Base game terrain/landscape/fractal pattern catalog |
+| `expansion_constants_reference.md` | Expansion-only patterns (Snow, Ice, quest-specific) |
 | `q_format_research.py` | Exploration script used during reverse-engineering |
-| `README.md` | This file |
 
-Spec docs live at `.kiro/specs/quest-map-generator/` (design.md, tasks.md, requirements.md).
+Spec docs: `.kiro/specs/quest-map-generator/` (requirements.md, design.md, tasks.md)
 
-## Key Research Findings
+## Key Concepts (from SDK "How To Make A Quest")
 
-### .q File Position Encoding (CRACKED)
-- Positions are a **5×5 grid** using ASCII bytes `A` (65) through `Y` (89)
-- `M` (77) = center (col 2, row 2) — always Palace location
-- Decode: `col = (byte - 65) % 5`, `row = (byte - 65) // 5`
-- One building per grid cell (game enforces this)
+The .q file is a **procedural generation template**, not a pre-rendered map. Maps are generated at load time.
 
-### Placed Entry Format (CORRECTED)
+### Hierarchy
+- **Force Pattern** — top level, positions faction clusters on overall map (its own 5×5 grid)
+- **Unit Pattern** — mid level, 5×5 Layout Grid with Resolution setting, contains Unit Instances
+- **Unit Instance** — single building/lair/monster with candidate grid cells (RGS picks one randomly)
+
+### Key behaviors
+- Grid positions are **candidate locations** — multiple cells per unit = random choice, NOT multiple placements
+- The grid is **randomly rotated** (0°/90°/180°/270°) at generation time
+- The engine **prevents overlap** based on building sprite sizes
+- Each Unit Instance is placed **exactly once**
+
+### Position Grid (5×5, A-Y)
 ```
-[4B Object_ID] [u32 0] [null-terminated desc] [u32 position_count] [position_count × u8 pos_byte]
+     col0  col1  col2  col3  col4
+row0:  A     B     C     D     E
+row1:  F     G     H     I     J
+row2:  K     L     M     N     O
+row3:  P     Q     R     S     T
+row4:  U     V     W     X     Y
 ```
-A single entry can place multiple instances (e.g., 5 Temples at D,I,N,R,S).
-
-### Spawner Entry Format (24 bytes)
-```
-[4B Monster_ID] [u32 spawn_level] [8B zeros] [u32 1] [4B zeros]
-```
+Encode: `byte = 65 + row*5 + col` | Decode: `col = (byte-65)%5, row = (byte-65)//5`
 
 ## Running
 
@@ -73,13 +83,25 @@ generate_test_quest(
 )
 ```
 
-## Remaining Work (Tasks 3-10)
+## Terrain System
 
-3. Q File Writer (binary serialization + round-trip test)
-4. MQXML Generator
-5. Terrain File Handling (.rgs template copy)
-6. High-Level Convenience API
-7. Pretty-Print text representation
-8. Validation
-9. CLI Interface
-10. Integration Testing & Documentation
+Terrain textures are in `Data/tilesetdata.cam` (808 tiles, 32×32 RGB565 pixels each).
+Terrain types defined in `Data/terrtype.cam` (10 types: GR00-GR09).
+Pattern definitions in `Data/constants.rgs` (base) and `DataMX/mx_constants.rgs` (expansion).
+
+See `constants_rgs_reference.md` and `expansion_constants_reference.md` for full catalogs.
+
+| Code | Terrain | Available In |
+|------|---------|-------------|
+| GR00 | Dirt | Base |
+| GR01 | Plains (parent — light green) | Base |
+| GR02 | Plains (child — dark green) | Base |
+| GR03 | Arid (parent — dry grass) | Base |
+| GR04 | Arid (child — yellow grass) | Base |
+| GR05 | Scorch (parent — gray dirt) | Base |
+| GR06 | Scorch (child — dark gray) | Base |
+| GR07 | Swamp (parent — blue-green) | Base |
+| GR08 | Swamp (child — red-brown) | Base |
+| GR09 | Snow | Expansion only |
+
+Custom terrain is theoretically possible via CAM mod loading — see reference docs for format details.
