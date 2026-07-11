@@ -161,67 +161,101 @@ Binary terrain/map definition file edited by RGSeditor. Defines terrain tile com
 height/slope data for the map. NOT a code constants file despite the name. Not relevant
 to spell/sprite modding.
 
-### Q File Format (Reverse-Engineered)
+### Q File Format (Reverse-Engineered — UPDATED)
 
-The `.q` file is the binary quest map produced by RGSEditor. Key findings:
+The `.q` file is the binary quest template produced by RGSEditor. It defines the Random
+Generation System (RGS) data for procedural map generation. The map is NOT pre-rendered —
+it's generated at load time using these patterns + random seed.
+
+**Key concept from SDK documentation:** The .q file encodes a HIERARCHY of placement patterns:
+- **Force Pattern** — top level, places Unit Patterns on the overall map (its own grid)
+- **Unit Patterns** — mid level, each has a 5×5 layout grid + resolution (tile spacing)
+- **Unit Instances** — individual buildings/monsters/landmarks within a Unit Pattern
+
+The 5×5 grid is NOT a fixed position. It's a **probability layout** — marking a unit at multiple
+grid cells means the RGS will randomly choose ONE of those positions. The grid is also
+randomly rotated each generation for variety.
 
 **Header (16 bytes):**
-- Bytes 0-3: Magic "RGMa" (editor version) or "RGM6" (base game version)
+- Bytes 0-3: Magic "RGMa" (editor) or "RGM6" (base game) or "RGM9" (expansion)
 - Bytes 4-7: zeros
 - Bytes 8-11: Same magic repeated
 - Bytes 12-15: zeros
 
 **Strings (starting at offset 0x10):**
-- Null-terminated quest name (e.g., "basicAI", "WrathOfKrolm", "BARREN_WASTE")
-- Null-terminated pattern/module name (e.g., "pattMyAI", references the GPL entry function)
+- Null-terminated quest name (e.g., "basicAI", "WrathOfKrolm")
+- Pattern name (12 bytes + null, format: 4+4+4 repeating pattern, references GPL entry function)
 
 **Map parameters (after strings):**
-- Several u32 values encoding map dimensions, seed/checksum, etc.
-- MyQuest uses dimensions ~256x256 (value 0x00000100)
-- WrathOfKrolm and base quests use 32768x32768 (0x00008000)
-- Followed by "NONE"/"none" section markers
+- u32 values encoding map size, seed, faction count, starting resources
+- Format varies between RGMa/RGM6/RGM9
 
-**Object entries (bulk of file):**
+**Spawner Sections (separated by "NONEnone\0" markers):**
+- Each spawner block: [u32 count] [count × 24-byte entries]
+- Entry: [4B Monster_ID] [u32 spawn_level] [8B zeros] [u32 active_flag] [4B zeros]
+- After entries: [u32 0] [u32 lair_resource] [u32 0] [u32 secondary_resource] + zeros
 
-Two types identified:
+**Team/Player Definitions (after spawners):**
+- Indexed entries: "Human Player\0", "player2_ai\0", "No Name\0" × 5, "Monsters\0"
+- Each with active flag and team identifier bytes
+- Defines the available factions/teams for the quest
 
-1. **Short entries (24 bytes each)** — Spawner definitions:
-   - 4-byte Object_ID (e.g., "BVr1" = Ratman Champion)
-   - u32 value (spawn count or index, values like 9-17 seen)
-   - 16 bytes zeros/flags (includes a u32 = 1 at offset +16)
-   - These come in groups of 4 (spacing: 24,24,24,73) representing lair spawn lists
-   - A u32 count precedes each group (e.g., "04 00 00 00" = 4 entries)
+**Region Pattern Section (terrain):**
+- Pattern name reference (e.g., "pattpattpattern\0")
+- u32 count of Region Patches
+- Each Region Patch: [4B terrain_code] [u32 value] [zeros] [u32 flags]
+  - terrain_code: "gras" (grass), "snow" (snow), etc.
+  - Followed by full terrain pattern names (4+4+4+full format):
+    e.g., "grasgrasgrasgrass\0" + landscape ref "xBarxGraxfla\0"
+- Defines terrain textures, fractal height, landscape objects (trees/rocks)
 
-2. **Long entries (29+ bytes each)** — Placed buildings/lairs:
-   - 4-byte Object_ID (e.g., "BBw1" = Ice Cave, "ABJ1" = Palace)
-   - u32 = 0
-   - Null-terminated description string (e.g., "Ice Cave", "Goblin Fortress", "Palace")
-   - Position data follows (encoding not fully cracked — appears to be in the u32 before/after)
+**Unit Pattern Placed Groups (the 5×5 grids):**
+- Header: [4B terrain_code] [u32 5] [u32 entry_count]
+- Each entry: [4B Object_ID] [u32 0] [cstr description\0] [u32 position_count] [position_count × u8]
+- Position bytes: ASCII 'A'-'Y' (65-89) mapping to 5×5 grid cells
+- position_count > 1 means the unit can appear at MULTIPLE candidate cells (RGS picks one randomly)
+- After entries: metadata block [u32 0,3,50,50,50,1,1,0,0,0] + faction name
+
+**Resolution (from SDK doc):** The spacing between grid cells is controlled by the
+Resolution dropdown in RGSEditor. "A tile is 32 pixels wide so a resolution of 3 means
+that each layout item is placed 96 pixels from its neighbor."
+
+**Force Pattern Section (end of file):**
+- Marker: [u32 2] "NONE" (standalone, not "NONEnone")
+- [u32 unit_pattern_count] [u32 total_force_entries]
+- Force entries: [4B faction_short] [u32 5] [cstr faction_name\0] [u32 active] [u8 map_grid_pos]
+- map_grid_pos is 'A'-'Y' (same 5×5 encoding) but on the FORCE PATTERN's map layout
+- This determines WHERE on the overall map each faction's Unit Pattern cluster is placed
+- Terminated by final metadata block + "Rel@"
+
+**Overlap prevention (from SDK doc):** "The placement code will not allow objects to overlap,
+so a minimum spacing will be enforced if the placement would cause an overlap."
+Building sizes matter at generation time — the engine adjusts positions to avoid overlap.
+
+**Random rotation (from SDK doc):** "The placement grid is also randomly rotated to add
+more variety to the placement of the pattern." So the in-game layout will NOT match the
+grid positions literally — it's rotated 0°/90°/180°/270° randomly.
 
 **Object ID conventions:**
-- `BV**` = monsters/characters (BVm1=Ice Dragon, BVx1=Yeti, BVN1=Daemon, BVr1=Ratman Champion)
-- `BB**` = monster lairs (BBw1=Ice Cave, BBz1=Goblin Fortress, BBH1=Goblin Camp, BBx1=Rat's Nest)
-- `AB**` = player buildings (ABJ1=Palace)
-
-**Coordinate encoding (PARTIALLY UNDERSTOOD):**
-- The u32 value immediately before each Long_Entry lair appears to encode position
-- Values seen: 1476395008 (Ice Cave), 1258291200, 1157627904 (Snake Pits)
-- These could be fixed-point coordinates or packed x,y pairs — needs more analysis
-- Comparing multiple quests with known map layouts against these values would crack it
+- `BV**` = monsters/characters (BVr1=Ratman Champion, BVN1=Daemonwood, BVm1=Ice Dragon)
+- `BB**` = monster lairs (BBw1=Ice Cave, BBz1=Goblin Fortress, BBH1=Goblin Camp)
+- `AB**` = player buildings (ABJ1=Palace, ABe1=House, ABE1=Guardhouse)
+- `AV**` = NPCs/Heroes (pre-placed)
+- `BA**` = ambient terrain objects
 
 **File sizes:**
-- Minimal (MyQuest, ~20 objects): 2469 bytes
-- Medium (WrathOfKrolm): 3198 bytes  
-- Large (Brashnard, many lairs): 4870 bytes
+- Minimal (MyQuest, ~35 placed entries): 2469 bytes
+- Medium (Krolm, 3 entries with multi-positions): 3191 bytes
+- Large (Freestyle, 162 entries): 111500 bytes
 
-**RGS terrain file:**
+**RGS terrain file (.rgs):**
 - Magic "RGCB" (newer) or "RGCA" (older)
-- Quest.rgs: 49833 bytes, Data/constants.rgs: 28012 bytes
-- Contains terrain heightmap/type data
-- For test quests, reusing an existing .rgs is the simplest approach
+- Contains terrain heightmap/type data used by the RGS to generate the actual map tiles
+- References terrain patterns, fractal settings, and landscape patterns from constants.rgs
+- For test quests, reusing an existing .rgs template is the simplest approach
 
-**Exploration script:** `utility/test_decoder.py` was used for this research.
-The Quests/ folder has 38 .q files available for comparison analysis.
+**Exploration scripts:** `utility/test_mapInfo.py` (scratch), `QuestMapGenerator/quest_map_generator.py` (parser/writer).
+Quests/ has 22 base .q files, QuestsMX/ has 14 expansion .q files, MyQuest/ has 1.
 
 ### RGSEditor
 - Located at `SDK/RGSeditor.exe` (also decompiled sections in `SDK/RGSeditor/`)
@@ -235,11 +269,23 @@ The Quests/ folder has 38 .q files available for comparison analysis.
 - Repack CAM: `python cam_writer.py --cam Data/maindata.cam --replace-tile 3547 --tile-data new.bin --output modded.cam`
 - Swap unit appearance via unittype.cam: change ImageIDBase field in DUNT entry
 
-### Future Scope: Automated Test Quest Generator
-To speed up in-game testing, explore auto-generating a minimal "test harness" quest:
-- Use a pre-made flat terrain `.q` file (binary map — RGSeditor format, needs understanding)
-- Auto-generate `.mqxml` with DataConfiguration loading the mod's CAM/XML/BCD files
-- GPL script that immediately on quest start: spawns the test unit, gives resources, triggers the spell
-- Goal: compile → launch game → select test quest → see feature in under 10 seconds
-- The `.q` binary map format is unexplored — understanding it would unlock full automation
-- Alternatively: keep one hand-made minimal test map and just swap the GPL/XML/CAM references
+### Quest Map Generator (QuestMapGenerator/)
+Automated test quest generation tool. Located at `QuestMapGenerator/quest_map_generator.py`.
+- **Parser**: Reads all .q format versions (RGMa, RGM6, RGM9) — 37/37 files pass
+- **Writer**: Template-based writer splices custom Unit Pattern entries into a known-good .q file
+- **CLI**: `parse`, `validate`, `generate` subcommands
+- **Convenience API**: `generate_test_quest(name, lairs, output_dir)` for one-call quest generation
+- **Note**: The writer uses a template approach (based on MyQuest/Quest.q). It replaces the
+  Unit Pattern placed groups while preserving the rest of the file structure. This works for
+  test quests but does NOT generate Force Patterns, Region Patterns, or team definitions from scratch.
+- **Limitation**: Generated quests always use the template's terrain, map size, and random seed.
+  For full control over map generation parameters, use RGSEditor directly.
+
+### Future Scope: Full RGS Generation
+The current quest_map_generator handles the placed-group section but doesn't generate:
+- Region Patterns (terrain textures, fractal settings, landscape objects)
+- Force Pattern map layout (which quadrant each faction's pattern lands in)
+- Team/Player definitions from scratch
+- Map size / random seed configuration
+Understanding these sections (now documented in steering) could enable fully programmatic
+quest creation without any RGSEditor involvement.
