@@ -272,19 +272,23 @@ Quests/ has 22 base .q files, QuestsMX/ has 14 expansion .q files, MyQuest/ has 
 ### Quest Map Generator (QuestMapGenerator/)
 Automated test quest generation tool. Located at `QuestMapGenerator/quest_map_generator.py`.
 - **Parser**: Reads all .q format versions (RGMa, RGM6, RGM9) — 37/37 files pass
-- **Writer**: Template-based writer splices custom Unit Pattern entries into a known-good .q file
+- **Writer**: Template-based writer splices custom UnitPattern entries into a known-good .q file
 - **CLI**: `parse`, `validate`, `generate` subcommands
 - **Convenience API**: `generate_test_quest(name, lairs, output_dir)` for one-call quest generation
+- **Data Model**: Uses correct RGS terminology — `UnitPattern` (5×5 grid with resolution),
+  `UnitInstance` (single unit with `candidate_cells` for random position selection),
+  `ForceEntry` (faction's map quadrant position), `TeamDefinition`, `RegionPatternInfo`
 - **Note**: The writer uses a template approach (based on MyQuest/Quest.q). It replaces the
-  Unit Pattern placed groups while preserving the rest of the file structure. This works for
-  test quests but does NOT generate Force Patterns, Region Patterns, or team definitions from scratch.
+  UnitPattern section while preserving the rest of the file structure (header, spawners,
+  teams, Region Pattern, Force Pattern). This works for test quests but does NOT generate
+  Force Patterns, Region Patterns, or team definitions from scratch.
 - **Limitation**: Generated quests always use the template's terrain, map size, and random seed.
   For full control over map generation parameters, use RGSEditor directly.
 
 ### Future Scope: Full RGS Generation
-The current quest_map_generator handles the placed-group section but doesn't generate:
+The current quest_map_generator handles the UnitPattern section but doesn't generate:
 - Region Patterns (terrain textures, fractal settings, landscape objects)
-- Force Pattern map layout (which quadrant each faction's pattern lands in)
+- Force Pattern map layout (which quadrant each faction's UnitPattern cluster lands in)
 - Team/Player definitions from scratch
 - Map size / random seed configuration
 Understanding these sections (now documented in steering) could enable fully programmatic
