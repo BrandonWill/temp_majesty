@@ -54,7 +54,7 @@ begin
 		end
 
 	$DebugOut ( 911, "ICE: About to createeffector freeze_effector..." );
-	$createeffector ( target, "freeze_effector", 0 );
+	$createeffector ( target, "freeze_effector", time );
 	$DebugOut ( 911, "ICE: freeze_effector created OK" );
 
 	$DebugOut ( 911, "ICE: About to createeffector freeze_icon..." );
