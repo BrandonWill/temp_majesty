@@ -2,12 +2,12 @@
 Quest Map Generator — Parser, writer, and grid encoding for Majesty Gold HD .q binary quest files.
 
 Reads RGMa (editor), RGM6 (base game), and RGM9 (expansion) format quest map files.
-Writes RGMa format using a template-based approach (splices placed groups into a known-good base).
+Writes RGMa format using a template-based approach (splices Unit Patterns into a known-good base).
 
 Usage:
     from quest_map_generator import parse_q_file, write_q_file, grid_to_byte, byte_to_grid
     qmap = parse_q_file("Quests/fertile_plain.q")
-    write_q_file(qmap, "output/Quest.q", template="MyQuest/Quest.q")
+    write_q_file(qmap.unit_patterns, "output/Quest.q", template="MyQuest/Quest.q")
 """
 
 from __future__ import annotations
@@ -52,51 +52,100 @@ class SpawnerBlock:
 
 
 @dataclass
-class PlacedEntry:
-    object_id: str  # 4-char ID
+class UnitInstance:
+    """A single building/monster/landmark entry within a UnitPattern.
+
+    Each UnitInstance is placed exactly once on the map. When candidate_cells
+    contains multiple positions, the RGS randomly selects ONE cell for placement.
+    This provides positional variety across map generations — it does NOT mean
+    the unit is placed at all listed cells simultaneously.
+    """
+    object_id: str  # 4-char ID (e.g., "ABJ1" = Palace, "BBw1" = Ice Cave)
     description: str  # Human-readable name
-    positions: list[int] = field(default_factory=list)  # Grid position bytes ('A'-'Y', 65-89)
+    candidate_cells: list[int] = field(default_factory=list)
+    # Grid position bytes (ASCII 'A'-'Y', 65-89).
+    # Multiple entries = RGS picks one randomly. NOT multiple placements.
 
     @staticmethod
     def grid_col(pos_byte: int) -> int:
+        """Column from position byte: (byte - 65) % 5"""
         return (pos_byte - 65) % 5
 
     @staticmethod
     def grid_row(pos_byte: int) -> int:
+        """Row from position byte: (byte - 65) // 5"""
         return (pos_byte - 65) // 5
 
 
 @dataclass
-class PlacedGroup:
-    terrain_code: str = "gras"  # 4-char terrain type
-    entries: list[PlacedEntry] = field(default_factory=list)
-    faction_name: str = ""  # Owner faction name
+class UnitPattern:
+    """A mid-level placement structure: a 5x5 Layout Grid with resolution.
+
+    Contains one or more UnitInstance entries. The entire pattern is placed
+    as a cluster on the map, with positions relative to the grid. The grid
+    is randomly rotated (0/90/180/270) at generation time.
+    """
+    terrain_code: str = "gras"  # 4-char terrain type for this pattern
+    resolution: int = 5  # Tile spacing between grid cells (from [u32 5] marker)
+    entries: list[UnitInstance] = field(default_factory=list)
+    faction_name: str = ""  # Owner faction (from metadata block after entries)
 
 
 @dataclass
-class Faction:
-    short_code: str  # 4-char code
-    full_name: str  # Full name
-    home_position: int = 77  # Grid position byte (default M)
-    active: bool = True
+class TeamDefinition:
+    """A team/player slot definition from the Team section.
+
+    Defines the available factions for the quest (Human Player, AI players, Monsters).
+    """
+    name: str  # e.g., "Human Player", "player2_ai", "Monsters"
+    active: bool = True  # Whether this team slot is in use
+    team_id: int = 0  # Team identifier byte
+
+
+@dataclass
+class RegionPatternInfo:
+    """Metadata about the Region Pattern section (terrain generation).
+
+    The actual terrain data is preserved opaquely by the template writer.
+    We only parse enough to know what's there for display/validation.
+    """
+    pattern_name: str = ""  # e.g., "pattpattpattern"
+    patch_count: int = 0  # Number of Region Patches defined
+    terrain_codes: list[str] = field(default_factory=list)  # e.g., ["gras", "snow"]
+
+
+@dataclass
+class ForceEntry:
+    """A faction's position within the Force Pattern (top-level map layout).
+
+    The Force Pattern determines WHERE on the overall map each faction's
+    UnitPattern cluster is placed. Uses its own 5x5 grid.
+    """
+    short_code: str  # 4-char code (e.g., "Play", "Gobl", "Mons")
+    full_name: str  # Full name (e.g., "Player1", "Goblin Kingdom")
+    active: bool = True  # Whether this faction is active in the quest
+    map_position: int = 77  # Grid position byte on the Force Pattern grid (A-Y)
 
 
 @dataclass
 class QuestMap:
+    """Complete parsed representation of a .q quest template file."""
     magic: str = "RGMa"
     quest_name: str = ""
     pattern_name: bytes = b""
     params: MapParams = field(default_factory=MapParams)
     spawner_blocks: list[SpawnerBlock] = field(default_factory=list)
-    placed_groups: list[PlacedGroup] = field(default_factory=list)
-    factions: list[Faction] = field(default_factory=list)
+    teams: list[TeamDefinition] = field(default_factory=list)
+    region_info: Optional[RegionPatternInfo] = None
+    unit_patterns: list[UnitPattern] = field(default_factory=list)
+    force_pattern: list[ForceEntry] = field(default_factory=list)
 
 
 # =============================================================================
 # Grid Position Encoding/Decoding
 # =============================================================================
 
-CENTER = ord('M')  # 77 — center of the 5×5 grid (2, 2)
+CENTER = ord('M')  # 77 — center of the 5x5 grid (2, 2)
 
 
 def grid_to_byte(col: int, row: int) -> int:
@@ -134,8 +183,8 @@ def auto_distribute(n: int, exclude: Optional[list[int]] = None) -> list[int]:
     """
     Given N items to place, return grid position bytes spread around the grid,
     avoiding the center (palace) and any excluded positions.
-    
-    Returns a list of N position bytes from the 5×5 grid.
+
+    Returns a list of N position bytes from the 5x5 grid.
     """
     if exclude is None:
         exclude = []
@@ -164,7 +213,7 @@ def auto_distribute(n: int, exclude: Optional[list[int]] = None) -> list[int]:
     return available[:n]
 
 
-def validate_unique_positions(entries: list[PlacedEntry]) -> None:
+def validate_placements(entries: list[UnitInstance]) -> None:
     """
     Validate that no two BUILDINGS occupy the same grid cell.
     Only AB* and BB* prefixes are buildings. BV* (monsters/trees),
@@ -176,7 +225,7 @@ def validate_unique_positions(entries: list[PlacedEntry]) -> None:
     for entry in entries:
         if not entry.object_id[:2] in BUILDING_PREFIXES:
             continue  # Skip non-buildings
-        for pos in entry.positions:
+        for pos in entry.candidate_cells:
             letter = chr(pos)
             if pos in seen:
                 raise ValueError(
@@ -202,9 +251,9 @@ def _read_cstr(data: bytes, offset: int) -> tuple[str, int]:
     return s, end + 1
 
 
-def _find_placed_groups(data: bytes) -> list[tuple[int, str, int]]:
+def _find_unit_patterns(data: bytes) -> list[tuple[int, str, int]]:
     """
-    Scan the binary data for placed-group headers: [4B terrain][u32 5][u32 count].
+    Scan the binary data for Unit Pattern headers: [4B terrain][u32 5][u32 count].
     Returns list of (offset, terrain_code, entry_count).
     """
     results = []
@@ -255,6 +304,7 @@ def _find_placed_groups(data: bytes) -> list[tuple[int, str, int]]:
         if not all(32 <= b < 127 for b in desc_bytes):
             continue
 
+
         # After desc null, read position_count
         pos_count_offset = null_pos + 1
         if pos_count_offset + 4 > len(data):
@@ -273,13 +323,11 @@ def _find_placed_groups(data: bytes) -> list[tuple[int, str, int]]:
         if not all(65 <= b <= 89 for b in positions):
             continue
 
-        # This looks like a valid placed group!
+        # This looks like a valid unit pattern!
         terrain_str = terrain.decode('ascii')
         results.append((offset, terrain_str, count))
 
     # De-duplicate: remove overlapping detections
-    # A valid group header should not be contained within another group's entries
-    # We'll keep only groups where the offset is not within a previously-identified group's data range
     if not results:
         return results
 
@@ -287,7 +335,7 @@ def _find_placed_groups(data: bytes) -> list[tuple[int, str, int]]:
     occupied_ranges: list[tuple[int, int]] = []
 
     for offset, terrain_str, count in results:
-        # Check if this offset falls within an already-identified group's data
+        # Check if this offset falls within an already-identified pattern's data
         in_existing = False
         for start, end in occupied_ranges:
             if start < offset < end:
@@ -296,20 +344,19 @@ def _find_placed_groups(data: bytes) -> list[tuple[int, str, int]]:
         if in_existing:
             continue
 
-        # Try to compute the extent of this group
+        # Try to compute the extent of this pattern
         extent = _compute_group_extent(data, offset, count)
         if extent is not None:
             filtered.append((offset, terrain_str, count))
             occupied_ranges.append((offset, extent))
         else:
-            # If we can't compute extent, still include but don't track range
             filtered.append((offset, terrain_str, count))
 
     return filtered
 
 
 def _compute_group_extent(data: bytes, offset: int, count: int) -> Optional[int]:
-    """Try to parse through all entries in a group and return the end offset."""
+    """Try to parse through all entries in a unit pattern and return the end offset."""
     pos = offset + 12  # Skip header
     for i in range(count):
         if pos + 8 >= len(data):
@@ -342,16 +389,16 @@ def _compute_group_extent(data: bytes, offset: int, count: int) -> Optional[int]
     return pos
 
 
-def _parse_placed_entries(data: bytes, offset: int, count: int) -> tuple[list[PlacedEntry], int]:
+def _parse_unit_instances(data: bytes, offset: int, count: int) -> tuple[list[UnitInstance], int]:
     """
-    Parse count placed entries starting at offset.
-    Returns (list of PlacedEntry, offset after last entry).
+    Parse count UnitInstance entries starting at offset.
+    Returns (list of UnitInstance, offset after last entry).
     """
     entries = []
     pos = offset
     for i in range(count):
         if pos + 8 >= len(data):
-            raise QFormatError(f"Truncated placed entry at offset {pos}")
+            raise QFormatError(f"Truncated unit instance at offset {pos}")
 
         obj_id = data[pos:pos + 4].decode('ascii', errors='replace')
         zero_field = struct.unpack_from('<I', data, pos + 4)[0]
@@ -366,7 +413,7 @@ def _parse_placed_entries(data: bytes, offset: int, count: int) -> tuple[list[Pl
         desc = data[pos:null_pos].decode('ascii', errors='replace')
         pos = null_pos + 1
 
-        # Position count
+        # Position count (candidate cells)
         if pos + 4 > len(data):
             raise QFormatError(f"Truncated position count at offset {pos}")
         pos_count = struct.unpack_from('<I', data, pos)[0]
@@ -377,23 +424,23 @@ def _parse_placed_entries(data: bytes, offset: int, count: int) -> tuple[list[Pl
                 f"Invalid position_count {pos_count} for entry {obj_id!r} at offset {pos - 4}"
             )
 
-        # Position bytes
+        # Position bytes (candidate cells)
         if pos + pos_count > len(data):
             raise QFormatError(f"Truncated position bytes at offset {pos}")
-        positions = list(data[pos:pos + pos_count])
+        candidate_cells = list(data[pos:pos + pos_count])
         pos += pos_count
 
         # Validate all positions are in range
-        for p in positions:
+        for p in candidate_cells:
             if not (65 <= p <= 89):
                 raise QFormatError(
                     f"Invalid position byte {p} (expected 65-89) in entry {obj_id!r}"
                 )
 
-        entries.append(PlacedEntry(
+        entries.append(UnitInstance(
             object_id=obj_id,
             description=desc,
-            positions=positions,
+            candidate_cells=candidate_cells,
         ))
 
     return entries, pos
@@ -435,13 +482,12 @@ def _find_spawner_blocks(data: bytes) -> list[SpawnerBlock]:
                     continue
 
                 # Parse entries
-                entries = []
+                spawner_entries = []
                 valid = True
                 for i in range(count):
                     entry_off = entries_start + i * entry_size
                     eid = data[entry_off:entry_off + 4].decode('ascii', errors='replace')
                     spawn_level = struct.unpack_from('<I', data, entry_off + 4)[0]
-                    # Validate active flag at offset +16 (for 24-byte) or +12 (for 20-byte, if it fits)
                     if entry_size == 24:
                         active = struct.unpack_from('<I', data, entry_off + 16)[0]
                     else:
@@ -449,10 +495,9 @@ def _find_spawner_blocks(data: bytes) -> list[SpawnerBlock]:
                     if active != 1 and active != 0:
                         valid = False
                         break
-                    entries.append(SpawnerEntry(object_id=eid, spawn_level=spawn_level))
+                    spawner_entries.append(SpawnerEntry(object_id=eid, spawn_level=spawn_level))
 
-                if valid and entries:
-                    # Try to find lair_resource after the entries
+                if valid and spawner_entries:
                     lair_resource = 0
                     after_entries = entries_start + count * entry_size
                     if after_entries + 8 <= len(data):
@@ -460,7 +505,7 @@ def _find_spawner_blocks(data: bytes) -> list[SpawnerBlock]:
                         if sep == 0 and after_entries + 8 <= len(data):
                             lair_resource = struct.unpack_from('<I', data, after_entries + 4)[0]
 
-                    blocks.append(SpawnerBlock(entries=entries, lair_resource=lair_resource))
+                    blocks.append(SpawnerBlock(entries=spawner_entries, lair_resource=lair_resource))
                     found = True
                     break
 
@@ -475,16 +520,16 @@ def _find_spawner_blocks(data: bytes) -> list[SpawnerBlock]:
 def parse_q_file(filepath) -> QuestMap:
     """
     Parse a .q binary quest map file.
-    
+
     Handles RGMa (editor), RGM6 (base game), and RGM9 (expansion) formats.
-    Uses pattern-matching to find placed-object groups rather than sequential parsing.
-    
+    Uses pattern-matching to find Unit Pattern groups rather than sequential parsing.
+
     Args:
         filepath: Path to the .q file
-        
+
     Returns:
         QuestMap data structure with parsed content
-        
+
     Raises:
         QFormatError: If the file has invalid magic or corrupted structure
         FileNotFoundError: If the file doesn't exist
@@ -520,64 +565,63 @@ def parse_q_file(filepath) -> QuestMap:
         raise QFormatError(f"Cannot find null-terminated quest name after header")
 
     # --- Pattern name (12 bytes of content, may include non-ASCII) ---
-    # The pattern name is 12 bytes followed by a null terminator
-    # But it might be shorter if it contains a null before 12 bytes
     pattern_end = after_name + 12
     if pattern_end > len(data):
         pattern_end = len(data)
     pattern_name = data[after_name:pattern_end]
-    # Find the actual null terminator for the pattern
     try:
         pattern_null = data.index(0, after_name)
         if pattern_null < pattern_end:
-            # Pattern is shorter than 12 bytes
             pattern_name = data[after_name:pattern_null]
     except ValueError:
         pass
 
+
     # --- Map parameters (best effort) ---
     params = MapParams()
-    # Parameters are somewhere after pattern name; format varies by version
-    # For now we extract what we can
 
     # --- Spawner blocks ---
     spawner_blocks = _find_spawner_blocks(data)
 
-    # --- Placed object groups (the critical part) ---
-    group_candidates = _find_placed_groups(data)
-    placed_groups = []
-    for offset, terrain_code, count in group_candidates:
+    # --- Teams (placeholder — full parsing is complex and not needed) ---
+    teams: list[TeamDefinition] = []
+
+    # --- Region info (placeholder — preserved opaquely by template writer) ---
+    region_info: Optional[RegionPatternInfo] = None
+
+    # --- Unit Patterns (the critical part) ---
+    pattern_candidates = _find_unit_patterns(data)
+    unit_patterns = []
+    for offset, terrain_code, count in pattern_candidates:
         try:
-            entries, end_pos = _parse_placed_entries(data, offset + 12, count)
-            group = PlacedGroup(
+            entries, end_pos = _parse_unit_instances(data, offset + 12, count)
+            pattern = UnitPattern(
                 terrain_code=terrain_code,
                 entries=entries,
                 faction_name="",
             )
             # Try to read faction name from metadata block
-            # Metadata: 10 × u32 then null-terminated string
+            # Metadata: 10 x u32 then null-terminated string
             meta_start = end_pos
             if meta_start + 40 < len(data):
-                # Check if this looks like a metadata block (first u32 should be 0)
                 first_val = struct.unpack_from('<I', data, meta_start)[0]
                 if first_val == 0:
                     fname_start = meta_start + 40
                     if fname_start < len(data):
                         try:
                             fname, _ = _read_cstr(data, fname_start)
-                            # Only accept if it looks like a name (printable, reasonable length)
                             if len(fname) < 50 and all(32 <= ord(c) < 127 for c in fname):
-                                group.faction_name = fname
+                                pattern.faction_name = fname
                         except (ValueError, IndexError):
                             pass
 
-            placed_groups.append(group)
+            unit_patterns.append(pattern)
         except QFormatError:
-            # Skip groups that fail to parse (false positive in pattern matching)
+            # Skip patterns that fail to parse (false positive in pattern matching)
             continue
 
-    # --- Factions (best effort) ---
-    factions = []
+    # --- Force Pattern (best effort) ---
+    force_pattern: list[ForceEntry] = []
 
     return QuestMap(
         magic=magic,
@@ -585,8 +629,10 @@ def parse_q_file(filepath) -> QuestMap:
         pattern_name=pattern_name,
         params=params,
         spawner_blocks=spawner_blocks,
-        placed_groups=placed_groups,
-        factions=factions,
+        teams=teams,
+        region_info=region_info,
+        unit_patterns=unit_patterns,
+        force_pattern=force_pattern,
     )
 
 
@@ -595,12 +641,12 @@ def parse_q_file(filepath) -> QuestMap:
 # =============================================================================
 
 # The writer uses a template .q file (e.g., MyQuest/Quest.q) and splices in
-# modified placed-group sections. This ensures the header, spawner blocks,
+# modified Unit Pattern sections. This ensures the header, spawner blocks,
 # metadata, and player sections are preserved from a known-working file.
 
 DEFAULT_TEMPLATE = Path(__file__).parent.parent / "MyQuest" / "Quest.q"
 
-# Standard metadata block that appears after each placed group's entries
+# Standard metadata block that appears after each unit pattern's entries
 # [u32 0][u32 3][u32 50][u32 50][u32 50][u32 1][u32 1][12B zeros] = 40 bytes
 METADATA_BLOCK = struct.pack('<10I',
     0,    # separator
@@ -614,8 +660,8 @@ METADATA_BLOCK = struct.pack('<10I',
 )
 
 
-def _encode_placed_entry(entry: PlacedEntry) -> bytes:
-    """Encode a single placed entry to binary."""
+def _encode_unit_instance(entry: UnitInstance) -> bytes:
+    """Encode a single UnitInstance entry to binary."""
     parts = []
     # Object ID (4 bytes, ASCII)
     obj_id_bytes = entry.object_id.encode('ascii')
@@ -626,78 +672,72 @@ def _encode_placed_entry(entry: PlacedEntry) -> bytes:
     parts.append(struct.pack('<I', 0))
     # Description (null-terminated)
     parts.append(entry.description.encode('ascii') + b'\x00')
-    # Position count (u32)
-    parts.append(struct.pack('<I', len(entry.positions)))
-    # Position bytes
-    for pos in entry.positions:
+    # Candidate cell count (u32)
+    parts.append(struct.pack('<I', len(entry.candidate_cells)))
+    # Candidate cell position bytes
+    for pos in entry.candidate_cells:
         if not (65 <= pos <= 89):
             raise QFormatError(f"Invalid position {pos} in entry {entry.object_id}")
         parts.append(bytes([pos]))
     return b''.join(parts)
 
 
-def _encode_placed_group(group: PlacedGroup) -> bytes:
-    """Encode a placed group header + entries (no metadata block)."""
+def _encode_unit_pattern(pattern: UnitPattern) -> bytes:
+    """Encode a UnitPattern header + entries (no metadata block)."""
     parts = []
     # Terrain code (4 bytes)
-    terrain = group.terrain_code.encode('ascii')
+    terrain = pattern.terrain_code.encode('ascii')
     if len(terrain) != 4:
         terrain = (terrain + b'    ')[:4]
     parts.append(terrain)
-    # Constant marker (u32 = 5)
+    # Constant marker (u32 = 5) — the resolution value
     parts.append(struct.pack('<I', 5))
     # Entry count
-    parts.append(struct.pack('<I', len(group.entries)))
+    parts.append(struct.pack('<I', len(pattern.entries)))
     # Entries
-    for entry in group.entries:
-        parts.append(_encode_placed_entry(entry))
+    for entry in pattern.entries:
+        parts.append(_encode_unit_instance(entry))
     return b''.join(parts)
 
 
 def _encode_faction_name_block(faction_name: str) -> bytes:
     """
     Encode the faction name that appears in the metadata gap.
-    Format: [12-char name (4+4+4 pattern)]\0[padding zeros]\0
+    Format: [12-char name (4+4+4 pattern)]\\0[padding zeros]\\0
     """
-    # Faction names use a 4+4+4 repeated pattern like "PlayPlayPlayer1"
-    # or "AutoAutoAutoExpanding"
-    # For simple names, just use the name padded/truncated
     name_bytes = faction_name.encode('ascii')
-    # The 12-char pattern is typically the first 4 chars repeated 3 times
-    # followed by the full name
     short = faction_name[:4]
     pattern_12 = (short * 3)[:12].encode('ascii')
     full_with_null = name_bytes + b'\x00'
-    # Padding: 4 null bytes after the full name, then u32 for next section
     return pattern_12 + full_with_null
 
 
 def _encode_pre_group_block(owner_entry_count: int) -> bytes:
-    """Encode the bytes that appear just before a placed group: [zeros][u32 count]."""
+    """Encode the bytes that appear just before a unit pattern: [zeros][u32 count]."""
     return struct.pack('<III', 0, 0, owner_entry_count)
 
 
 def write_q_file(
-    placed_groups: list[PlacedGroup],
+    unit_patterns: list[UnitPattern],
     output_path,
     template_path=None,
     quest_name: Optional[str] = None,
 ) -> Path:
     """
     Write a .q file using a template-based approach.
-    
-    Takes placed groups and splices them into a copy of the template file,
-    replacing the template's placed groups while preserving header/spawners/player sections.
-    
+
+    Takes Unit Patterns and splices them into a copy of the template file,
+    replacing the template's Unit Patterns while preserving header/spawners/player sections.
+
     Args:
-        placed_groups: List of PlacedGroup objects to write
+        unit_patterns: List of UnitPattern objects to write
         output_path: Where to write the output .q file
         template_path: Path to template .q file (default: MyQuest/Quest.q)
         quest_name: Optional quest name override (replaces template's name)
-        
+
     Returns:
         Path to the written file
-        
+
     Raises:
         QFormatError: If encoding fails
         FileNotFoundError: If template doesn't exist
@@ -706,157 +746,111 @@ def write_q_file(
         template_path = DEFAULT_TEMPLATE
     template_path = Path(template_path)
     output_path = Path(output_path)
-    
+
     if not template_path.exists():
         raise FileNotFoundError(f"Template file not found: {template_path}")
-    
-    # Validate unique positions across all groups (optional - skip for round-trip of existing files)
-    all_entries = [e for g in placed_groups for e in g.entries]
-    # Only validate if caller hasn't explicitly opted out
-    # (existing game files sometimes have buildings sharing cells)
-    
+
+    # Validate placements across all patterns
+    all_entries = [e for p in unit_patterns for e in p.entries]
+
     # Read template
     template_data = template_path.read_bytes()
-    
-    # Find the placed groups in the template to know what section to replace
-    template_groups = _find_placed_groups(template_data)
-    if not template_groups:
-        raise QFormatError(f"Template has no placed groups: {template_path}")
-    
-    # Find the FIRST group's pre-block (goes back from the group to find the owner count)
-    first_group_offset = template_groups[0][0]
-    
-    # The pre-block is 8 bytes before the terrain code: [u32 0][u32 owner_count]
-    # Actually from the hex dump, it's: [...faction_name\0][u32 0][u32 0][u32 0][u32 0/1][u32 count]
-    # Let's find it by scanning backwards for the u32 that equals the group count
-    # Actually simpler: just use a fixed offset. The pre-group pattern is always
-    # [u32 owner_entry_count] immediately before [terrain_code]
-    pre_group_u32_offset = first_group_offset - 4
-    
-    # Find where to START splicing: we want to preserve everything before the
-    # placed groups section. The pre-group has a u32 count, and before THAT
-    # is the faction name + metadata from the spawner section.
-    # Let's find the splice point: 8 bytes before first group
-    # (the [u32 0][u32 count] before the terrain code)
-    splice_start = first_group_offset - 8  # includes the zero padding + count
-    
-    # Find the splice END: after the last group's metadata, before the player section
-    last_group = template_groups[-1]
-    last_extent = _compute_group_extent(template_data, last_group[0], last_group[2])
+
+    # Find the unit patterns in the template to know what section to replace
+    template_patterns = _find_unit_patterns(template_data)
+    if not template_patterns:
+        raise QFormatError(f"Template has no unit patterns: {template_path}")
+
+    # Find splice boundaries
+    first_pattern_offset = template_patterns[0][0]
+    splice_start = first_pattern_offset - 8
+
+    last_pattern = template_patterns[-1]
+    last_extent = _compute_group_extent(template_data, last_pattern[0], last_pattern[2])
     if last_extent is None:
-        raise QFormatError("Cannot compute template last group extent")
-    
-    # After last extent comes the metadata block (40 bytes) + faction name + player section
-    # The player section starts with a distinctive pattern: [u32 1][pattern 12B][...NONE...]
-    # Let's find "NONE" after the last group as the player section marker
-    # Actually the metadata is 40 bytes, then faction name (variable), then player section
-    # The player section in MyQuest starts at 0x0898 with [01 00 00 00 "MyAI"...]
-    # Let's find the splice end by looking for the metadata + faction name pattern
-    # after the LAST group.
-    
-    # Simpler approach: after the last group entries, skip the metadata (40 bytes),
-    # then the faction name string, then some padding — and the REST is the player section
-    # that we want to preserve.
-    
-    # For robustness, let's find the byte position where "NONE" appears after the last
-    # group (that's the start of the player section end-block)
+        raise QFormatError("Cannot compute template last pattern extent")
+
+
+    # Find the Force Pattern section marker after the last unit pattern
     player_section_marker = template_data.find(b'\x02\x00\x00\x00NONE', last_extent)
     if player_section_marker == -1:
-        # Try alternate pattern
         player_section_marker = template_data.find(b'NONE', last_extent + 40)
         if player_section_marker != -1:
-            # Back up to include the u32 before NONE
             player_section_marker -= 4
-    
+
     if player_section_marker == -1:
-        # Fallback: preserve everything from last_extent + 40 + 50 onward
-        # (rough estimate of metadata + faction name)
         splice_end = last_extent + 100
     else:
-        # Go back a bit to include the metadata block separator before NONE
-        # The pattern before player section is: [metadata 40B][faction_name][padding][u32 1/2][NONE]
         splice_end = player_section_marker
-    
-    # Now build the output:
-    # [preserved header/spawner section] + [new placed groups with metadata] + [preserved player section]
-    
+
+    # Build the output
     output_parts = []
-    
-    # Part 1: Everything before the placed section
+
+    # Part 1: Everything before the unit patterns section
     pre_section = bytearray(template_data[:splice_start])
-    
-    # If quest_name override, replace it in the header
+
     if quest_name is not None:
-        # Quest name starts at offset 0x10 as null-terminated string
-        old_name_end = template_data.index(0, 0x10) + 1
-        new_name = quest_name.encode('ascii') + b'\x00'
-        # Replace: everything from 0x10 to old_name_end becomes new_name
-        # But this changes offsets... too complex for now. Skip name replacement
-        # in template mode. Name will come from the template.
         pass
-    
+
     output_parts.append(bytes(pre_section))
-    
-    # Part 2: New placed groups (each with pre-block + entries + metadata + faction name)
+
+    # Part 2: New unit patterns (each with pre-block + entries + metadata + faction name)
     faction_names = ["AutoExpanding", "Player1", "player2_ai", "MyAI"]
-    owner_counts = [9, 9, 1, 1]  # From template: counts before each group
-    
-    for i, group in enumerate(placed_groups):
+    owner_counts = [9, 9, 1, 1]  # From template: counts before each pattern
+
+    for i, pattern in enumerate(unit_patterns):
         # Pre-block: [u32 0][u32 owner_count]
         oc = owner_counts[i] if i < len(owner_counts) else 1
         output_parts.append(struct.pack('<II', 0, oc))
-        
-        # Group entries
-        output_parts.append(_encode_placed_group(group))
-        
+
+        # Pattern entries
+        output_parts.append(_encode_unit_pattern(pattern))
+
         # Metadata block (40 bytes)
         output_parts.append(METADATA_BLOCK)
-        
-        # Faction name (if not the last group before player section)
+
+        # Faction name
         fname = faction_names[i] if i < len(faction_names) else f"Faction{i}"
-        if i < len(placed_groups) - 1:
-            # Between groups: faction name + padding
+        if i < len(unit_patterns) - 1:
             output_parts.append(_encode_faction_name_block(fname))
         else:
-            # Last group: faction name leads into player section
-            # Use a shorter format
             name_bytes = fname.encode('ascii')
             short = fname[:4]
-            pattern = (short * 3)[:12].encode('ascii')
-            output_parts.append(pattern + name_bytes + b'\x00')
-    
-    # Part 3: Player section (preserved from template)
+            pattern_12 = (short * 3)[:12].encode('ascii')
+            output_parts.append(pattern_12 + name_bytes + b'\x00')
+
+    # Part 3: Force Pattern section (preserved from template)
     output_parts.append(template_data[splice_end:])
-    
+
     # Write output
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_bytes = b''.join(output_parts)
     output_path.write_bytes(output_bytes)
-    
+
     return output_path
 
 
 def write_q_file_simple(
-    entries: list[PlacedEntry],
+    entries: list[UnitInstance],
     output_path,
     template_path=None,
 ) -> Path:
     """
-    Simplified writer: takes a flat list of placed entries and puts them
-    all in a single group. Palace should be included in entries.
-    
+    Simplified writer: takes a flat list of UnitInstance entries and puts them
+    all in a single UnitPattern. Palace should be included in entries.
+
     This is the easiest way to generate a test quest map.
     """
-    group = PlacedGroup(
+    pattern = UnitPattern(
         terrain_code="gras",
         entries=entries,
         faction_name="Player1",
     )
-    return write_q_file([group], output_path, template_path)
+    return write_q_file([pattern], output_path, template_path)
 
 
 # =============================================================================
-# MQXML Generator (Task 4)
+# MQXML Generator
 # =============================================================================
 
 def generate_mqxml(
@@ -875,7 +869,7 @@ def generate_mqxml(
 ) -> Path:
     """
     Generate a .mqxml quest definition file.
-    
+
     Args:
         quest_name: Internal quest name (used in Name element)
         output_path: Where to write the .mqxml
@@ -889,14 +883,15 @@ def generate_mqxml(
         description_short: Short description text
         description_long: Long description text
         difficulty: "Easy", "Normal", "Hard"
-        
+
     Returns:
         Path to the written .mqxml file
     """
     import uuid
-    
+
     output_path = Path(output_path)
-    
+
+
     if q_filename is None:
         q_filename = "Quest.q"
     if rgs_filename is None:
@@ -907,15 +902,15 @@ def generate_mqxml(
         description_short = f"Test quest: {quest_name}"
     if description_long is None:
         description_long = description_short
-    
+
     # Generate a GUID
     quest_guid = f"{{{str(uuid.uuid4()).upper()}}}"
-    
+
     # Build Load section
     load_lines = []
     load_lines.append(f'\t\t\t\t\t<Template>{q_filename}</Template>')
     load_lines.append(f'\t\t\t\t\t<Constants>{rgs_filename}</Constants>')
-    
+
     if gpl_sources or gpl_target:
         load_lines.append('\t\t\t\t\t<GPL>')
         if gpl_target:
@@ -924,13 +919,13 @@ def generate_mqxml(
             for src in gpl_sources:
                 load_lines.append(f'\t\t\t\t\t\t<Source>{src}</Source>')
         load_lines.append('\t\t\t\t\t</GPL>')
-    
+
     if descriptions:
         for desc_file in descriptions:
             load_lines.append(f'\t\t\t\t\t<Descriptions>{desc_file}</Descriptions>')
-    
+
     load_section = '\n'.join(load_lines)
-    
+
     mqxml = f'''<Majesty>
 \t<Quest id="{quest_guid}">
 \t\t<DataConfiguration>
@@ -950,14 +945,14 @@ def generate_mqxml(
 \t</Quest>
 </Majesty>
 '''
-    
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(mqxml, encoding='utf-8')
     return output_path
 
 
 # =============================================================================
-# Terrain File Handling (Task 5)
+# Terrain File Handling
 # =============================================================================
 
 DEFAULT_RGS_TEMPLATE = Path(__file__).parent.parent / "MyQuest" / "Quest.rgs"
@@ -970,28 +965,28 @@ def copy_terrain_template(
 ) -> Path:
     """
     Copy a .rgs terrain template to the output directory.
-    
+
     Args:
         output_dir: Directory to copy the .rgs into
         output_name: Filename for the output .rgs
         template_path: Path to source .rgs (default: MyQuest/Quest.rgs)
-        
+
     Returns:
         Path to the copied .rgs file
-        
+
     Raises:
         FileNotFoundError: If template doesn't exist
         QFormatError: If template doesn't have valid RGS magic
     """
     import shutil
-    
+
     if template_path is None:
         template_path = DEFAULT_RGS_TEMPLATE
     template_path = Path(template_path)
-    
+
     if not template_path.exists():
         raise FileNotFoundError(f"RGS template not found: {template_path}")
-    
+
     # Validate RGS magic
     with open(template_path, 'rb') as f:
         magic = f.read(4)
@@ -999,7 +994,7 @@ def copy_terrain_template(
         raise QFormatError(
             f"Invalid RGS magic {magic!r} in {template_path}. Expected RGCB or RGCA."
         )
-    
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / output_name
@@ -1008,7 +1003,7 @@ def copy_terrain_template(
 
 
 # =============================================================================
-# High-Level Convenience API (Task 6)
+# High-Level Convenience API
 # =============================================================================
 
 def generate_test_quest(
@@ -1025,10 +1020,10 @@ def generate_test_quest(
 ) -> dict:
     """
     Generate a complete test quest package (Q file + RGS + MQXML).
-    
+
     This is the one-call API for creating a minimal quest with a palace
     and specified lairs, ready for in-game loading.
-    
+
     Args:
         quest_name: Quest name (used in filenames and metadata)
         lairs: List of lair specs, each a dict with keys:
@@ -1043,10 +1038,10 @@ def generate_test_quest(
         extra_gpl_target: GPL bytecode target
         extra_descriptions: Additional description XML files
         rgs_template: Custom .rgs template path (default: MyQuest/Quest.rgs)
-        
+
     Returns:
         Dict with paths: {"q": Path, "rgs": Path, "mqxml": Path}
-        
+
     Example:
         generate_test_quest(
             "IceTest",
@@ -1056,44 +1051,44 @@ def generate_test_quest(
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Build placed entries
+
+
+    # Build UnitInstance entries
     palace_byte = letter_to_byte(palace_position)
-    entries = [PlacedEntry("ABJ1", "Palace", [palace_byte])]
-    
+    entries = [UnitInstance("ABJ1", "Palace", [palace_byte])]
+
     # Distribute lairs
     lairs_needing_positions = []
-    lairs_with_positions = []
     excluded = [palace_byte]
-    
+
     for lair in lairs:
         if "position" in lair and lair["position"]:
             pos_byte = letter_to_byte(lair["position"])
-            entries.append(PlacedEntry(lair["id"], lair["desc"], [pos_byte]))
+            entries.append(UnitInstance(lair["id"], lair["desc"], [pos_byte]))
             excluded.append(pos_byte)
         else:
             lairs_needing_positions.append(lair)
-    
+
     if lairs_needing_positions:
         positions = auto_distribute(len(lairs_needing_positions), exclude=excluded)
         for lair, pos_byte in zip(lairs_needing_positions, positions):
-            entries.append(PlacedEntry(lair["id"], lair["desc"], [pos_byte]))
-    
+            entries.append(UnitInstance(lair["id"], lair["desc"], [pos_byte]))
+
     # Write .q file
-    group = PlacedGroup(terrain_code="gras", entries=entries, faction_name="Player1")
+    pattern = UnitPattern(terrain_code="gras", entries=entries, faction_name="Player1")
     q_path = write_q_file(
-        [group],
+        [pattern],
         output_dir / "Quest.q",
         template_path=rgs_template if rgs_template else None,
     )
-    
+
     # Copy .rgs terrain
     rgs_path = copy_terrain_template(
         output_dir,
         output_name="Quest.rgs",
         template_path=rgs_template,
     )
-    
+
     # Generate .mqxml
     mqxml_path = generate_mqxml(
         quest_name=quest_name,
@@ -1103,7 +1098,7 @@ def generate_test_quest(
         gpl_target=extra_gpl_target,
         descriptions=extra_descriptions,
     )
-    
+
     return {"q": q_path, "rgs": rgs_path, "mqxml": mqxml_path}
 
 
@@ -1127,28 +1122,50 @@ def format_q_text(qmap: QuestMap) -> str:
             lines.append(f"  Block {i}: [{ids}] resource={block.lair_resource}")
         lines.append("")
 
-    if qmap.placed_groups:
-        lines.append(f"--- Placed Groups ({len(qmap.placed_groups)}) ---")
-        for i, group in enumerate(qmap.placed_groups):
-            total_pos = sum(len(e.positions) for e in group.entries)
+    if qmap.teams:
+        lines.append(f"--- Teams ({len(qmap.teams)}) ---")
+        for t in qmap.teams:
+            lines.append(f"  {t.name} (id={t.team_id}, active={t.active})")
+        lines.append("")
+
+    if qmap.region_info:
+        lines.append(f"--- Region Pattern ---")
+        lines.append(f"  Name: {qmap.region_info.pattern_name}")
+        lines.append(f"  Patches: {qmap.region_info.patch_count}")
+        lines.append(f"  Terrains: {qmap.region_info.terrain_codes}")
+        lines.append("")
+
+    if qmap.unit_patterns:
+        lines.append(f"--- Unit Patterns ({len(qmap.unit_patterns)}) ---")
+        for i, pattern in enumerate(qmap.unit_patterns):
+            total_cells = sum(len(e.candidate_cells) for e in pattern.entries)
             lines.append(
-                f"  Group {i}: terrain={group.terrain_code!r} "
-                f"entries={len(group.entries)} positions={total_pos} "
-                f"faction={group.faction_name!r}"
+                f"  Pattern {i}: terrain={pattern.terrain_code!r} "
+                f"entries={len(pattern.entries)} candidate_cells={total_cells} "
+                f"faction={pattern.faction_name!r}"
             )
-            for entry in group.entries:
-                pos_str = ''.join(chr(p) for p in entry.positions)
+            for entry in pattern.entries:
+                pos_str = ''.join(chr(p) for p in entry.candidate_cells)
                 lines.append(
                     f"    {entry.object_id} {entry.description!r} @ [{pos_str}]"
                 )
         lines.append("")
 
+
+    if qmap.force_pattern:
+        lines.append(f"--- Force Pattern ({len(qmap.force_pattern)}) ---")
+        for fe in qmap.force_pattern:
+            lines.append(
+                f"  {fe.short_code} {fe.full_name!r} pos={chr(fe.map_position)} active={fe.active}"
+            )
+        lines.append("")
+
     # Grid visualization
     lines.append("--- Grid (5x5) ---")
     grid = {}
-    for group in qmap.placed_groups:
-        for entry in group.entries:
-            for pos in entry.positions:
+    for pattern in qmap.unit_patterns:
+        for entry in pattern.entries:
+            for pos in entry.candidate_cells:
                 grid[pos] = entry.object_id
     for row in range(5):
         row_cells = []
@@ -1165,7 +1182,7 @@ def format_q_text(qmap: QuestMap) -> str:
 
 
 # =============================================================================
-# Validation (Task 8)
+# Validation
 # =============================================================================
 
 @dataclass
@@ -1178,72 +1195,73 @@ class ValidationIssue:
 def validate_q_file(filepath) -> list[ValidationIssue]:
     """
     Validate a .q file's structural integrity.
-    
+
     Checks magic bytes, object IDs, position bytes, and structural consistency.
     Returns a list of issues found (empty = valid).
     """
     filepath = Path(filepath)
     issues = []
-    
+
     if not filepath.exists():
         issues.append(ValidationIssue(0, "error", f"File not found: {filepath}"))
         return issues
-    
+
     data = filepath.read_bytes()
-    
+
     # Check file size
     if len(data) < 16:
         issues.append(ValidationIssue(0, "error", f"File too small: {len(data)} bytes"))
         return issues
-    
+
     # Check magic at offset 0
     magic = data[0:4]
     if magic not in VALID_MAGICS:
         issues.append(ValidationIssue(0, "error", f"Invalid magic: {magic!r}"))
-    
+
     # Check magic repeated at offset 8
     magic2 = data[8:12]
     if magic2 != magic:
         issues.append(ValidationIssue(8, "error", f"Magic mismatch at offset 8: {magic2!r} != {magic!r}"))
-    
+
     # Check zeros at 4-7 and 12-15
     if data[4:8] != b'\x00\x00\x00\x00':
         issues.append(ValidationIssue(4, "warning", f"Expected zeros at offset 4-7"))
     if data[12:16] != b'\x00\x00\x00\x00':
         issues.append(ValidationIssue(12, "warning", f"Expected zeros at offset 12-15"))
-    
-    # Try to parse and check placed groups
+
+
+    # Try to parse and check unit patterns
     try:
         qmap = parse_q_file(filepath)
-        
+
         # Check all object IDs are valid
-        for group in qmap.placed_groups:
-            for entry in group.entries:
+        for pattern in qmap.unit_patterns:
+            for entry in pattern.entries:
                 oid = entry.object_id
                 if len(oid) != 4:
                     issues.append(ValidationIssue(0, "error", f"Object ID not 4 chars: {oid!r}"))
                 elif not all(32 <= ord(c) < 127 for c in oid):
                     issues.append(ValidationIssue(0, "error", f"Object ID has non-ASCII: {oid!r}"))
-                
-                # Check positions
-                for pos in entry.positions:
+
+                # Check candidate cells
+                for pos in entry.candidate_cells:
                     if not (65 <= pos <= 89):
-                        issues.append(ValidationIssue(0, "error", 
+                        issues.append(ValidationIssue(0, "error",
                             f"Invalid position {pos} in {oid} (expected 65-89)"))
-        
+
         # Check for empty quest name
         if not qmap.quest_name:
             issues.append(ValidationIssue(16, "warning", "Empty quest name"))
-        
-        # Check placed groups found
-        if not qmap.placed_groups:
-            issues.append(ValidationIssue(0, "warning", "No placed groups found"))
-            
+
+        # Check unit patterns found
+        if not qmap.unit_patterns:
+            issues.append(ValidationIssue(0, "warning", "No unit patterns found"))
+
     except QFormatError as e:
         issues.append(ValidationIssue(0, "error", f"Parse error: {e}"))
     except Exception as e:
         issues.append(ValidationIssue(0, "error", f"Unexpected error: {e}"))
-    
+
     return issues
 
 
@@ -1253,38 +1271,38 @@ def compare_q_files(generated_path, reference_path) -> list[str]:
     Returns list of difference descriptions.
     """
     diffs = []
-    
+
     gen = parse_q_file(generated_path)
     ref = parse_q_file(reference_path)
-    
+
     if gen.magic != ref.magic:
         diffs.append(f"Magic: {gen.magic} vs {ref.magic}")
-    
-    gen_groups = len(gen.placed_groups)
-    ref_groups = len(ref.placed_groups)
-    if gen_groups != ref_groups:
-        diffs.append(f"Placed groups: {gen_groups} vs {ref_groups}")
-    
-    gen_entries = sum(len(g.entries) for g in gen.placed_groups)
-    ref_entries = sum(len(g.entries) for g in ref.placed_groups)
+
+    gen_patterns = len(gen.unit_patterns)
+    ref_patterns = len(ref.unit_patterns)
+    if gen_patterns != ref_patterns:
+        diffs.append(f"Unit patterns: {gen_patterns} vs {ref_patterns}")
+
+    gen_entries = sum(len(p.entries) for p in gen.unit_patterns)
+    ref_entries = sum(len(p.entries) for p in ref.unit_patterns)
     if gen_entries != ref_entries:
         diffs.append(f"Total entries: {gen_entries} vs {ref_entries}")
-    
-    gen_positions = sum(len(e.positions) for g in gen.placed_groups for e in g.entries)
-    ref_positions = sum(len(e.positions) for g in ref.placed_groups for e in g.entries)
-    if gen_positions != ref_positions:
-        diffs.append(f"Total positions: {gen_positions} vs {ref_positions}")
-    
+
+    gen_cells = sum(len(e.candidate_cells) for p in gen.unit_patterns for e in p.entries)
+    ref_cells = sum(len(e.candidate_cells) for p in ref.unit_patterns for e in p.entries)
+    if gen_cells != ref_cells:
+        diffs.append(f"Total candidate_cells: {gen_cells} vs {ref_cells}")
+
     gen_spawners = len(gen.spawner_blocks)
     ref_spawners = len(ref.spawner_blocks)
     if gen_spawners != ref_spawners:
         diffs.append(f"Spawner blocks: {gen_spawners} vs {ref_spawners}")
-    
+
     return diffs
 
 
 # =============================================================================
-# CLI (Task 9)
+# CLI
 # =============================================================================
 
 def _cli_parse(args):
@@ -1302,24 +1320,24 @@ def _cli_validate(args):
     if not args:
         print("Usage: quest_map_generator.py validate <file.q> [--reference <ref.q>]")
         return 1
-    
+
     filepath = args[0]
     reference = None
     if "--reference" in args:
         ref_idx = args.index("--reference")
         if ref_idx + 1 < len(args):
             reference = args[ref_idx + 1]
-    
+
     print(f"Validating: {filepath}")
     issues = validate_q_file(filepath)
-    
+
     if issues:
         for issue in issues:
             prefix = "ERROR" if issue.severity == "error" else "WARN"
             print(f"  [{prefix}] @0x{issue.offset:04X}: {issue.message}")
     else:
         print("  No issues found.")
-    
+
     if reference:
         print(f"\nComparing to reference: {reference}")
         diffs = compare_q_files(filepath, reference)
@@ -1328,7 +1346,7 @@ def _cli_validate(args):
                 print(f"  DIFF: {d}")
         else:
             print("  Structures match.")
-    
+
     errors = [i for i in issues if i.severity == "error"]
     return 1 if errors else 0
 
@@ -1342,12 +1360,12 @@ def _cli_generate(args):
     parser.add_argument("--lairs", default="", help="Comma-separated lair specs: ID:Desc:Pos (pos optional)")
     parser.add_argument("--dataset", default="Majesty", choices=["Majesty", "MajestyExpansion"])
     parser.add_argument("--palace", default="M", help="Palace grid position (A-Y)")
-    
+
     try:
         parsed = parser.parse_args(args)
     except SystemExit:
         return 1
-    
+
     # Parse lair specs
     lairs = []
     if parsed.lairs:
@@ -1360,7 +1378,7 @@ def _cli_generate(args):
                 lairs.append(lair)
             elif len(parts) == 1 and parts[0]:
                 lairs.append({"id": parts[0], "desc": parts[0]})
-    
+
     result = generate_test_quest(
         quest_name=parsed.name,
         lairs=lairs,
@@ -1368,7 +1386,7 @@ def _cli_generate(args):
         palace_position=parsed.palace,
         dataset_base=parsed.dataset,
     )
-    
+
     print(f"Generated quest package in: {parsed.output}")
     for key, path in result.items():
         print(f"  {key}: {path} ({path.stat().st_size} bytes)")
@@ -1377,7 +1395,7 @@ def _cli_generate(args):
 
 if __name__ == "__main__":
     import sys
-    
+
     if len(sys.argv) < 2:
         print("Quest Map Generator — Majesty Gold HD")
         print()
@@ -1389,10 +1407,10 @@ if __name__ == "__main__":
         print("Lair spec format: ID:Description:Position (position optional, A-Y)")
         print("Example: quest_map_generator.py generate --name Test --output out --lairs BBw1:Ice Cave:N,BBH1:Goblin Camp")
         sys.exit(1)
-    
+
     cmd = sys.argv[1]
     rest = sys.argv[2:]
-    
+
     if cmd == "parse":
         sys.exit(_cli_parse(rest))
     elif cmd == "validate":
