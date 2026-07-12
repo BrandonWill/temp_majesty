@@ -1,90 +1,108 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Ice Freeze Spell - GPL Implementation (Debug version)
+// Ice Elemental Cold Stack → Freeze System
+///////////////////////////////////////////////////////////////////////////////
+// Each hit adds cold stacks. At threshold, target freezes with DOT.
+// Stacks reset to 0 on unfreeze. Can't add stacks while frozen.
 ///////////////////////////////////////////////////////////////////////////////
 
+expression #Cold_Stacks_To_Freeze 5
+expression #Cold_Damage_Per_Hit 8
 expression #Freeze_Duration 10000
-expression #Freeze_DamagePerTick 5
-expression #Freeze_DamageInterval 2000
-expression #Freeze_ThawDuration 3000
+expression #Freeze_DOT_Damage 5
+expression #Freeze_DOT_Interval 2000
 
 
 ///////////////////////////////////////////////////////////////////////////////
 function Ice_Freeze_Begin ( agent ThisAgent, agent target )
+// Called on each Ice Dragon attack hit. Adds cold stacks, triggers freeze at threshold.
 declare
-	integer time;
+	integer stacks;
 begin
-	$DebugOut ( 911, "ICE: ===== Ice_Freeze_Begin ENTERED =====" );
-	$DebugOut ( 911, "ICE: Caster=", ThisAgent, " Target=", target );
-
-	$DebugOut ( 911, "ICE: Checking IsDead..." );
 	If ( $IsDead ( target ))
-		begin
-			$DebugOut ( 911, "ICE: Target is dead, returning" );
-			return;
-		end
-
-	$DebugOut ( 911, "ICE: Checking Type..." );
+		return;
 	If (Target's "Type" == "Building")
-		begin
-			$DebugOut ( 911, "ICE: Target is Building, returning" );
-			return;
-		end
+		return;
 	If (Target's "Type" == "Lair")
-		begin
-			$DebugOut ( 911, "ICE: Target is Lair, returning" );
-			return;
-		end
+		return;
 
-	$DebugOut ( 911, "ICE: Checking HasEffectPetrify..." );
+	// Don't add stacks if already frozen
 	if ( $GetAttribute ( target, #ATTRIB_HasEffectPetrify ) == 1 )
+		return;
+
+	// Deal cold damage on each hit
+	$adjustattribute ( target, #ATTRIB_HP, -#Cold_Damage_Per_Hit );
+
+	// Increment cold stacks (using IsFrozen attribute as stack counter)
+	stacks = $GetAttribute ( target, #ATTRIB_IsFrozen );
+	stacks += 1;
+	$SetAttribute ( target, #ATTRIB_IsFrozen, stacks );
+
+	$DebugOut ( 911, "ICE: Cold stack on ", target, " stacks=", stacks );
+
+	// Check freeze threshold
+	if ( stacks >= #Cold_Stacks_To_Freeze )
 		begin
-			$DebugOut ( 911, "ICE: Target already petrified, returning" );
+			$DebugOut ( 911, "ICE: FREEZE TRIGGERED on ", target );
+
+			// Apply freeze
+			$createeffector ( target, "freeze_effector", 0 );
+			$createeffector ( target, "freeze_icon", #Freeze_Duration );
+
+			$SetAttribute ( target, #ATTRIB_HasEffectPetrify, 1 );
+			$GetProperUnitArt ( target );
+			$Freeze_Unit ( target );
+			$SpecifyIntent ( target, #intent_petrified );
+
+			// Start DOT thread
+			target's "FreezeScript" = $Ice_Freeze_DOT;
+			$NewThread ( target's "FreezeScript", #Freeze_DOT_Interval, target );
+		end
+end
+
+
+///////////////////////////////////////////////////////////////////////////////
+function Ice_Freeze_DOT ( agent ThisAgent )
+// Periodic damage while frozen. Kills itself when freeze ends.
+declare
+	integer HP;
+begin
+	// Stop if dead or no longer frozen
+	If ( $IsDead ( ThisAgent ))
+		begin
+			$KillThread ( ThisAgent's "FreezeScript" );
 			return;
 		end
 
-	$DebugOut ( 911, "ICE: Calculating duration..." );
-	time = #Freeze_Duration;
-	$DebugOut ( 911, "ICE: Base duration=", time );
-
-	$DebugOut ( 911, "ICE: Checking MagicResistance..." );
-	if ( $randomnumber ( 100 ) <= $getattribute ( target, #ATTRIB_MagicResistance ))
+	if ( $GetAttribute ( ThisAgent, #ATTRIB_HasEffectPetrify ) == 0 )
 		begin
-			time = time / 2;
-			$DebugOut ( 911, "ICE: Resisted! Duration halved to ", time );
+			$KillThread ( ThisAgent's "FreezeScript" );
+			return;
 		end
 
-	$DebugOut ( 911, "ICE: About to createeffector freeze_effector..." );
-	$createeffector ( target, "freeze_effector", 0 );
-	$DebugOut ( 911, "ICE: freeze_effector created OK" );
-
-	$DebugOut ( 911, "ICE: About to createeffector freeze_icon..." );
-	$createeffector ( target, "freeze_icon", time );
-	$DebugOut ( 911, "ICE: freeze_icon created OK" );
-
-	$SetAttribute ( target, #ATTRIB_HasEffectPetrify, 1 );
-	$GetProperUnitArt ( target );
-	$Freeze_Unit ( target );
-	$SpecifyIntent ( target, #intent_petrified );
-
-	// Deal frost damage on impact
-	$adjustattribute ( target, #ATTRIB_HP, -#Freeze_DamagePerTick );
-
-	$DebugOut ( 911, "ICE: ===== Ice_Freeze_Begin COMPLETE =====" );
+	// Deal DOT damage
+	$adjustattribute ( ThisAgent, #ATTRIB_HP, -#Freeze_DOT_Damage );
+	$DebugOut ( 911, "ICE: DOT tick on ", ThisAgent );
 end
 
 
 ///////////////////////////////////////////////////////////////////////////////
 function Ice_Freeze_End ( agent ThisAgent )
+// Called by freeze_icon timer when freeze duration expires.
 declare
 begin
-	$DebugOut ( 911, "ICE: ===== Ice_Freeze_End ENTERED =====" );
-
 	If ( $IsDead ( ThisAgent ))
 		return;
 
+	// Clear freeze state
 	$SetAttribute ( ThisAgent, #ATTRIB_HasEffectPetrify, 0 );
 	$GetProperUnitArt ( ThisAgent );
 	$UnFreeze_Unit ( ThisAgent );
 
-	$DebugOut ( 911, "ICE: ===== Ice_Freeze_End COMPLETE =====" );
+	// Reset cold stacks to 0
+	$SetAttribute ( ThisAgent, #ATTRIB_IsFrozen, 0 );
+
+	// Kill DOT thread
+	$KillThread ( ThisAgent's "FreezeScript" );
+
+	$DebugOut ( 911, "ICE: Unfreeze complete on ", ThisAgent );
 end

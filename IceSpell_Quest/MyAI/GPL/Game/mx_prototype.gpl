@@ -199,6 +199,7 @@ declare
 
 	// -- New MX additions below this line -- //
 	function PlagueScript;
+	function FreezeScript;
 	function ShieldScript; 			//This is for the Frost Field spell
 
 	boolean	Resists_Fire;
@@ -383,6 +384,7 @@ declare
 // New MX stuff below this point //
 	agent zoo_agent;
 	function PlagueScript;
+	function FreezeScript;
 	function ShieldScript; 			//This is for the Frost Field spell
 
 	boolean	Resists_Fire;
@@ -1307,6 +1309,7 @@ declare
 
 	// -- New MX additions below this line -- //
 	function PlagueScript;
+	function FreezeScript;
 	function ShieldScript; 				//This is for the Frost Field spell
 
 	boolean	Resists_Fire;
@@ -1399,6 +1402,7 @@ declare
 	string Idle_Action;
 	// -- New MX additions below this line -- //
 	function PlagueScript;
+	function FreezeScript;
 	function ShieldScript; 				//This is for the Frost Field spell
 
 	boolean	Resists_Fire;
