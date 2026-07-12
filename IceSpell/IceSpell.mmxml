@@ -3,10 +3,10 @@
 		<DataConfiguration>
 			<Dataset base="MajestyExpansion">
 				<Load>
-					<CAM>Data\Quest_maindata.cam</CAM>
 					<Descriptions>Data\IceSpell_Actions.xml</Descriptions>
 					<Descriptions>Data\IceSpell_Characters.xml</Descriptions>
 					<Descriptions>Data\IceSpell_Overlays.xml</Descriptions>
+					<CAM>Data\Quest_maindata.cam</CAM>
 					<GPL>
 						<Target>Data\IceSpell.bcd</Target>
 						<Source>GPL\IceSpell.gpl</Source>
