@@ -106,6 +106,7 @@ begin
 			$GetProperUnitArt ( ThisAgent );
 			$UnFreeze_Unit ( ThisAgent );
 			$KillThread ( ThisAgent's "FreezeScript" );
+			$DeleteEffector ( ThisAgent, "freeze_effector" );
 
 			// Set immunity (-1) and start immunity timer
 			$SetAttribute ( ThisAgent, #ATTRIB_IsFrozen, -1 );
