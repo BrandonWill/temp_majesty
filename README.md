@@ -1,24 +1,63 @@
 # Majesty Gold HD Modding Toolkit
 
-A complete toolset for extracting, modifying, and injecting sprites, spell effects,
-and unit definitions in Majesty Gold HD. Fully reverse-engineered and verified in-game.
+A complete toolset for modding Majesty Gold HD — sprite extraction/injection, quest generation,
+custom spells, and AI overhaul. Fully reverse-engineered binary formats with in-game verified results.
 
-## Status
+**Repo:** https://github.com/BrandonWill/temp_majesty
 
-| Component | Status |
-|-----------|--------|
-| CAM container format | ✅ Fully decoded |
-| TILE sprite pixel format | ✅ **Cracked** — 8-bit paletted, per-row RLE, absolute x-positioning |
-| SPLT palette system | ✅ Decoded (854 palettes, 256 RGBA entries each) — **read-only** |
-| IMAG animation metadata | ✅ Image sets, frame descriptors, 8-direction blocks |
-| PNG sprite extraction | ✅ Working with correct colors and transparency |
-| TILE encoder (PNG → game format) | ✅ Round-trip verified, in-game confirmed |
-| CAM repacker | ✅ Identity repack + modified tiles verified in-game |
-| In-game pixel modification | ✅ **Confirmed working** in original game mode |
-| Unit type modification (unittype.cam) | ✅ Stats, sprite swaps, verified in-game |
-| Expansion mode modding | ✅ Uses `DataMX/mx_maindata.cam` + `DataMX/mx_Unittype.cam` |
-| Spell/effect animation modding | ✅ Same TILE format — overlays, particles, projectiles all moddable |
-| SPLT palette modification | ❌ Crashes the game — palettes are read-only |
+## Project Overview
+
+This repo contains:
+1. **Python modding tools** — CAM reader/writer, sprite extractor/injector
+2. **Quest Map Generator** — Programmatic .q file generation without RGSEditor
+3. **IceSpell mod** — Custom freeze spell (standalone mod format, `.mmxml`)
+4. **IceSpell_Quest** — Test quest with Ice Spell + AI opponent (self-contained `.mqxml`)
+5. **Game data files** — Original Data/, DataMX/, Quests/, SDK/ for reference and modding
+
+## Repository Structure
+
+```
+├── cam_reader.py              # Parse CAM archive files
+├── cam_writer.py              # Repack CAM archives with modifications
+├── sprite_extractor.py        # Extract sprites as PNGs with correct colors
+├── sprite_injector.py         # Encode PNGs back into TILE RLE format
+├── RESEARCH_NOTES.md          # Detailed binary format reverse-engineering notes
+├── README.md                  # This file
+│
+├── IceSpell/                  # Ice Freeze spell — standalone mod (.mmxml)
+│   ├── IceSpell.mmxml         # Mod definition (game loads this)
+│   ├── Data/                  # Compiled BCD, XMLs, Quest_maindata.cam
+│   ├── GPL/                   # GPL source, globals, compiler project
+│   ├── sprites/               # Raw TILE frame data
+│   ├── preview/               # PNG previews of overlay sprites
+│   ├── utility/               # Sprite generation scripts
+│   ├── TODO.md                # Current status + next steps
+│   └── deploy.bat             # Deploy to Mods folder
+│
+├── IceSpell_Quest/            # Test quest — Ice Spell + AI + map
+│   ├── Quest.mqxml            # Quest definition with DataConfiguration
+│   ├── Quest.q                # Binary map template (RGSEditor-generated)
+│   ├── Quest.rgs              # Terrain data
+│   ├── Data/                  # Quest-specific data (BCD, XMLs, CAM)
+│   ├── GPL/                   # Quest GPL source
+│   ├── MyAI/                  # AI opponent (Dwarfeh AI fork)
+│   ├── VISUAL_VERIFICATION.md # Test results and screenshot analysis
+│   └── crash_troubleshooting.md # Crash analysis notes
+│
+├── QuestMapGenerator/         # Programmatic .q file generator
+│   ├── quest_map_generator.py # Parser + writer + CLI
+│   ├── test_all_quests.py     # Validation suite (37/37 pass)
+│   └── *.md                   # Reference docs for terrain/buildings
+│
+├── Data/                      # Original game data files
+├── DataMX/                    # Expansion data files
+├── Quests/                    # Original quest .q files (22)
+├── QuestsMX/                  # Expansion quest .q files (14)
+├── MyQuest/                   # Minimal test quest (RGSEditor template)
+├── SDK/                       # Game SDK (gplbcc.exe, docs, examples)
+├── Music/                     # Game music tracks
+└── utility/                   # Scratch scripts (gitignored)
+```
 
 ## Tools
 
@@ -28,169 +67,126 @@ and unit definitions in Majesty Gold HD. Fully reverse-engineered and verified i
 | `sprite_extractor.py` | Extract sprites as PNGs with correct palette colors |
 | `sprite_injector.py` | Encode PNGs back into TILE RLE format |
 | `cam_writer.py` | Repack CAM archives with modified/replaced entries |
+| `QuestMapGenerator/quest_map_generator.py` | Parse/validate/generate .q quest templates |
 
 ## Quick Start
 
 ```bash
 # List all sprite records
-python sprite_extractor.py --cam maindata.cam --list
+python sprite_extractor.py --cam Data/maindata.cam --list
 
-# Show a unit's animation sets
-python sprite_extractor.py --cam maindata.cam --dump-anim AVA1
+# Extract a unit's walk frames
+python sprite_extractor.py --cam Data/maindata.cam --extract AVA1 Walk
 
-# Extract all walk frames with correct colors
-python sprite_extractor.py --cam maindata.cam --extract AVA1 Walk
-
-# Extract a single tile frame
-python sprite_extractor.py --cam maindata.cam --extract-tile 3547
-
-# Round-trip test (decode → re-encode → verify)
-python sprite_injector.py --cam maindata.cam --roundtrip --tile-idx 3547
+# Round-trip test a tile
+python sprite_injector.py --cam Data/maindata.cam --roundtrip --tile-idx 3547
 
 # Repack CAM with a modified tile
-python cam_writer.py --cam maindata.cam --replace-tile 3547 --tile-data new.bin --output modded.cam
+python cam_writer.py --cam Data/maindata.cam --replace-tile 3547 --tile-data new.bin --output modded.cam
 
-# Identity repack (verify repacker)
-python cam_writer.py --cam maindata.cam --identity --output test.cam
+# Generate a test quest
+python QuestMapGenerator/quest_map_generator.py generate --name IceTest --output output/IceTest --lairs "BBw1:Ice Cave:N"
+
+# Validate all quest files
+python QuestMapGenerator/test_all_quests.py
 ```
+
+## IceSpell Mod — Current Status
+
+A custom Ice Freeze spell that Ice Elementals cast on nearby units.
+
+| Feature | Status |
+|---------|--------|
+| Mod loads in game | ✅ Working (requires valid GUID from RGSEditor) |
+| IceElemental spawns from Ice Cave | ✅ Working |
+| Freeze spell targets + immobilizes | ✅ Working (full cycle: freeze → hold → unfreeze) |
+| Grey petrify visual on freeze | ✅ Brief start animation plays |
+| Custom ice overlay sprite | ⚠️ Not rendering (IMAG format issue in Quest_maindata.cam) |
+| Targeting (avoids buildings/dead/already-frozen) | ✅ Guards working |
+| Freeze timer + unfreeze | ✅ Working |
+| Targeting spam (re-casts on frozen target) | ❌ Needs fix — wastes AI cycles |
+
+**Deployment:** The `IceSpell/` folder is junction-linked to `Documents\My Games\MajestyHD\Mods\IceSpell`.
+The `IceSpell_Quest/` folder is junction-linked to `Documents\My Games\MajestyHD\Quests\IceSpell_Quest`.
+Edits in the repo are immediately live in-game — no copying needed.
+
+**Next steps:** See `IceSpell/TODO.md` for detailed IMAG format analysis and remaining work.
+
+## Format Status
+
+| Component | Status |
+|-----------|--------|
+| CAM container format | ✅ Fully decoded |
+| TILE sprite pixel format | ✅ Cracked — 8-bit paletted, per-row RLE |
+| SPLT palette system | ✅ Decoded (854 palettes) — **read-only** |
+| IMAG animation metadata | ✅ Decoded for reading; writing custom IMAG partially working |
+| PNG extraction | ✅ Working |
+| TILE encoder (PNG → game) | ✅ Round-trip verified |
+| CAM repacker | ✅ Identity repack + modified tiles |
+| .q quest map format | ✅ Fully decoded — parser + writer (37/37 files) |
+| .mmxml mod format | ✅ Working (requires RGSEditor-generated GUID) |
+| .mqxml quest format | ✅ Working |
+| GPL compilation | ✅ Working via gplbcc.exe |
+| Custom overlays (sprite rendering) | ⚠️ Effector created OK but sprite not visually rendering |
 
 ## Game Modes and Data Loading
 
-The game has two modes with independent data pipelines:
+**Original mode** — loads `Data/` only  
+**Expansion mode** — loads `Data/` then overlays `DataMX/`  
+**Mods (.mmxml)** — loaded from `Documents\My Games\MajestyHD\Mods\<name>\`  
+**Quests (.mqxml)** — loaded from `Documents\My Games\MajestyHD\Quests\<name>\`
 
-**Original mode** — loads from `Data/` only:
+### Mod/Quest DataConfiguration
+
+Mods and quests use XML `<DataConfiguration>` to declare what to load:
+```xml
+<Dataset base="MajestyExpansion">
+    <Load>
+        <Template>Quest.q</Template>           <!-- map template (quests only) -->
+        <Constants>Quest.rgs</Constants>       <!-- terrain (quests only) -->
+        <Descriptions>Data\MyFile.xml</Descriptions>  <!-- unit/spell/overlay defs -->
+        <CAM>Data\Quest_maindata.cam</CAM>     <!-- custom sprites -->
+        <GPL>
+            <Target>Data\MyMod.bcd</Target>    <!-- compiled bytecode -->
+            <Source>GPL\MySource.gpl</Source>   <!-- runtime source files -->
+            <Source>GPL\MyData.dat</Source>     <!-- runtime data files -->
+        </GPL>
+    </Load>
+</Dataset>
 ```
-Data/MajestyDatasetDefinitions.xml → loads Data/maindata.cam, Data/unittype.cam, etc.
-```
-
-**Expansion mode** — loads base `Data/` first, then overlays `DataMX/`:
-```
-DataMX/MajestyExpansionDatasetDefinitions.xml → base="Majesty" (inherits base data)
-  → then loads DataMX/mx_maindata.cam, DataMX/mx_Unittype.cam, etc.
-  → expansion entries OVERRIDE base entries with same IDs
-```
-
-### Targeting Your Mod
-
-| Target | Sprite file | Unit type file |
-|--------|-------------|---------------|
-| Original only | `Data/maindata.cam` | `Data/unittype.cam` |
-| Expansion only | `DataMX/mx_maindata.cam` | `DataMX/mx_Unittype.cam` |
-| Both modes | Modify all four files |
-
-### Data File Sizes
-
-| File | IMAG records | TILE frames | SPLT palettes |
-|------|-------------|-------------|---------------|
-| `Data/maindata.cam` (91.6 MB) | 380 | 17,224 | 854 |
-| `DataMX/mx_maindata.cam` (53.8 MB) | 166 | 9,031 | 288 |
-
-## What Can Be Modded
-
-### Unit Sprites (characters, buildings, monsters)
-Every unit has an IMAG record in `maindata.cam` containing animation metadata:
-- Multiple image sets: Walk, Stand, Attack, Cast, Die, Dead, Special, etc.
-- 6-8 directions per set (isometric facings)
-- Variable frame count per direction (typically 7-8 for walk cycles)
-
-Each frame is a TILE entry using the same RLE format.
-
-### Spell & Effect Animations
-Spells use three types of visuals, all stored as standard TILE sprites:
-
-| Type | Defined in | Example | IMAG prefix |
-|------|-----------|---------|-------------|
-| Caster animation | Unit's own IMAG "Cast" set | Adept raising staff | `AVA1` |
-| Overlays (persistent effects) | `M_Overlays.xml` | Fire shield glow | `WRb2` |
-| Particle systems | `M_ParticleSystems.xml` | Meteor storm, fireballs | `XL20` |
-| Projectiles | `M_Projectiles.xml` | Lightning bolt, acid bolt | `WRC1` |
-
-Effect IMAG records in maindata.cam include:
-- `WRd1teleport_e` — Teleport visual effect
-- `WRc1fire_blast_e` — Fire blast explosion
-- `WRC1lightng_bolt` — Lightning bolt
-- `XL14Firestorm` — Firestorm particles
-- `XL20MeteorStrmEffct` — Meteor storm effect
-- `HRA1healing_e` — Healing glow
-- `WPe1fireball_missil` — Fireball projectile
-
-All use the same TILE RLE format and can be extracted/modified identically to unit sprites.
-
-### Unit Stats and Behavior
-Unit stats (HP, speed, attack, defense, spells, etc.) are exposed through GPL
-scripting and should be modified there rather than editing `unittype.cam` directly.
-GPL is the intended modding interface for gameplay changes — the CAM file approach
-is only necessary for things GPL can't touch (like sprite pixel data).
-
-### Spell Definitions
-`action.cam` (DACT section) defines spell behavior:
-- Which animation set to play (ImageSet = "Cast")
-- Sound effects
-- GPL script function to execute
-- Duration, cooldown, level requirements
-
-**Adding new spells:** The most practical approach would be to clone an existing
-effect's IMAG+TILE data, modify the pixel frames for new visuals, and reference
-it under a new ID in a quest's XML files. This avoids building IMAG metadata
-blobs from scratch (which is unexplored territory). The WrathOfKrolm SDK example
-demonstrates how quests define custom actions, overlays, and particle systems.
-
-## TILE Pixel Format (Technical)
-
-```
-[16 bytes]  Header: version(3), height(u16), w2, w3, w4(32), w5, w6, w7
-[6 bytes]   Zeros (padding)
-[4 bytes]   u32 palette_id (index into SPLT section — DO NOT MODIFY SPLT)
-[height×4]  u32 offset table (offsets relative to byte 26, self-referencing)
-[variable]  Row data (RLE compressed pixel runs)
-```
-
-**Row format** — repeated segments until last flag set:
-```
-[u16 x_position]  Absolute column where opaque pixels begin
-[u8  count]       Number of opaque pixels
-[u8  flags]       0x80 = last segment in row, 0x00 = more follow
-[count bytes]     Palette indices (one byte per pixel)
-```
-
-**Transparency:**
-- Palette index 0 = fully transparent
-- Palette indices 248-255 = "magic pink" (game renders as shadow/blend, not opaque)
-- Any gap between segments = transparent pixels
 
 ## Key Constraints
 
 | Rule | Detail |
 |------|--------|
-| **Don't modify SPLT palettes** | Crashes the game. Use existing palette colors only. |
-| **Original mode for base mods** | `Data/maindata.cam` changes only visible in original game mode |
-| **Expansion uses DataMX** | Expansion mode reads `DataMX/mx_maindata.cam` for sprites |
-| **Preserve pixel format** | Keep RLE segment structure intact; only change pixel byte values |
-| **Quest mods can override** | Quest CAM files may override base entries — needs testing for sprites |
-
-## Architecture
-
-```
-unittype.cam (DUNT section)
-  └── Unit definition: ImageIDBase = "AVA1"
-        └── maindata.cam IMAG section: "AVA1Adept"
-              └── Image sets (Walk, Stand, Attack, Cast, Die...)
-                    └── Frame descriptors → TILE indices
-                          └── TILE[3547..3594] = Walk frames (6 dirs × 8 frames)
-                                └── Pixel bytes = palette indices
-                                      └── SPLT[350] = 256-color RGBA palette
-
-action.cam (DACT section)
-  └── Spell definition: "teleport_short"
-        ├── ImageSet = "Cast" (uses unit's Cast animation)
-        └── GPLFunction = "Teleport_Short_Effect" (spawns visual effect)
-              └── Overlay/Particle definition (M_Overlays.xml)
-                    └── ImageIDBase = "DRa1" → maindata.cam IMAG "DRa1teleport_shrt_e"
-                          └── TILE frames (same RLE format)
-```
+| Don't modify SPLT palettes | Crashes the game |
+| Use backslashes in mmxml/mqxml paths | Forward slashes may not work on Windows |
+| GUIDs must be valid | Use RGSEditor to generate; hand-crafted GUIDs are rejected |
+| CAM IMAG records must match engine format | Malformed IMAG causes crash on zone load |
+| GPL has no error handling | Guard every function entry against dead/building/lair targets |
 
 ## Requirements
 
 ```
 pip install Pillow numpy
+```
+
+## Architecture
+
+```
+.mmxml / .mqxml (mod/quest definition)
+  └── DataConfiguration
+        ├── Descriptions (XML) → unit types, spells, overlays
+        ├── CAM → IMAG (animation metadata) + TILE (pixels) + SPLT (palettes)
+        └── GPL → .bcd bytecode + .gpl/.dat source files
+              └── Functions called by spell actions → $createeffector, $SetAttribute, etc.
+
+unittype.cam / Characters.xml
+  └── Unit: ImageIDBase = "BVi1" (links to IMAG in maindata.cam)
+
+action.cam / Actions.xml  
+  └── Spell: GPLFunction = "Ice_Freeze_Begin" (called when cast)
+
+Overlays.xml
+  └── Overlay: Name = "freeze_effector", ImageIDBase = "IR01" (IMAG in Quest_maindata.cam)
 ```
