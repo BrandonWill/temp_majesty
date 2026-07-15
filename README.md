@@ -101,7 +101,7 @@ A custom Ice Freeze spell that Ice Elementals cast on nearby units.
 | IceElemental spawns from Ice Cave | ✅ Working |
 | Freeze spell targets + immobilizes | ✅ Working (full cycle: freeze → hold → unfreeze) |
 | Grey petrify visual on freeze | ✅ Brief start animation plays |
-| Custom ice overlay sprite | ⚠️ Not rendering (IMAG format issue in Quest_maindata.cam) |
+| Custom ice overlay sprite | ⚠️ Rendering system works (XR47 confirmed); custom ice frames may be too subtle |
 | Targeting (avoids buildings/dead/already-frozen) | ✅ Guards working |
 | Freeze timer + unfreeze | ✅ Working |
 | Targeting spam (re-casts on frozen target) | ❌ Needs fix — wastes AI cycles |
@@ -127,7 +127,7 @@ Edits in the repo are immediately live in-game — no copying needed.
 | .mmxml mod format | ✅ Working (requires RGSEditor-generated GUID) |
 | .mqxml quest format | ✅ Working |
 | GPL compilation | ✅ Working via gplbcc.exe |
-| Custom overlays (sprite rendering) | ⚠️ Effector created OK but sprite not visually rendering |
+| Custom overlays (sprite rendering) | ✅ Confirmed working (XR47 test rendered from quest CAM) |
 
 ## Game Modes and Data Loading
 
