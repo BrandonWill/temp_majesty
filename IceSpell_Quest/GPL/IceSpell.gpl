@@ -42,13 +42,9 @@ begin
 	stacks += 1;
 	$SetAttribute ( target, #ATTRIB_IsFrozen, stacks );
 
-	$DebugOut ( 911, "ICE: Cold stack on ", target, " stacks=", stacks );
-
 	// Check freeze threshold
 	if ( stacks >= #Cold_Stacks_To_Freeze )
 		begin
-			$DebugOut ( 911, "ICE: FREEZE TRIGGERED on ", target );
-
 			// Apply freeze
 			$createeffector ( target, "freeze_effector", 0 );
 			$createeffector ( target, "freeze_icon", #Freeze_Duration );
@@ -83,7 +79,6 @@ begin
 		end
 
 	$adjustattribute ( ThisAgent, #ATTRIB_HP, -#Freeze_DOT_Damage );
-	$DebugOut ( 911, "ICE: DOT tick on ", ThisAgent );
 end
 
 
@@ -111,8 +106,6 @@ begin
 			// Set immunity (-1) and start immunity timer
 			$SetAttribute ( ThisAgent, #ATTRIB_IsFrozen, -1 );
 			$createeffector ( ThisAgent, "freeze_icon", #Freeze_Immunity_Time );
-
-			$DebugOut ( 911, "ICE: Unfrozen, immunity started on ", ThisAgent );
 			return;
 		end
 
@@ -120,7 +113,6 @@ begin
 	if ( stacks == -1 )
 		begin
 			$SetAttribute ( ThisAgent, #ATTRIB_IsFrozen, 0 );
-			$DebugOut ( 911, "ICE: Immunity cleared on ", ThisAgent );
 			return;
 		end
 end
