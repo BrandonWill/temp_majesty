@@ -1,0 +1,13 @@
+{
+  "name": "Update QMG Findings",
+  "version": "1.0.0",
+  "description": "When QuestMapGenerator files are edited, reminds to document new discoveries in FINDINGS.md",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["**/QuestMapGenerator/*.py", "**/QuestMapGenerator/*.md"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "If you discovered something new about the .q binary format, encountered a new error message, or found a failure mode during this work, document it in QuestMapGenerator/FINDINGS.md before finishing. Keep entries concise with symptom, cause, and fix/workaround."
+  }
+}
