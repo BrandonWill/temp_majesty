@@ -1,0 +1,13 @@
+{
+  "name": "Auto-compile GPL on save",
+  "version": "1.0.0",
+  "description": "When a .gpl or .dat file is saved, runs MakeGPL.bat in the parent mod/quest folder to recompile the BCD",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["**/*.gpl", "**/*.dat"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A GPL source file was edited. Run `cmd /c MakeGPL.bat` from the mod/quest folder containing this file to recompile the BCD. If MakeGPL.bat doesn't exist in that folder, copy one from IceSpell/MakeGPL.bat and update OUTPUTNAME and GPLPROJECTFILE variables to match, then run it."
+  }
+}
