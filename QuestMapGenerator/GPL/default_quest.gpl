@@ -1,0 +1,11 @@
+///////////////////////////////////////////////////////////////////////////////
+// Default Quest Initialization — generated quests use this as their entry point.
+// Provides a simple "destroy all enemy lairs" victory condition.
+///////////////////////////////////////////////////////////////////////////////
+
+function DefaultQuest()
+declare
+begin
+	// Set default victory condition (destroy all enemy lairs/buildings)
+	$setvictorycondition();
+end

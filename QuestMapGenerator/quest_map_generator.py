@@ -1098,13 +1098,17 @@ def generate_mqxml(
     load_lines.append(f'\t\t\t\t\t<Constants>{rgs_filename}</Constants>')
 
     if gpl_sources or gpl_target:
-        load_lines.append('\t\t\t\t\t<GPL>')
-        if gpl_target:
-            load_lines.append(f'\t\t\t\t\t\t<Target>{gpl_target}</Target>')
         if gpl_sources:
+            # Full GPL section with Target + Source entries
+            load_lines.append('\t\t\t\t\t<GPL>')
+            if gpl_target:
+                load_lines.append(f'\t\t\t\t\t\t<Target>{gpl_target}</Target>')
             for src in gpl_sources:
                 load_lines.append(f'\t\t\t\t\t\t<Source>{src}</Source>')
-        load_lines.append('\t\t\t\t\t</GPL>')
+            load_lines.append('\t\t\t\t\t</GPL>')
+        else:
+            # Simple GPL — just the .bcd path
+            load_lines.append(f'\t\t\t\t\t<GPL>{gpl_target}</GPL>')
 
     if descriptions:
         for desc_file in descriptions:
@@ -1286,17 +1290,28 @@ def generate_test_quest(
     )
 
     # Generate .mqxml
-    # The <Name> tag is the GPL init function to call. Use the template's function
-    # name (basicAI) to avoid "script doesn't exist" errors. The user-provided
-    # quest_name goes in <DisplayName> which is what shows in the quest list UI.
+    # The <Name> tag is the GPL init function to call. Use "DefaultQuest" which
+    # is defined in QuestMapGenerator/GPL/default_quest.bcd and provides a
+    # simple "destroy all enemies" victory condition.
+    # Copy the default BCD into the output directory
+    default_bcd = Path(__file__).parent / "GPL" / "default_quest.bcd"
+    if default_bcd.exists():
+        import shutil
+        data_dir = output_dir / "Data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(default_bcd, data_dir / "default_quest.bcd")
+        gpl_target_final = extra_gpl_target or r"Data\default_quest.bcd"
+    else:
+        gpl_target_final = extra_gpl_target
+
     mqxml_path = generate_mqxml(
-        quest_name="basicAI",
+        quest_name="DefaultQuest",
         output_path=output_dir / "Quest.mqxml",
         dataset_base=dataset_base,
         display_name=quest_name,
         description_short=f"Test quest: {quest_name}",
         gpl_sources=extra_gpl_sources,
-        gpl_target=extra_gpl_target,
+        gpl_target=gpl_target_final,
         descriptions=extra_descriptions,
     )
 
