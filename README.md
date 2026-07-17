@@ -101,10 +101,10 @@ A custom Ice Freeze spell that Ice Elementals cast on nearby units.
 | IceElemental spawns from Ice Cave | ✅ Working |
 | Freeze spell targets + immobilizes | ✅ Working (full cycle: freeze → hold → unfreeze) |
 | Grey petrify visual on freeze | ✅ Brief start animation plays |
-| Custom ice overlay sprite | ⚠️ Rendering system works (XR47 confirmed); custom ice frames may be too subtle |
+| Custom ice overlay sprite | ✅ Loads without crash (XR47 template); may be too subtle visually |
 | Targeting (avoids buildings/dead/already-frozen) | ✅ Guards working |
 | Freeze timer + unfreeze | ✅ Working |
-| Targeting spam (re-casts on frozen target) | ❌ Needs fix — wastes AI cycles |
+| Targeting spam (re-casts on frozen target) | ⚠️ Needs fix — wastes AI cycles |
 
 **Deployment:** The `IceSpell/` folder is junction-linked to `Documents\My Games\MajestyHD\Mods\IceSpell`.
 The `IceSpell_Quest/` folder is junction-linked to `Documents\My Games\MajestyHD\Quests\IceSpell_Quest`.

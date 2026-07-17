@@ -1,80 +1,100 @@
-# IceSpell Mod — TODO
+# IceSpell Mod — Status & Next Steps
 
 ## Current Status
 
-Everything works EXCEPT the Quest_maindata.cam IMAG records. The game crashes on CAM load with no error messages.
+The mod is functional. The freeze spell works end-to-end (targeting, immobilize, damage, unfreeze).
+Custom sprites load without crashing using the XR47 template approach for IMAG records.
 
 - ✓ Mod loads (GUID valid, mmxml format correct)
 - ✓ IceElemental spawns from Ice Cave
-- ✓ GPL freeze logic runs correctly (all DebugOut confirmed)
+- ✓ GPL freeze logic runs correctly
 - ✓ TILE sprite frames are valid (round-trip verified, palette_id=0)
 - ✓ SPLT palette correct
-- ✓ CAM has 3 sections (no CUT) matching WrathOfKrolm structure
-- ✓ IR01/IR02/IR03 names are UNIQUE — no conflicts in maindata.cam, mx_maindata.cam, or WoK CAM
-- ✗ IMAG record binary format is wrong — causes hard crash on zone load
+- ✓ CAM structure correct (3 sections matching WrathOfKrolm structure)
+- ✓ IMAG records load (XR47 template approach — confirmed via VISUAL_VERIFICATION)
+- ✓ Custom CAM loads from quest DataConfiguration without crashing
 
 ---
 
-## The Problem: IMAG Record Writing
+## Remaining Issues
 
-We can READ/PARSE IMAG records correctly. We cannot WRITE new ones that the engine accepts.
+### 1. Ice overlay visibility (LOW PRIORITY)
 
-Previous attempts:
-1. Built IMAG from scratch with guessed offsets → crash
-2. Copied MRB1's first 128 bytes as template → crash
-3. Fixed palette_id and removed CUT section → crash
+Custom ice sprites (IR01/IR02/IR03) load without crashing but may be too subtle to see
+in-game. The petrify grey tint is visible, but the blue shimmer overlay hasn't been
+confirmed visually on top of it.
 
-The IMAG record format has unknown metadata fields that we're getting wrong.
+**Options:**
+- Increase sprite size (currently ~45×64px, vs XR47's 150-400px)
+- Increase opacity / more solid fills
+- Add brighter white highlights
 
----
+### 2. Targeting spam (MEDIUM PRIORITY)
 
-## Solution: Use WrathOfKrolm's XR47 as Template
+The IceElemental re-casts Ice_Freeze_Begin every frame on already-frozen targets.
+Guards catch it and return early, but this wastes AI cycles and floods gpl.log.
 
-The WrathOfKrolm mod CAM (`SDK/Example/Data/WrathOfKrolm_maindata.cam`) has 5 working IMAG records. The simplest is:
+**Options:**
+- Add cooldown via `TimeoutDuration` in the Action XML
+- Use `$SpecifyIntent` on the caster after a successful cast to force a pause
+- Add a "find unfrozen target" check in the targeting logic
 
-- `XR47DustofDeth` — 292 bytes (a directionless overlay, exactly like our ice effector)
-- `KR0TKrolm-appear` — 364 bytes (another overlay)
+### 3. Remove debug logging (LOW PRIORITY)
 
-These are PROVEN WORKING in a mod-loaded CAM file. The next step is:
-
-1. Byte-dump `XR47DustofDeth` completely
-2. Compare its structure against MRB1 (from base maindata.cam) to find differences
-3. The difference between MRB1 (works in base CAM) and XR47 (works in mod CAM) may reveal what's special about mod CAM IMAG records
-4. Build our IR01 matching XR47's exact structure, just with different frame count/tile indices
-
-Key question: Does a mod CAM IMAG reference TILE indices relative to ITS OWN TILE section (0, 1, 2...) or relative to the combined global pool? XR47's tile indices will tell us.
-
----
-
-## Deployment Info
-
-- Mod folder: `C:\Users\Brandon\Documents\My Games\MajestyHD\Mods\IceSpell`
-- Junction link from repo → mod folder (no copying needed)
-- Compile: `gplbcc.exe -in IceSpell.gplproj -out IceSpell.bcd -stdout` in the GPL folder
-- Deploy: just git pull (junction handles the rest)
+Strip `$DebugOut` calls from GPL for stability once the spell logic is finalized.
+The debug spam contributes to the gpl.log sharing violation crashes noted in
+`IceSpell_Quest/crash_troubleshooting.md`.
 
 ---
 
-## File State
+## Deployment
+
+- **Mod folder:** `C:\Users\Brandon\Documents\My Games\MajestyHD\Mods\IceSpell`
+- **Deploy:** Run `deploy.bat` from the `IceSpell/` folder (copies files to Mods folder)
+- **Compile GPL:** Run `MakeGPL.bat` from the `IceSpell/` folder
+- Junction link from repo → mod folder also works (edits are immediately live in-game)
+
+---
+
+## File Structure
 
 ```
 IceSpell/
-├── IceSpell.mmxml              ✓ Working
+├── IceSpell.mmxml              # Mod definition (game loads this)
+├── MakeGPL.bat                 # Compile GPL → Data/IceSpell.bcd
+├── deploy.bat                  # Deploy to Mods folder
 ├── Data/
-│   ├── IceSpell.bcd            ✓ Compiles and loads
-│   ├── IceSpell_Actions.xml    ✓ Loaded
-│   ├── IceSpell_Characters.xml ✓ IceElemental spawns
-│   ├── IceSpell_Overlays.xml   ✓ References IR01/IR02/IR03
-│   └── Quest_maindata.cam      ✗ IMAG format wrong — crashes
+│   ├── IceSpell.bcd            # Compiled GPL bytecode
+│   ├── IceSpell_Actions.xml    # Ice_Freeze spell action
+│   ├── IceSpell_Characters.xml # IceElemental (Ice Dragon sprite)
+│   ├── IceSpell_Overlays.xml   # freeze_effector, freeze_icon, thaw_effector
+│   └── Quest_maindata.cam      # Sprite data (IMAG + TILE + SPLT)
 ├── GPL/
-│   ├── IceSpell.gpl            ✓ Debug version with $DebugOut
-│   ├── IceSpell_Globals.dat    ✓ IceElemental data + Ice_Cave override
-│   └── IceSpell.gplproj        ✓ Compiles
-└── sprites/                    ✓ TILE frames (round-trip verified)
+│   ├── IceSpell.gpl            # Freeze logic source
+│   ├── IceSpell_Globals.dat    # IceElemental data + Ice_Cave override
+│   └── IceSpell.gplproj        # Compiler project file
+├── sprites/                    # Raw TILE frame data (ice + thaw frames)
+├── preview/                    # PNG previews of overlay sprites
+└── utility/                    # Python tools for sprite generation
+    ├── ice_overlay_generator.py
+    └── ice_palette_analyzer.py
 ```
 
 ---
 
-## Workaround (for testing freeze mechanics without custom sprites)
+## Technical Notes
 
-Remove `<CAM>Data\Quest_maindata.cam</CAM>` from mmxml and change overlay XML to use `ImageIDBase value="MRB1"` (petrify sprite from base game). This confirms the full freeze/unfreeze cycle works while the IMAG format is being cracked.
+### IMAG Template Approach (what worked)
+
+The WrathOfKrolm mod CAM (`SDK/Example/Data/WrathOfKrolm_maindata.cam`) has working
+IMAG records for mod-loaded CAMs. We used `XR47DustofDeth` (292 bytes, directionless
+overlay) as a template structure for our IR01/IR02/IR03 records.
+
+Key insight: mod CAM TILE indices are 0-based (local to the mod's own TILE section),
+not global indices into the base game's maindata.cam.
+
+### Workaround (testing freeze mechanics without custom sprites)
+
+Remove `<CAM>Data\Quest_maindata.cam</CAM>` from mmxml and change overlay XML to use
+`ImageIDBase value="MRB1"` (petrify sprite from base game). This confirms the full
+freeze/unfreeze cycle works.
