@@ -293,11 +293,7 @@ Automated test quest generation tool. Located at `QuestMapGenerator/quest_map_ge
 - **Limitation**: Generated quests always use the template's terrain, map size, and random seed.
   For full control over map generation parameters, use RGSEditor directly.
 
-### Future Scope: Full RGS Generation
-The current quest_map_generator handles the UnitPattern section but doesn't generate:
-- Region Patterns (terrain textures, fractal settings, landscape objects)
-- Force Pattern map layout (which quadrant each faction's UnitPattern cluster lands in)
-- Team/Player definitions from scratch
-- Map size / random seed configuration
-Understanding these sections (now documented in steering) could enable fully programmatic
-quest creation without any RGSEditor involvement.
+### Quest Map Generator — Testing Status
+The parser works (37/37 files pass) and the writer generates structurally valid .q files.
+**No generated quest has been loaded in-game yet.** See `QuestMapGenerator/TODO.md` for
+testing plan and remaining work.
