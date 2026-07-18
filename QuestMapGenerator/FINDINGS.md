@@ -170,3 +170,101 @@ Problems:
 - Only output 1 pattern instead of preserving all 4 template slots
 
 The minimal splice approach avoids ALL of this by only touching entry data.
+
+
+---
+
+## SpawnerBlock Field Mapping (CONFIRMED — Ghidra Decompilation July 2026)
+
+Confirmed via decompilation of `DialogEditLairs::DoDataExchange` (FUN_00426430)
+and the save handler (FUN_00427490). Assembly at 0x0042754c-0x00427575 shows exact
+struct offset writes.
+
+### Binary Layout (read/write order in file)
+
+```
+u32 field_00 = Max HP            (DDX control 0x3f2, DDV 0-99999)
+u32 field_04 = Base Spawn Rate   (DDX control 0x3f4, DDV 0-999999, in milliseconds)
+u32 field_08 = Dispersion        (DDX control 0x3f5, DDV 0-99999, in pixels)
+u32 field_0c = (Not implemented) (DDX control 0x466, DDV 0-10)
+u32 field_10 = Hit Rate Reduction (DDX control 0x48d, DDV 0-9999, spawner_ver >= 2 only)
+```
+
+### UI Tooltips (from RGSEditor binary .rdata)
+
+| Field | Tooltip |
+|-------|---------|
+| Max HP | "The maximum hit points given to the Lair. If 0, then the default value for the lair is used." |
+| Base Spawn Rate | "The base time, in milliseconds that a monster is spawned from the lair. If 0, then the default value for the lair is used." |
+| Dispersion | "The dispersion range used to place spawned monsters around the lair, in pixels. If 0, then the default value for the lair is used." |
+| (Not implemented) | "Not implemented" |
+| Hit Rate Reduction | "Each hit on the Lair will subtract this amount from the spawn rate delay, effectively speeding up the rate at which monsters are spawned. If 0, then the default value for the lair is used." |
+
+### Decompilation Evidence
+
+```asm
+; FUN_00427490 — save dialog members to spawner struct (EAX = struct ptr)
+0042754c: MOV ECX,[ESI + 0x764]    ; Dispersion (DDX ctrl 0x3f5)
+00427552: MOV [EAX + 0x8],ECX      ; → field_08
+00427555: MOV ECX,[ESI + 0x768]    ; Max HP (DDX ctrl 0x3f2)
+0042755b: MOV [EAX],ECX            ; → field_00
+0042755d: MOV ECX,[ESI + 0x76c]    ; Spawn Rate (DDX ctrl 0x3f4)
+00427563: MOV [EAX + 0x4],ECX      ; → field_04
+00427566: MOV ECX,[ESI + 0x770]    ; Not Implemented (DDX ctrl 0x466)
+0042756c: MOV [EAX + 0xc],ECX      ; → field_0c
+0042756f: MOV ECX,[ESI + 0x774]    ; Hit Rate Reduction (DDX ctrl 0x48d)
+00427575: MOV [EAX + 0x10],ECX     ; → field_10
+```
+
+### Per-Lair Override Key Scheme
+
+Spawner blocks inside `UnitPattern.spawners[]` use keys of format:
+`entry_index * 1000 + sub_index`
+
+- Entry 0 → keys 0, 1, 2, 3, 4 (sub-indices = difficulty levels)
+- Entry 1 → keys 1000, 1001, 1002, ...
+- Entry 2 → keys 2000, 2001, 2002, ...
+
+Each key maps one building/lair entry to a specific spawner override at a difficulty level.
+
+### Additional DDX Fields (from DoDataExchange FUN_00426430)
+
+- `param_1 + 0x778-0x784` (ctrl IDs 0x4a6-0x4a9, DDV 0-1000): Monster Artifice overrides (4 slots)
+- `param_1 + 0x788-0x794` (ctrl IDs 0x467-0x46a): Slider weight values for 4 monster type slots
+- `SpawnerBlock.extra_names[]` (spawner_ver >= 3): "Change what monsters are released when a Lair is destroyed"
+
+---
+
+## Terrain/Region Pattern System
+
+### Structure
+
+- **Region entries**: tag + TeamDefinition whose items are landscape zone refs with weight (spawn_level) and terrain type (field_0c)
+- **Force entries**: map each zone ref to actual game resources: (body_tag, name, fractal_ref, texture_ref, height_ref)
+
+### Texture Codes (ref2 in force entries)
+
+| Code Pattern | Meaning |
+|---|---|
+| `#Ple`, `#Pla-d` | Plains/grass |
+| `#Sca-c`, `#Sco` | Scorched/rocky |
+| `#Swa-d` | Swamp |
+| `#All` | Dirt/alluvial |
+| `#Ara-c`, `#Ari`, `#Arr` | Arid/desert |
+| `xSno`, `xSna-c` | Snow |
+| `xfor` | Forest |
+| `xbog` | Bog |
+| `xpla` | Plain (expansion) |
+| `xroc` | Rocky (expansion) |
+| `xswa` | Swamp (expansion) |
+| `xmud` | Mud |
+
+### Height Profiles (ref3 in force entries)
+
+| Code | Terrain Shape |
+|---|---|
+| `Bump`, `Roll`, `Rola` | Gentle hills |
+| `Subt`, `Smal`, `Slow` | Very gentle |
+| `Stee`, `Moun` | Mountainous |
+| `FS01` | Flat (swamp/snow) |
+| `xhil`, `xlig`, `xsli`, `xfla`, `xrou` | Expansion height profiles |

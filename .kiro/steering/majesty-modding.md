@@ -114,6 +114,17 @@ GPL/Quest.gpl — gameplay logic
 - The `utility/` folder is gitignored — use it for throwaway scripts and experiments
 - This workspace is the git repo — commit and push directly (no more copying to a separate folder)
 
+### Testing Requirements
+- **Run tests before committing/pushing.** All existing tests must pass.
+- **New code changes require tests.** Any new feature, bug fix, or refactor must include
+  or update unit tests that cover the change.
+- Test commands:
+  - `python QuestMapGenerator/test_rgs_format.py` — RGS format parser/writer tests (34 tests)
+  - `python -m pytest QuestMapGenerator/test_rgs_format.py -v` — same, with pytest (if installed)
+  - `python tests/test_str_tool.py` — STR tool tests (if applicable)
+- If a test fails after your change, fix the code or update the test before committing.
+- For binary format work: always verify byte-perfect roundtrip on `MyQuest/Quest.q`.
+
 ### Compiling GPL
 - Each mod/quest folder has a `MakeGPL.bat` that compiles GPL source and copies the `.bcd` to `Data/`.
 - **Always use `cmd /c MakeGPL.bat`** from the mod/quest folder to compile. Do NOT invoke

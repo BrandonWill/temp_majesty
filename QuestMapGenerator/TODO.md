@@ -1,90 +1,150 @@
 # Quest Map Generator — TODO
 
-## Status: Fully Working ✅
+## Status: Sequential Parser + Create API COMPLETE ✅
 
-Generated quests load in-game with no errors. Default win condition included.
-
-### What Works
-- Parser: 37/37 files pass
-- Writer: minimal splice approach — in-game validated, no freeze
-- Default GPL: `DefaultQuest()` function with `$setvictorycondition()` — no error dialog
-- MQXML generation: correct format, quest appears in list with DisplayName
-- Slot assignment: lairs → Pattern 0 (enemy quadrant), Palace → Pattern 2 (player quadrant)
-- Full CLI: `generate` subcommand produces complete quest package in one call
-
-### Usage
-
-```bash
-# Generate a quest with Palace + lairs
-python quest_map_generator.py generate --name "My Quest" --output output\MyQuest --lairs "BBH1:Goblin Camp:N,BBw1:Ice Cave"
-
-# Deploy to game
-xcopy /E /Y output\MyQuest "C:\Users\Brandon\Documents\My Games\MajestyHD\Quests\MyQuest\"
-```
+- **Parse: 37/37 files** (100%) ✅
+- **Roundtrip: MyQuest/Quest.q = byte-perfect** ✅
+- **`create_quest()` API: working, in-game validated** ✅
+- **Custom spawners: supported** ✅
+- **Per-lair overrides: supported** ✅
+- **Terrain presets: 14 presets + custom blends** ✅
+- **All RGSEditor UI fields documented** (from binary tooltip extraction) ✅
 
 ---
 
-## Template Mapping (MyQuest/Quest.q)
+## Completed Work
 
-### Unit Pattern Slots
+### ~~Priority 1: Integrate `rgs_format.py` into `quest_map_generator.py`~~ ✅ DONE
 
-| Slot | RGSEditor Name | Role | What to put here |
-|---|---|---|---|
-| 0 | Goblin Kingdom | Enemy territory | Monster lairs (placed in enemy quadrant) |
-| 1 | AutoExpanding | Neutral expanding | Additional structures (center-south) |
-| 2 | Player1 | Human player start | Palace + player-area buildings |
-| 3 | player2_ai | AI opponent | AI Palace (top of map) |
+CLI `generate` command now uses `create_quest()` from `rgs_format.py` by default.
+Old template-splice approach available via `--use-template` flag.
+New options: `--map-size` (128/256/512), `--terrain` (grass/snow/grass_snow).
 
-### Force Pattern Layout
+### ~~Priority 2: Per-Lair Spawner Override API~~ ✅ DONE
+
+The `create_quest()` API now supports per-lair overrides via `lair_override` on entries:
+
+```python
+create_quest("Test", [
+    {"name": "Monsters", "entries": [
+        {"id": "BBH1", "desc": "Goblin Camp", "cells": [65],
+         "lair_override": {
+             "monsters": [("BVr1", 50), ("BVs1", 50)],  # (id, weight%)
+             "max_hp": 500,              # field_00
+             "spawn_rate_ms": 30000,     # field_04
+             "dispersion": 200,          # field_08
+             "hit_rate_sub": 100,        # field_10
+             "death_monsters": ["BVL1"], # extra_names (spawner_ver 3)
+         }},
+        {"id": "BBw1", "desc": "Ice Cave", "cells": [85],
+         "lair_override": [  # List = multiple difficulty levels
+             {"monsters": [("BVx1", 80)], "spawn_rate_ms": 30000},
+             {"monsters": [("BVx1", 60), ("BVm1", 40)], "max_hp": 300},
+         ]},
+    ]},
+])
 ```
-     col0   col1   col2   col3   col4
-row0:  .      .     AI(1)   .      .
-row1:  .      .      .      .      .
-row2:  .      .      .      .      .
-row3:  .    Gob(4) Auto(2) Gob(3)  .
-row4:  .      .   Player(0) .      .
+
+Key scheme: `entry_index * 1000 + sub_index` (matching RGSEditor's internal model).
+Roundtrip verified. Monsters auto-padded to 4 slots with NONE entries.
+
+### ~~Priority 3: Verify SpawnerBlock Field Mapping~~ ✅ DONE
+
+Confirmed via Ghidra decompilation of `DialogEditLairs::DoDataExchange` (FUN_00426430)
+and the save handler (FUN_00427490). Assembly at 0x0042754c-0x00427575 shows exact
+struct offset writes.
+
+| Field | Meaning | UI Tooltip | DDV Range |
+|-------|---------|-----------|-----------|
+| `field_00` | Max HP | "The maximum hit points given to the Lair" | 0-99999 |
+| `field_04` | Base Spawn Rate (ms) | "The base time, in milliseconds..." | 0-999999 |
+| `field_08` | Dispersion (pixels) | "The dispersion range...in pixels" | 0-99999 |
+| `field_0c` | (Not implemented) | "Not implemented" | 0-10 |
+| `field_10` | Hit Rate Reduction | "Each hit...subtracts this amount from spawn rate delay" | 0-9999 |
+
+All fields default to 0 meaning "use lair's built-in value". Only in spawner_ver >= 2.
+Property aliases added to `SpawnerBlock`: `.max_hp`, `.spawn_rate_ms`, `.dispersion`, `.hit_rate_sub`.
+
+### ~~Priority 4: Region Pattern Editing~~ ✅ DONE
+
+Terrain is now fully configurable without templates:
+
+1. **14 presets** (string): "grass", "snow", "grass_snow", "forest", "swamp", "desert",
+   "scorched", "mountain", "snow_mountain", "dark_forest", "barren", "fertile", "winter", "bog"
+2. **25 landscape zones** (dict blend): custom mix like `{"snow_ice": 60, "mountain": 40}`
+3. **Fully custom** (list): raw tag/fractal/texture/height definitions
+
+All extracted from real quest file data. Auto-derives `field_0c` terrain type from texture ref.
+
+```python
+# Preset:
+create_quest("Test", [...], terrain="dark_forest")
+
+# Custom blend:
+create_quest("Test", [...], terrain={"snow_ice": 60, "mountain": 40, "forest": 20})
+
+# Fully custom:
+create_quest("Test", [...], terrain=[
+    {"tag": "MyGr", "name": "My Grass", "fractal": "xBBC", "texture": "#Pla", "height": "Roll", "weight": 55},
+    {"tag": "MySn", "name": "My Snow", "fractal": "xCla", "texture": "xSno", "height": "FS01", "weight": 45},
+])
 ```
 
 ---
 
 ## Remaining Work
 
-### Put lairs near the player (not in enemy quadrant)
+### Priority 5: Force Pattern Layout API
 
-Currently `generate_test_quest` puts lairs in slot 0 (Goblin Kingdom = enemy quadrant,
-far from player). For testing mods like IceSpell where you want the player to encounter
-lairs quickly, lairs should go in slot 2 (Player1) alongside the Palace.
+Expose the force layout as a first-class API:
+- Control where each faction's cluster appears on the map
+- Support "Off Map" placement (monsters spawning from edges)
+- Multi-player configurations (2P, 3P, 4P)
+- Monster-only force patterns (no palaces)
 
-**Option:** Add a `--near-player` flag that puts lairs in slot 2 instead of slot 0.
+### Priority 6: Full CLI Replacement
 
-### Add `--deploy` flag to CLI
-
-Automatically copy the generated quest to the game's Quests folder:
+Build a comprehensive CLI that covers all RGSEditor functionality:
 ```bash
-python quest_map_generator.py generate --name "Test" --output out --lairs "..." --deploy
+# Create quest from JSON definition
+rgs_format.py create --config quest.json --output MyQuest/
+
+# Modify existing quest
+rgs_format.py modify Quests/Krolm.q --add-pattern "Ice Lairs" --entries "BBw1:Ice Cave:N"
+
+# Inspect any section
+rgs_format.py inspect Quests/fertile_plain.q --section spawners
+rgs_format.py inspect Quests/fertile_plain.q --section force-layout
+
+# Convert between versions (always outputs RGMa)
+rgs_format.py convert Quests/old_quest.q --output updated.q
 ```
 
-### Terrain preset support
+### Other Items (from quest_map_generator.py)
 
-The code has terrain presets (grass, snow, scorched, etc.) but they require modifying
-the Region Pattern section which hasn't been validated in-game. Low priority since the
-template's terrain works fine for testing.
-
-### Explore RGSEditor decompiled source
-
-`SDK/RGSeditor/` may contain source code that reveals exact binary formats for:
-- Region Pattern section
-- Force Pattern section
-- Metadata block meanings
-
-This could enable generating those sections from scratch instead of relying on templates.
+- **`--deploy` flag**: Auto-copy generated quest to game's Quests folder
+- **`--near-player` flag**: Put lairs in player quadrant for quick testing
+- **In-game terrain validation**: Confirm new terrain presets render correctly
 
 ---
 
-## Known Limitations
+## Architecture Notes
 
-- Template locked to MyQuest/Quest.q structure (4 pattern slots, fixed Force Pattern)
-- Cannot add/remove pattern slots without breaking Force Pattern references
-- Lairs in slot 0 appear in enemy quadrant, not near player
-- Seed=0 means different map each time (set fixed seed in template for reproducibility)
-- Goblin Kingdom pattern is reused 4× by Force Pattern — all 4 get modified together
+### Field Naming (from decompilation — confusing but correct)
+- `UnitPattern.terrain_code` = actually the **faction short code** (4 chars)
+- `UnitPattern.name` = actually the **faction full name**
+- `UnitPattern.tag_48` = the **real terrain code** ("gras", "snow", etc.)
+- `UnitPattern.field_44` = always 5 (grid resolution constant)
+- `UnitPattern._faction_tag` = read by the set reader BEFORE the pattern body
+
+### Spawner Connection Model
+- Top-level `spawner_blocks[]` define difficulty curves (indexed by `_spawner_indices`)
+- `SlotConfig[7]` ("Monsters") has `sub_items` referencing spawner block indices
+- Per-lair overrides are in `UnitPattern.spawners[]` (with `_spawner_keys` mapping to entries)
+- Key scheme: `entry_index * 1000 + sub_index`
+
+### Ghidra MCP
+- Project: `MajestyRE` at `C:\Users\Brandon\Tools\GhidraProjects`
+- Config: `.kiro/settings/mcp.json`
+- RGSeditor.exe fully analyzed: 16,513 functions
+- All serialization + UI tooltip strings extracted

@@ -1575,6 +1575,9 @@ def _cli_generate(args):
     parser.add_argument("--lairs", default="", help="Comma-separated lair specs: ID:Desc:Pos (pos optional)")
     parser.add_argument("--dataset", default="MajestyExpansion", choices=["Majesty", "MajestyExpansion"])
     parser.add_argument("--palace", default="M", help="Palace grid position (A-Y)")
+    parser.add_argument("--map-size", type=int, default=256, choices=[128, 256, 512], help="Map size in tiles")
+    parser.add_argument("--terrain", default="grass", help="Terrain preset (grass, snow, forest, etc.)")
+    parser.add_argument("--use-template", action="store_true", help="Use old template-splice approach instead of create_quest()")
 
     try:
         parsed = parser.parse_args(args)
@@ -1594,17 +1597,93 @@ def _cli_generate(args):
             elif len(parts) == 1 and parts[0]:
                 lairs.append({"id": parts[0], "desc": parts[0]})
 
-    result = generate_test_quest(
-        quest_name=parsed.name,
-        lairs=lairs,
-        output_dir=parsed.output,
-        palace_position=parsed.palace,
-        dataset_base=parsed.dataset,
-    )
+    if parsed.use_template:
+        # Old template-splice approach
+        result = generate_test_quest(
+            quest_name=parsed.name,
+            lairs=lairs,
+            output_dir=parsed.output,
+            palace_position=parsed.palace,
+            dataset_base=parsed.dataset,
+        )
+    else:
+        # New approach: use rgs_format.create_quest()
+        from rgs_format import create_quest, write_quest_file, TERRAIN_PRESETS
+        from pathlib import Path
+        import shutil
+
+        output_dir = Path(parsed.output)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build unit patterns
+        palace_cell = ord(parsed.palace)
+        player_entries = [{"id": "ABJ1", "desc": "Palace", "cells": [palace_cell]}]
+        lair_entries = []
+        auto_positions = [65, 69, 85, 70, 80, 74, 84, 68, 88]  # A,E,U,F,P,J,T,D,X
+        auto_idx = 0
+        for lair in lairs:
+            if "position" in lair and lair["position"]:
+                cells = [ord(lair["position"])]
+            else:
+                cells = [auto_positions[auto_idx % len(auto_positions)]]
+                auto_idx += 1
+            lair_entries.append({"id": lair["id"], "desc": lair["desc"], "cells": cells})
+
+        unit_patterns = [
+            {"name": "Player1", "entries": player_entries + lair_entries,
+             "starting_gold": 50000},
+        ]
+
+        # Validate terrain preset
+        terrain = parsed.terrain
+        if terrain not in TERRAIN_PRESETS and not isinstance(terrain, dict):
+            print(f"Warning: Unknown terrain preset '{terrain}', using 'grass'")
+            print(f"Available: {sorted(TERRAIN_PRESETS.keys())}")
+            terrain = "grass"
+
+        qf = create_quest(
+            name=parsed.name,
+            unit_patterns=unit_patterns,
+            map_size=(parsed.map_size, parsed.map_size),
+            terrain=terrain,
+        )
+
+        q_path = write_quest_file(qf, output_dir / "Quest.q")
+
+        # Copy .rgs terrain template
+        rgs_src = Path(__file__).parent.parent / "MyQuest" / "Quest.rgs"
+        rgs_path = output_dir / "Quest.rgs"
+        if rgs_src.exists():
+            shutil.copy2(rgs_src, rgs_path)
+
+        # Copy default GPL bytecode
+        default_bcd = Path(__file__).parent / "GPL" / "default_quest.bcd"
+        data_dir = output_dir / "Data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        if default_bcd.exists():
+            shutil.copy2(default_bcd, data_dir / "default_quest.bcd")
+            gpl_target = r"Data\default_quest.bcd"
+        else:
+            gpl_target = None
+
+        # Generate .mqxml
+        mqxml_path = generate_mqxml(
+            quest_name="DefaultQuest",
+            output_path=output_dir / "Quest.mqxml",
+            dataset_base=parsed.dataset,
+            display_name=parsed.name,
+            description_short=f"Test quest: {parsed.name}",
+            gpl_target=gpl_target,
+        )
+
+        result = {"q": q_path, "rgs": rgs_path, "mqxml": mqxml_path}
 
     print(f"Generated quest package in: {parsed.output}")
     for key, path in result.items():
-        print(f"  {key}: {path} ({path.stat().st_size} bytes)")
+        if path.exists():
+            print(f"  {key}: {path} ({path.stat().st_size} bytes)")
+        else:
+            print(f"  {key}: {path} (not found)")
     return 0
 
 
@@ -1617,10 +1696,20 @@ if __name__ == "__main__":
         print("Usage:")
         print("  quest_map_generator.py parse <file.q>")
         print("  quest_map_generator.py validate <file.q> [--reference <ref.q>]")
-        print("  quest_map_generator.py generate --name <name> --output <dir> [--lairs <specs>]")
+        print("  quest_map_generator.py generate --name <name> --output <dir> [options]")
         print()
-        print("Lair spec format: ID:Description:Position (position optional, A-Y)")
-        print("Example: quest_map_generator.py generate --name Test --output out --lairs BBw1:Ice Cave:N,BBH1:Goblin Camp")
+        print("Generate options:")
+        print("  --lairs <specs>       Lair specs: ID:Description:Position (comma-separated)")
+        print("  --map-size <128|256|512>  Map size in tiles (default: 256)")
+        print("  --terrain <preset>    Terrain preset (default: grass)")
+        print("  --palace <A-Y>        Palace grid position (default: M)")
+        print("  --use-template        Use old template-splice approach")
+        print()
+        print("Terrain presets: grass, snow, grass_snow, forest, swamp, desert,")
+        print("  scorched, mountain, snow_mountain, dark_forest, barren, fertile, winter, bog")
+        print()
+        print("Example:")
+        print("  quest_map_generator.py generate --name Test --output out --lairs BBw1:Ice Cave:N,BBH1:Goblin Camp --terrain snow_mountain")
         sys.exit(1)
 
     cmd = sys.argv[1]
