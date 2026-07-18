@@ -424,25 +424,134 @@ If you forget to save after first upload:
 
 ---
 
-# Programmatic Quest Generation (No RGSEditor)
+# Programmatic Quest Generation (rgs_format.py — RGSEditor Replacement)
 
-There is an ongoing project to generate `.q` quest template files programmatically, bypassing
-the RGSEditor entirely. See `QuestMapGenerator/quest_map_generator.py` and the
-`Quest Map Generator` section in the main steering file (`majesty-modding.md`) for details.
+The `QuestMapGenerator/rgs_format.py` tool fully replaces RGSEditor for programmatic quest creation.
+It was built from a complete Ghidra decompilation of RGSEditor.exe's serialization functions.
 
-**Current status:**
-- Parser reads all .q format versions (RGMa, RGM6, RGM9) — 37/37 files pass
-- Writer uses a template-based approach (splices custom UnitPattern entries into a known-good .q)
-- CLI supports `parse`, `validate`, `generate` subcommands
-- Convenience API: `generate_test_quest(name, lairs, output_dir)`
-- **No generated quest has been loaded in-game yet** — see `QuestMapGenerator/TODO.md`
+**Status: COMPLETE — all features implemented, in-game validated, 43 unit tests passing.**
 
-**When to use RGSEditor vs QuestMapGenerator:**
-- RGSEditor: full control over terrain, Region Patterns, Force Patterns, visual preview
-- QuestMapGenerator: automated/batch generation of test quests, CI-friendly, no GUI needed
+## Tools
 
-The long-term goal is to eliminate the RGSEditor dependency for quest creation workflows
-that can be fully described in code (e.g., test quests for mod validation, procedural quest packs).
+| File | Purpose |
+|------|---------|
+| `QuestMapGenerator/rgs_format.py` | Core parser/writer + `create_quest()` API + CLI |
+| `QuestMapGenerator/quest_map_generator.py` | Higher-level CLI with --deploy |
+| `QuestMapGenerator/test_rgs_format.py` | Unit test suite (43 tests) |
+| `QuestMapGenerator/constants_rgs_reference.md` | Base terrain/landscape pattern catalog (234 entries) |
+| `QuestMapGenerator/expansion_constants_reference.md` | Expansion patterns (176 entries) |
+| `QuestMapGenerator/buildings_reference.md` | Building/unit Object IDs |
+| `QuestMapGenerator/FINDINGS.md` | Decompilation results and field mappings |
+
+## CLI Usage
+
+```bash
+# Create from JSON config
+python QuestMapGenerator/rgs_format.py create --config quest.json --output Quest.q
+
+# Inspect any .q file
+python QuestMapGenerator/rgs_format.py inspect Quests/Krolm.q
+python QuestMapGenerator/rgs_format.py inspect Quests/Krolm.q --section spawners
+
+# Modify existing quest
+python QuestMapGenerator/rgs_format.py modify Quests/Krolm.q --patch changes.json --output modified.q
+
+# List available terrain presets
+python QuestMapGenerator/rgs_format.py presets
+
+# Generate + deploy in one command
+python QuestMapGenerator/quest_map_generator.py generate \
+  --name "MyQuest" --output out/MyQuest \
+  --lairs "BBH1:Goblin Camp:N,BBw1:Ice Cave:E" \
+  --terrain forest --seed 42 --deploy
+```
+
+## Python API
+
+```python
+from rgs_format import create_quest, write_quest_file
+
+qf = create_quest(
+    name="MyQuest",
+    unit_patterns=[
+        {"name": "Player1", "entries": [
+            {"id": "ABJ1", "desc": "Palace", "cells": [77]}
+        ]},
+        {"name": "Monster Lairs", "entries": [
+            {"id": "BBH1", "desc": "Goblin Camp", "cells": [65, 69],
+             "lair_override": {
+                 "monsters": [("BVL1", 60), ("BVL2", 40)],
+                 "max_hp": 200,
+                 "spawn_rate_ms": 15000,
+                 "dispersion": 500,
+                 "hit_rate_sub": 50,
+             }},
+            {"id": "BBw1", "desc": "Ice Cave", "cells": [85]},
+        ]},
+    ],
+    map_size=(256, 256),
+    terrain="forest",           # 14 presets or custom dict/list
+    seed=42,                    # 0 = random each play
+    force_layout={
+        "name": "My Force",
+        "players": [1, 2],      # Allowed player counts
+        "difficulty": 70,
+        "entries": [
+            {"pattern_idx": 0, "position": "W"},
+            {"pattern_idx": 1, "position": "CGHLN"},   # Multi-candidate
+            {"pattern_idx": 1, "position": "off_map"},  # Edge spawning
+        ],
+    },
+)
+write_quest_file(qf, "output/Quest.q")
+```
+
+## Capabilities
+
+| Feature | Status |
+|---------|--------|
+| Parse all .q versions (RGM1-RGMa) | ✅ 37/37 files |
+| Byte-perfect roundtrip | ✅ MyQuest/Quest.q |
+| Unit patterns with entries | ✅ |
+| Per-lair spawner overrides (HP, rate, dispersion, hit reduction) | ✅ |
+| Death monster lists (extra_names) | ✅ |
+| Terrain: 14 presets + 25 zones + custom | ✅ In-game validated |
+| Force pattern: positions, off-map, multi-candidate | ✅ |
+| Player modes (1P-4P), difficulty/money/time ratings | ✅ |
+| Random seed control | ✅ |
+| JSON config input | ✅ |
+| --deploy to game folder | ✅ |
+| Warning if no enemy buildings (instant win) | ✅ |
+| Inspect/modify existing .q files | ✅ |
+
+## SpawnerBlock Field Mapping (Confirmed via Ghidra)
+
+| Field | Meaning | Range |
+|-------|---------|-------|
+| `field_00` | Max HP | 0-99999 |
+| `field_04` | Base Spawn Rate (ms) | 0-999999 |
+| `field_08` | Dispersion (pixels) | 0-99999 |
+| `field_0c` | (Not implemented) | 0-10 |
+| `field_10` | Hit Rate Reduction (ms/hit) | 0-9999 |
+
+## Terrain Presets
+
+`grass`, `snow`, `grass_snow`, `forest`, `swamp`, `desert`, `scorched`, `mountain`,
+`snow_mountain`, `dark_forest`, `barren`, `fertile`, `winter`, `bog`
+
+Custom: pass a dict of zone blends `{"snow_ice": 60, "mountain": 40}` or a list of
+raw `{"tag", "name", "fractal", "texture", "height", "weight"}` definitions.
+
+## When to Use What
+
+| Scenario | Tool |
+|----------|------|
+| Quick test quest for mod validation | `quest_map_generator.py generate --deploy` |
+| Complex quest with custom spawners | `rgs_format.py create --config quest.json` |
+| Inspect/debug existing quest | `rgs_format.py inspect file.q --section force` |
+| Batch quest generation | Python API: `create_quest()` in a loop |
+| Visual terrain/layout preview | RGSEditor (still has the GUI grid view) |
+| Custom landscape objects (trees/rocks) | Edit constants.rgs (not yet automated) |
 
 ---
 
@@ -457,6 +566,13 @@ that can be fully described in code (e.g., test quests for mod validation, proce
 7. **Save** → creates `.mqxml` + `.q` files
 8. Copy to `My Games/MajestyHD/Quests/YourQuest/` folder
 9. Launch game → Quest appears in Quest list
+
+# Quick Reference: Minimum Viable Quest (Programmatic)
+
+1. Write a JSON config or use the Python API
+2. `python QuestMapGenerator/quest_map_generator.py generate --name "Test" --output out --lairs "BBH1:Goblin Camp" --deploy`
+3. Launch game → Quest appears in Quest list
+4. No RGSEditor needed, no GUI, fully scriptable
 
 # Quick Reference: Minimum Viable Mod
 
