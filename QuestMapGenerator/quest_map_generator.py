@@ -1578,6 +1578,8 @@ def _cli_generate(args):
     parser.add_argument("--map-size", type=int, default=256, choices=[128, 256, 512], help="Map size in tiles")
     parser.add_argument("--terrain", default="grass", help="Terrain preset (grass, snow, forest, etc.)")
     parser.add_argument("--use-template", action="store_true", help="Use old template-splice approach instead of create_quest()")
+    parser.add_argument("--deploy", action="store_true", help="Auto-copy quest to game's Quests folder")
+    parser.add_argument("--seed", type=int, default=0, help="Random seed (0 = different each play)")
 
     try:
         parsed = parser.parse_args(args)
@@ -1646,6 +1648,7 @@ def _cli_generate(args):
             unit_patterns=unit_patterns,
             map_size=(parsed.map_size, parsed.map_size),
             terrain=terrain,
+            seed=parsed.seed,
         )
 
         q_path = write_quest_file(qf, output_dir / "Quest.q")
@@ -1684,6 +1687,20 @@ def _cli_generate(args):
             print(f"  {key}: {path} ({path.stat().st_size} bytes)")
         else:
             print(f"  {key}: {path} (not found)")
+
+    if parsed.deploy:
+        import shutil
+        deploy_dir = Path.home() / "Documents" / "My Games" / "MajestyHD" / "Quests" / parsed.name
+        deploy_dir.mkdir(parents=True, exist_ok=True)
+        src_dir = Path(parsed.output)
+        for item in src_dir.rglob("*"):
+            if item.is_file():
+                rel = item.relative_to(src_dir)
+                dest = deploy_dir / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(item, dest)
+        print(f"\nDeployed to: {deploy_dir}")
+
     return 0
 
 

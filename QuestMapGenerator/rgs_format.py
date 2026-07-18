@@ -900,6 +900,7 @@ def create_quest(
     force_layout: list[dict] = None,
     starting_gold: int = 30000,
     spawners: list[dict] = None,
+    seed: int = 0,
 ) -> QuestFile:
     """
     Create a complete QuestFile from scratch — no template dependency.
@@ -945,6 +946,7 @@ def create_quest(
                 - "time": Time rating 0-100 (default 50)
                 - "resolution": Grid cell spacing (default 3)
         starting_gold: Default starting gold for player factions
+        seed: Random seed for map generation (0 = different each play, non-zero = fixed layout)
 
     Returns:
         QuestFile ready to write with write_quest_file()
@@ -983,7 +985,7 @@ def create_quest(
     short = name[:4] if len(name) >= 4 else (name + "    ")[:4]
     qf._tag1 = "patt"
     qf._tag2 = short
-    qf._tag3 = random.randint(0, 0xFFFFFFFF)
+    qf._tag3 = seed if seed != 0 else random.randint(0, 0xFFFFFFFF)
     qf._tag4 = 0
     qf.map_params = map_size
 
@@ -1451,6 +1453,7 @@ def _cli_create(config_path, output_path):
         force_layout=config.get("force_layout"),
         starting_gold=config.get("starting_gold", 30000),
         spawners=config.get("spawners"),
+        seed=config.get("seed", 0),
     )
     out = write_quest_file(qf, Path(output_path))
     print(f"Created: {out} ({out.stat().st_size} bytes)")
@@ -1504,6 +1507,44 @@ if __name__ == "__main__":
             print("Error: --config and --output are required")
             sys.exit(1)
         _cli_create(config_path, output_path)
+
+    elif cmd == "modify":
+        # Modify an existing .q file with JSON patch
+        filepath = None
+        patch_path = None
+        output_path = None
+        args = sys.argv[2:]
+        i = 0
+        while i < len(args):
+            if args[i] == "--patch":
+                patch_path = args[i + 1]
+                i += 2
+            elif args[i] == "--output":
+                output_path = args[i + 1]
+                i += 2
+            elif not filepath:
+                filepath = args[i]
+                i += 1
+            else:
+                i += 1
+        if not filepath:
+            print("Error: source .q file is required")
+            print("Usage: rgs_format.py modify <file.q> --patch <patch.json> [--output <out.q>]")
+            sys.exit(1)
+        import json
+        qf = read_quest_file(filepath)
+        if patch_path:
+            patch = json.loads(Path(patch_path).read_text())
+            # Apply patch fields
+            if "map_size" in patch:
+                qf.map_params = tuple(patch["map_size"])
+            if "seed" in patch:
+                qf._tag3 = patch["seed"]
+            if "quest_name" in patch:
+                qf.quest_name = patch["quest_name"]
+        out_target = Path(output_path) if output_path else Path(filepath)
+        write_quest_file(qf, out_target)
+        print(f"Modified: {out_target} ({out_target.stat().st_size} bytes)")
 
     elif cmd == "roundtrip":
         ok, msg = roundtrip_test(sys.argv[2])

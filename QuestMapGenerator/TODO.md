@@ -144,9 +144,10 @@ JSON config accepts all `create_quest()` parameters including lair_override and 
 
 ### Other Items (from quest_map_generator.py)
 
-- **`--deploy` flag**: Auto-copy generated quest to game's Quests folder
-- **`--near-player` flag**: Put lairs in player quadrant for quick testing
-- **In-game terrain validation**: Confirm new terrain presets render correctly
+- ~~**`--deploy` flag**: Auto-copy generated quest to game's Quests folder~~ ✅ DONE
+- ~~**`--seed` parameter**: Fixed random seed for reproducible maps~~ ✅ DONE
+- ~~**`modify` command**: Read existing .q, patch fields, write back~~ ✅ DONE
+- **In-game terrain validation**: Confirm new terrain presets render correctly (manual test)
 
 ---
 
