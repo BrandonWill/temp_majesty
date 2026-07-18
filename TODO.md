@@ -145,10 +145,14 @@ Focus: comprehensive knowledge of engine capabilities for quest/mod creation.
 
 ## Lower Priority / Future Work
 
-### constants.rgs Editor
-- [ ] Implement RGCB format writer (create custom landscape patterns)
-- [ ] Map sprite group IDs (IG08, PG10, etc.) to actual visual objects
-- [ ] Enable custom tree/bush/rock density without RGSEditor
+### constants.rgs — Unknown Modifiability
+- [ ] **UNVERIFIED:** Can quests/mods load custom constants.rgs files?
+  - SDK docs mention "changing RGS Constants is optional" but no Workshop mod does it
+  - MQXML has `<Constants>` in the Unload section — implies load/unload is possible?
+  - No Workshop mod ships a custom constants.rgs (0 out of 10 analyzed)
+  - Need to test: create a minimal modified constants.rgs, reference it in MQXML, see if game loads it
+- [ ] If modifiable: implement RGCB format writer for custom landscape patterns
+- [ ] If NOT modifiable: document this limitation, focus on selecting from existing 410 patterns
 
 ### Workshop Integration
 - [ ] `--workshop` flag for quest_map_generator to create Workshop-ready packages
