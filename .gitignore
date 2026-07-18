@@ -5,12 +5,11 @@ __pycache__/
 # Output artifacts
 *.png
 *.gif
-
-# Large binary game archives (local working copy, redundant with Data/)
-/maindata.cam
+!IceSpell/preview/*.png
+!IceSpell_Quest/sprite_preview/*.png
 
 # Large zip downloads
 *.zip
 
-# Scratch/utility scripts (not part of the toolkit)
-utility/
+# Scratch/utility scripts (root-level only, not mod subfolders)
+/utility/
