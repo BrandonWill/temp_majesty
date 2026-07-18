@@ -1,7 +1,7 @@
 """
 cam_writer.py - Repack maindata.cam with modified TILE entries
 ================================================================
-Based on the CamLib format from cam_reader.py (ported from ).
+Based on the CamLib format from cam_reader.py.
 
 The CAM file format:
   [File header]

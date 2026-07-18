@@ -1,10 +1,9 @@
 """
-cam_reader.py - faithful Python port of 's CamLib.Read()
+cam_reader.py - CAM archive parser
 ====================================================================
-This is a direct, careful port of the validated C# source (),
-not a re-derivation from scratch. Trust this over any hand-decoded
-byte-offset guesses in RESEARCH_NOTES.md - those were superseded the
-moment real tool source appeared.
+Parses the CAM container format used by Majesty Gold HD. Validated
+byte-for-byte against real game data files. Trust this over any
+hand-decoded byte-offset guesses in RESEARCH_NOTES.md.
 """
 
 import struct
