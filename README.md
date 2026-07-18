@@ -17,12 +17,14 @@ This repo contains:
 ## Repository Structure
 
 ```
-├── cam_reader.py              # Parse CAM archive files
+├── cam_reader.py              # Parse and extract CAM archive files
 ├── cam_writer.py              # Repack CAM archives with modifications
+├── str_tool.py                # STRT string table ↔ TXT converter (translations)
 ├── sprite_extractor.py        # Extract sprites as PNGs with correct colors
 ├── sprite_injector.py         # Encode PNGs back into TILE RLE format
 ├── RESEARCH_NOTES.md          # Detailed binary format reverse-engineering notes
 ├── README.md                  # This file
+├── tests/                     # Unit tests for CAM/STRT tools
 │
 ├── IceSpell/                  # Ice Freeze spell — standalone mod (.mmxml)
 │   ├── IceSpell.mmxml         # Mod definition (game loads this)
@@ -63,10 +65,11 @@ This repo contains:
 
 | File | Purpose |
 |------|---------|
-| `cam_reader.py` | Parse CAM archive files (sections, file entries, offsets) |
+| `cam_reader.py` | Parse and extract CAM archive files (sections, file entries, offsets) |
+| `cam_writer.py` | Repack CAM archives with modified/replaced entries, or pack from extracted dir |
+| `str_tool.py` | Convert STRT string tables ↔ editable TXT (for translations) |
 | `sprite_extractor.py` | Extract sprites as PNGs with correct palette colors |
 | `sprite_injector.py` | Encode PNGs back into TILE RLE format |
-| `cam_writer.py` | Repack CAM archives with modified/replaced entries |
 | `QuestMapGenerator/quest_map_generator.py` | Parse/validate/generate .q quest templates |
 
 ## Quick Start
@@ -89,6 +92,54 @@ python QuestMapGenerator/quest_map_generator.py generate --name IceTest --output
 
 # Validate all quest files
 python QuestMapGenerator/test_all_quests.py
+```
+
+## Translation Workflow
+
+The game stores text strings in STRT binary format inside CAM archives (`gpltext.cam`,
+`textdata.cam`, etc.). The toolkit supports the full extract → edit → repack pipeline:
+
+```bash
+# 1. Extract CAM archive → individual STRT files on disk
+python cam_reader.py Data/gpltext.cam --extract ./extracted/
+
+# 2. Convert STRT binaries → editable UTF-8 TXT files
+python str_tool.py -e ./extracted/0/ ./translated/
+
+# 3. Edit the .TXT files in any text editor (translate, fix typos, etc.)
+#    Each line ends with <EOL> marker — preserve these markers.
+
+# 4. Convert edited TXT files back to STRT binaries
+python str_tool.py -i ./translated/ ./extracted/0/
+
+# 5. Repack directory back into a CAM archive
+python cam_writer.py --pack ./extracted/ --output Data/gpltext_translated.cam
+```
+
+**Single-entry replacement** (without full unpack):
+```bash
+python cam_writer.py --cam Data/gpltext.cam --replace 0 5 modified_entry.STRT --output modded.cam
+```
+
+**STRT format details:**
+- Header: line count (u16) + encoding flag + version flag
+- HD format uses u32 offsets; original (PL) format uses u16 offsets
+- Text encoding: Windows-1250 (Central/Eastern European)
+- Byte-perfect roundtrip verified: extract → import produces identical binary
+
+**Supported text CAM files:**
+| File | Content |
+|------|---------|
+| `Data/gpltext.cam` | GPL script text (hero names, AI strings, quest text) |
+| `Data/textdata.cam` | Interface/UI text strings |
+| `DataMX/mx_gpltext.cam` | Expansion GPL text |
+| `DataMX/mx_textdata.cam` | Expansion UI text |
+
+## Running Tests
+
+```bash
+# Run the full test suite for CAM/STRT tools
+python -m pytest tests/ -v
 ```
 
 ## IceSpell Mod — Current Status

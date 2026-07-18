@@ -137,6 +137,8 @@ def strt_to_txt(strt_data):
     has a valid latin-1 codepoint. Translators edit the readable parts.
     """
     lines = read_strt(strt_data)
+    if not lines:
+        return ""  # Empty STRT → empty TXT
     text_lines = []
     for line in lines:
         # latin-1 is a perfect 1:1 byte mapping — no data loss
@@ -149,15 +151,19 @@ def txt_to_strt(text, version_flag=0x02):
     """Convert edited text (UTF-8) back to binary STRT data.
     Re-encodes using latin-1 for lossless byte preservation.
     """
-    # Split on EOL marker + newline
+    # Empty text → empty STRT (0 lines)
+    if not text or text.strip() == "":
+        return write_strt([], version_flag)
+
+    # Split on EOL marker + newline — each part is one logical line
     parts = text.split(EOL_MARKER + "\n")
-    # Filter empty trailing parts
-    parts = [p for p in parts if p]
-    # Handle EOL at very end without trailing newline
+    # The split always produces a trailing empty string after the last EOL+\n
+    # Remove only the final empty trailing element
+    if parts and parts[-1] == "":
+        parts.pop()
+    # Handle case where last line has EOL but no trailing newline
     if parts and parts[-1].endswith(EOL_MARKER):
         parts[-1] = parts[-1][:-len(EOL_MARKER)]
-        if not parts[-1]:
-            parts.pop()
 
     lines = []
     for part in parts:
