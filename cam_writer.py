@@ -123,12 +123,132 @@ def repack_cam(cam_data, sections, replacements=None):
     return bytes(out)
 
 
+def pack_from_directory(input_dir):
+    """
+    Pack a CAM file from an extracted directory (CamTool.index + section subdirs).
+    This is the inverse of cam_reader.py --extract.
+    """
+    import base64
+    input_dir = Path(input_dir)
+    index_path = input_dir / "CamTool.index"
+
+    if not index_path.exists():
+        raise FileNotFoundError(f"No CamTool.index found in {input_dir}")
+
+    lines = index_path.read_text(encoding="ascii").strip().split("\n")
+    idx = 0
+    section_count = int(lines[idx]); idx += 1
+    section_sizes = []
+    for _ in range(section_count):
+        section_sizes.append(int(lines[idx])); idx += 1
+
+    # Read file names from index
+    section_file_names = []
+    for sec_size in section_sizes:
+        names = []
+        for _ in range(sec_size):
+            names.append(lines[idx]); idx += 1
+        section_file_names.append(names)
+
+    # Detect base64 mode: if any name contains non-ASCII-printable after decode attempt
+    # We just check if the directory uses base64 names by looking at actual files
+    # Simple heuristic: try ASCII decode first, fall back to base64
+    use_base64 = False
+
+    # Build the CAM structure
+    section_count_val = section_count
+    # We need to figure out extensions from the files on disk
+    sections_data = []  # list of (extension, [(name_bytes, data_bytes), ...])
+
+    for sec_idx in range(section_count):
+        sec_dir = input_dir / str(sec_idx)
+        if not sec_dir.exists():
+            raise FileNotFoundError(f"Section directory not found: {sec_dir}")
+
+        # Get extension from any file in the directory
+        sample_files = list(sec_dir.iterdir())
+        if not sample_files:
+            raise ValueError(f"Empty section directory: {sec_dir}")
+        extension = sample_files[0].suffix.lstrip(".")
+
+        files_data = []
+        for name_str in section_file_names[sec_idx]:
+            file_path = sec_dir / f"{name_str}.{extension}"
+            if not file_path.exists():
+                raise FileNotFoundError(f"Missing entry file: {file_path}")
+
+            # Decode name back to 20-byte padded form
+            if use_base64:
+                name_bytes = base64.b64decode(name_str.replace("_", "/"))
+            else:
+                name_bytes = name_str.encode("ascii").ljust(20, b"\x00")
+
+            data = file_path.read_bytes()
+            files_data.append((name_bytes, data))
+
+        sections_data.append((extension, files_data))
+
+    # Build the output binary
+    # File header: 12 + 4 + 4 + 8*section_count
+    file_header_size = 12 + 4 + 4 + 8 * section_count
+
+    # Content header: sum of (4 + 4 + 28*file_count) per section
+    content_header_size = sum(4 + 4 + 28 * len(files) for _, files in sections_data)
+
+    content_start = file_header_size + content_header_size
+
+    # Calculate offsets
+    current_offset = content_start
+    all_offsets = []
+    for _, files in sections_data:
+        sec_offsets = []
+        for _, data in files:
+            sec_offsets.append(current_offset)
+            current_offset += len(data)
+        all_offsets.append(sec_offsets)
+
+    # Write
+    out = bytearray()
+
+    # File header
+    out += b"CYLBPC  \x01\x00\x01\x00"
+    out += struct.pack("<I", section_count)
+    out += struct.pack("<I", content_header_size)
+
+    sec_header_offset = file_header_size
+    for ext, files in sections_data:
+        out += ext.encode("ascii")[:4].ljust(4, b" ")
+        out += struct.pack("<I", sec_header_offset)
+        sec_header_offset += 4 + 4 + 28 * len(files)
+
+    # Content header
+    for sec_idx, (ext, files) in enumerate(sections_data):
+        out += struct.pack("<I", len(files))
+        out += struct.pack("<I", 0)  # pause
+        for file_idx, (name_bytes, data) in enumerate(files):
+            out += name_bytes[:20].ljust(20, b"\x00")
+            out += struct.pack("<I", all_offsets[sec_idx][file_idx])
+            out += struct.pack("<I", len(data))
+
+    # Content
+    for _, files in sections_data:
+        for _, data in files:
+            out += data
+
+    return bytes(out)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Majesty HD CAM repacker")
-    parser.add_argument("--cam", required=True, help="Input maindata.cam path")
+    parser.add_argument("--cam", help="Input CAM file path (for replace modes)")
     parser.add_argument("--output", required=True, help="Output CAM file path")
+    parser.add_argument("--pack", metavar="DIR",
+                        help="Pack CAM from extracted directory (CamTool.index + subdirs)")
     parser.add_argument("--replace-tile", type=int, metavar="IDX",
                         help="TILE index to replace")
+    parser.add_argument("--replace", nargs=3, metavar=("SEC", "IDX", "FILE"),
+                        action="append",
+                        help="Replace entry: --replace <section_idx> <file_idx> <path>")
     parser.add_argument("--tile-data", metavar="FILE",
                         help="Binary file with new TILE data")
     parser.add_argument("--reencode", action="store_true",
@@ -137,15 +257,37 @@ def main():
                         help="Repack without changes (verify repacker)")
     args = parser.parse_args()
 
+    # Pack from directory mode
+    if args.pack:
+        print(f"Packing from directory: {args.pack}")
+        output = pack_from_directory(args.pack)
+        print(f"  Output size: {len(output):,} bytes")
+        with open(args.output, "wb") as f:
+            f.write(output)
+        print(f"  Saved: {args.output}")
+
+        # Verify
+        sections2 = read_cam(output)
+        print(f"  Sections: {len(sections2)}")
+        for i, s in enumerate(sections2):
+            print(f"    {s.extension}: {len(s.files)} files")
+        print(f"  ✓ Packed successfully")
+        return
+
+    # All other modes require --cam
+    if not args.cam:
+        parser.error("--cam is required for replace/identity modes")
+
     print(f"Loading {args.cam}...")
     with open(args.cam, "rb") as fh:
         cam_data = fh.read()
     print(f"  Original size: {len(cam_data):,} bytes")
 
     sections = read_cam(cam_data)
-    imag, tile, splt, cut = sections
-    print(f"  IMAG: {len(imag.files)}  TILE: {len(tile.files)}  "
-          f"SPLT: {len(splt.files)}  CUT: {len(cut.files)}")
+
+    # Print section summary (handle any number of sections)
+    summary = "  ".join(f"{s.extension}: {len(s.files)}" for s in sections)
+    print(f"  {summary}")
 
     replacements = {}
 
@@ -204,6 +346,23 @@ def main():
             print("Error: specify --tile-data or --reencode")
             return
 
+    # Generic --replace entries
+    if args.replace:
+        for sec_str, idx_str, filepath in args.replace:
+            sec_idx = int(sec_str)
+            file_idx = int(idx_str)
+            if sec_idx >= len(sections):
+                print(f"Error: section {sec_idx} out of range")
+                return
+            if file_idx >= len(sections[sec_idx].files):
+                print(f"Error: file {file_idx} out of range in section {sec_idx}")
+                return
+            with open(filepath, "rb") as f:
+                new_data = f.read()
+            old_size = sections[sec_idx].files[file_idx].data_size
+            replacements[(sec_idx, file_idx)] = new_data
+            print(f"  Replacing [{sec_idx}][{file_idx}]: {old_size} -> {len(new_data)} bytes")
+
     print(f"\n  Repacking...")
     output = repack_cam(cam_data, sections, replacements)
     print(f"  New size: {len(output):,} bytes "
@@ -222,23 +381,24 @@ def main():
             return
     print(f"  ✓ All sections readable, file counts match")
 
-    # Spot-check a few tiles
-    for check_idx in [0, 100, 3547, 5000, 17000]:
-        if check_idx >= len(sections2[1].files):
-            continue
-        f2 = sections2[1].files[check_idx]
-        data2 = output[f2.data_off:f2.data_off + f2.data_size]
+    # Spot-check entries if there's a TILE section (index 1)
+    if len(sections2) > 1:
+        for check_idx in [0, 100, 3547, 5000, 17000]:
+            if check_idx >= len(sections2[1].files):
+                continue
+            f2 = sections2[1].files[check_idx]
+            data2 = output[f2.data_off:f2.data_off + f2.data_size]
 
-        if (1, check_idx) in replacements:
-            expected = replacements[(1, check_idx)]
-        else:
-            f1 = sections[1].files[check_idx]
-            expected = cam_data[f1.data_off:f1.data_off + f1.data_size]
+            if (1, check_idx) in replacements:
+                expected = replacements[(1, check_idx)]
+            else:
+                f1 = sections[1].files[check_idx]
+                expected = cam_data[f1.data_off:f1.data_off + f1.data_size]
 
-        if data2 == expected:
-            print(f"  ✓ TILE[{check_idx}]: data matches")
-        else:
-            print(f"  ✗ TILE[{check_idx}]: DATA MISMATCH!")
+            if data2 == expected:
+                print(f"  ✓ [{1}][{check_idx}]: data matches")
+            else:
+                print(f"  ✗ [{1}][{check_idx}]: DATA MISMATCH!")
 
 
 if __name__ == "__main__":

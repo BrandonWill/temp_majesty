@@ -77,11 +77,81 @@ def read_cam(path_or_bytes):
 
 if __name__ == "__main__":
     import sys
-    path = sys.argv[1] if len(sys.argv) > 1 else "Data/maindata.cam"
-    sections = read_cam(path)
-    for i, sec in enumerate(sections):
-        print(f"Section {i}: ext={sec.extension!r}  files={len(sec.files)}")
-        for f in sec.files[:5]:
-            print(f"    {f.display_name!r:30s} off=0x{f.data_off:08X} size={f.data_size}")
-        if len(sec.files) > 5:
-            print(f"    ... and {len(sec.files)-5} more")
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Majesty HD CAM archive reader/extractor")
+    parser.add_argument("cam", nargs="?", default="Data/maindata.cam",
+                        help="CAM file to read (default: Data/maindata.cam)")
+    parser.add_argument("--extract", metavar="DIR",
+                        help="Extract all entries to DIR (creates section subdirs)")
+    parser.add_argument("--section", type=int, metavar="IDX",
+                        help="Only extract/list this section index")
+    parser.add_argument("--entry", type=int, metavar="IDX",
+                        help="Only extract this entry index (requires --section)")
+    parser.add_argument("--base64-names", action="store_true",
+                        help="Use base64-encoded filenames (handles non-ASCII names)")
+    args = parser.parse_args()
+
+    import base64
+
+    path = args.cam
+    with open(path, "rb") as fh:
+        cam_data = fh.read()
+    sections = read_cam(cam_data)
+
+    if args.extract:
+        # Extract mode: dump entries to disk
+        out_dir = Path(args.extract)
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        # Write index file (compatible with CamTool format)
+        sec_range = [args.section] if args.section is not None else range(len(sections))
+
+        index_lines = []
+        index_lines.append(str(len(sections)))
+        for sec in sections:
+            index_lines.append(str(len(sec.files)))
+
+        for sec_idx in range(len(sections)):
+            sec = sections[sec_idx]
+            for f in sec.files:
+                if args.base64_names:
+                    encoded = base64.b64encode(f.name).decode("ascii").replace("/", "_")
+                else:
+                    encoded = f.name.rstrip(b"\x00").decode("ascii", errors="replace")
+                index_lines.append(encoded)
+
+        index_path = out_dir / "CamTool.index"
+        index_path.write_text("\n".join(index_lines) + "\n", encoding="ascii")
+        print(f"Wrote index: {index_path}")
+
+        # Write entry files
+        extracted = 0
+        for sec_idx in sec_range:
+            sec = sections[sec_idx]
+            sec_dir = out_dir / str(sec_idx)
+            sec_dir.mkdir(parents=True, exist_ok=True)
+
+            entry_range = [args.entry] if args.entry is not None else range(len(sec.files))
+            for file_idx in entry_range:
+                f = sec.files[file_idx]
+                if args.base64_names:
+                    name = base64.b64encode(f.name).decode("ascii").replace("/", "_")
+                else:
+                    name = f.name.rstrip(b"\x00").decode("ascii", errors="replace")
+                file_path = sec_dir / f"{name}.{sec.extension}"
+                file_path.write_bytes(cam_data[f.data_off:f.data_off + f.data_size])
+                extracted += 1
+
+        print(f"Extracted {extracted} entries to {out_dir}/")
+
+    else:
+        # List mode (default)
+        for i, sec in enumerate(sections):
+            if args.section is not None and i != args.section:
+                continue
+            print(f"Section {i}: ext={sec.extension!r}  files={len(sec.files)}")
+            for f in sec.files[:5]:
+                print(f"    {f.display_name!r:30s} off=0x{f.data_off:08X} size={f.data_size}")
+            if len(sec.files) > 5:
+                print(f"    ... and {len(sec.files)-5} more")
