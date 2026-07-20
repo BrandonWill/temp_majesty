@@ -1,36 +1,18 @@
 <Majesty>
-	<Quest id="{EAD1D405-1333-4112-9C6C-56F45A40BDA3}">
+	<Quest id="{A7F3B2D1-4E56-48C9-B1A4-9D2E7F5C8A63}">
 		<DataConfiguration>
 			<Dataset base="MajestyExpansion">
 				<Load>
 					<Template>Quest.q</Template>
 					<Constants>Quest.rgs</Constants>
-					<Descriptions>Data\PanelTest_Buildings.xml</Descriptions>
-					<Descriptions>Data\IceSpell_Actions.xml</Descriptions>
-					<Descriptions>Data\IceSpell_Characters.xml</Descriptions>
-					<Descriptions>Data\IceSpell_Overlays.xml</Descriptions>
-					<Descriptions>MyAI\Data\M_Buildings.xml</Descriptions>
-					<Descriptions>MyAI\Data\MX_Buildings.xml</Descriptions>
-					<CAM>Data\Quest_maindata.cam</CAM>
 					<CAM>Data\Quest_textdata.cam</CAM>
-					<GPL>
-						<Target>Data\IceSpell_Quest.bcd</Target>
-						<Source>GPL\IceSpell.gpl</Source>
-						<Source>GPL\IceSpell_Globals.dat</Source>
-						<Source>MyAI\GPL\custom_rules.gpl</Source>
-						<Source>MyAI\GPL\Game\mx_Building_Data.dat</Source>
-						<Source>MyAI\GPL\Game\mx_Globals.gpl</Source>
-						<Source>MyAI\GPL\Game\mx_Hero_Data.dat</Source>
-						<Source>MyAI\GPL\Game\mx_prototype.gpl</Source>
-						<Source>MyAI\GPL\Game\DecisionTrees\Modules\mx_defend_home.gpl</Source>
-					</GPL>
 				</Load>
 			</Dataset>
 		</DataConfiguration>
 		<DisplayName lang="en_US">Panel Navigation Test</DisplayName>
 		<Description lang="en_US">
-			<Short>Test quest for SMNU panel navigation. Build the Test Shop to verify sub-panel resolution.</Short>
-			<Long>Build the Test Shop (uses Magic Bazaar sprite). Click it and try the Research button. If a research panel appears, sequential naming convention is confirmed.</Long>
+			<Short>Test multi-page panel navigation for Magic Bazaar research.</Short>
+			<Long>Build the Magic Bazaar and click Research. Tests whether MX03 override loads a custom router panel with navigation to sub-pages PT01 (Potions) and PT02 (Equipment).</Long>
 		</Description>
 		<Difficulty>Normal</Difficulty>
 		<Name>basicAI</Name>
