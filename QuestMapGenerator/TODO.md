@@ -172,3 +172,14 @@ JSON config accepts all `create_quest()` parameters including lair_override and 
 - Config: `.kiro/settings/mcp.json`
 - RGSeditor.exe fully analyzed: 16,513 functions
 - All serialization + UI tooltip strings extracted
+
+
+---
+
+## Bugs
+
+### Quest UUID Generation
+- [ ] Generated quest IDs (GUIDs) in `.mqxml` files don't work — game rejects them
+- [ ] The working ID `{EAD1D405-1333-4112-9C6C-56F45A40BDA3}` was manually created
+- [ ] Investigate: what format does the game expect? Standard UUID4? Specific byte pattern?
+- [ ] Fix the quest generator / template to produce valid IDs
