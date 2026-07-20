@@ -1,5 +1,72 @@
 # SMNU Research — Future Work
 
+## Confirmed: Sub-Panel Navigation is Dead-End Without EXE Patch
+
+Tested all viable action codes from within a building research sub-panel:
+
+| Code | Action ID | Result |
+|------|-----------|--------|
+| 8013 | 9 | Works — returns to building main (only working code) |
+| 8013 | 35 | Also returns to main (code overrides target value) |
+| 4004 | 7 | Nothing (hero code, ignored in building context) |
+| System B full format | 6 | Nothing (hero navigation format, ignored) |
+| 8851 | 83 | Nothing (open-sub-panel code, only works from MAIN panel) |
+
+**Conclusion:** From inside a building sub-panel, the ONLY recognized action is
+code 8013 (return to parent). No panel-to-panel navigation is possible without
+patching the exe's click handler to support additional codes.
+
+---
+
+## WILD IDEA: "Hero as Building" — Use Hero Panel for Custom UI
+
+The hero panel has working multi-tab navigation (System B buttons with literal panel
+indices). What if we create a "hero" that acts like a building?
+
+### Concept
+A Character unit that:
+- Doesn't move (Speed=0, Static)
+- Has a building sprite (ImageIDBase pointing to a building)
+- When clicked, opens the hero-style panel with Stats/Spells/Items tabs
+- Those tabs are repurposed as custom content pages
+- Spawned at a fixed location via GPL, invincible
+
+### Challenges
+- [ ] Can a Character have `Info value="Static"`? Does it suppress movement?
+- [ ] Does Speed=0 prevent all AI behavior?
+- [ ] Can we suppress hero tracking window appearance?
+- [ ] Can the hero panel's tab indices (AP21/AP22/AP78) be overridden per-unit?
+- [ ] Can a static character be built from the construction menu? Or only GPL-spawned?
+- [ ] What happens if a "hero" has building-style sprites (multi-frame idle)?
+- [ ] Does clicking a static character show hero panel or something else?
+
+### Quick Test
+Define a Character with:
+```xml
+<Description type="Unit" subType="Character" ID="ZZA1" Name="ShopKeeper">
+    <Engine version="1">
+        <Info value="Static"/>
+        <Info value="Directionless"/>
+        <Info value="BlockGround"/>
+        <CanUse value="HumanPlayer"/>
+        <Menu value="6"/>
+        <ImageIDBase value="ABl1"/>  <!-- Magic Bazaar sprite -->
+        <DefaultSound value="0"/>
+    </Engine>
+    <Game version="1">
+        <MaxHP value="9999"/>
+        <Speed value="0"/>
+        <SightRange value="0"/>
+        <Flags value="HasHPBar"/>
+    </Game>
+</Description>
+```
+
+Spawn via GPL: `$SpawnUnit(palace, "ShopKeeper", 0, location);`
+Click it — does it show the hero panel with Stats/Spells/Items tabs?
+
+---
+
 ## Priority 1: EXE Patch — Enable STRT Lookup from Quest CAMs
 
 ### Problem
