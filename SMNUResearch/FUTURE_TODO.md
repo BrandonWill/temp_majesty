@@ -1,20 +1,32 @@
 # SMNU Research — Future Work
 
-## Confirmed: Sub-Panel Navigation is Dead-End Without EXE Patch
+## Confirmed Limitations (Exhaustively Tested)
 
-Tested all viable action codes from within a building research sub-panel:
+### Building Sub-Panel Navigation
+- Only action code 8013 (return to parent) works from inside a sub-panel
+- Codes 4004, 8851, System B format — all silently ignored in sub-panel context
+- Multi-page navigation is impossible without an exe patch
 
-| Code | Action ID | Result |
-|------|-----------|--------|
-| 8013 | 9 | Works — returns to building main (only working code) |
-| 8013 | 35 | Also returns to main (code overrides target value) |
-| 4004 | 7 | Nothing (hero code, ignored in building context) |
-| System B full format | 6 | Nothing (hero navigation format, ignored) |
-| 8851 | 83 | Nothing (open-sub-panel code, only works from MAIN panel) |
+### Quest CAM Capabilities
+- Quest CAMs loaded via `<CAM>` ARE loaded into the resource system (confirmed — no error)
+- Quest SMNU/STRT entries with same name as base/expansion do NOT override (first-loaded wins)
+- Quest CAMs DO work for: IMAG, TILE, SPLT (sprites), WAVE (audio) — these DO override
+- The difference: sprites use "last loaded wins" while SMNU/STRT use "first loaded wins"
+- This is a **search priority issue** in `FUN_00679a80`, not a loading issue
 
-**Conclusion:** From inside a building sub-panel, the ONLY recognized action is
-code 8013 (return to parent). No panel-to-panel navigation is possible without
-patching the exe's click handler to support additional codes.
+### Panel Modifications (Working)
+- Inserting widgets into existing SMNU panels WORKS (via direct file replacement)
+- The SMNU format is a tag-value int32 stream (fully decoded)
+- Widget type 0 buttons can be cloned and repositioned successfully
+- The CAM builder (`build_cam()`) produces byte-perfect output
+
+### Distribution Model Required (Current State)
+- **Modified mx_textdata.cam** = required for panel mods (direct file replacement)
+- Cannot be quest-only WITHOUT an exe patch to fix search priority
+- With exe patch (reverse search order for SMNU/STRT): quest-only distribution would work
+- **Patched exe** + **modified mx_textdata.cam** = full solution
+- Cannot be quest-only
+- Users must install both files (game directory replacement)
 
 ---
 
@@ -67,7 +79,39 @@ Click it — does it show the hero panel with Stats/Spells/Items tabs?
 
 ---
 
-## Priority 1: EXE Patch — Enable STRT Lookup from Quest CAMs
+## Priority 1: EXE Patch — Fix Resource Search Priority for SMNU/STRT
+
+### Problem (CORRECTED)
+Quest CAMs ARE loaded into the resource system. The data IS there. But
+`FUN_00679a80` finds the base/expansion version FIRST and stops looking.
+Quest-loaded entries with the same name are shadowed (never found).
+
+Sprites (IMAG/TILE) DO override because they use a different lookup path
+that prefers last-loaded. SMNU/STRT use a "first match" lookup.
+
+### Potential Fix
+In `FUN_00679a80`, reverse the search order: look through resources
+starting from MOST RECENTLY LOADED (quest CAMs) instead of oldest first.
+This might be a single comparison direction change, or a linked list
+traversal direction flip.
+
+### What This Would Enable
+- Quest CAMs can override ANY panel (SMNU + STRT) by entry name
+- Panel mods become distributable as self-contained quest files
+- No need to replace base game files
+- Combined with the sub-panel navigation patch (Priority 2), enables
+  full multi-page custom building panels from quest-only mods
+
+### Ghidra Task
+1. Find `FUN_00679a80` and decompile
+2. Identify the loop/search that iterates over registered resources
+3. Determine search direction (oldest-first vs newest-first)
+4. Find the comparison/iteration that could be reversed
+5. Test patched exe with quest-loaded SMNU override
+
+---
+
+## Priority 2: EXE Patch — Sub-Panel Navigation Action Code
 
 ### Problem
 Quest CAMs loaded via `<CAM>` in mqxml/mmxml do NOT register their STRT entries
