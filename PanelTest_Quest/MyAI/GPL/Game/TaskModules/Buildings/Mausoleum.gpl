@@ -1,0 +1,63 @@
+///////////////////////////////////////////////////////////////////////////////
+//Copyright (c) 1999 Cyberlore Studios, Inc. All rights Reserved.
+//CONFIDENTIAL MATERIAL
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+//Dwarfeh
+//Added a fix to a bug in the game that is only caused by the AI.
+//
+Function Mausoleum_Resurrect_Cost ( agent thisagent ) is integer
+/////////////////////////////////////////////////////////////////////
+// Called by the interface to fill in the resurrection cost field
+/////////////////////////////////////////////////////////////////////
+declare
+	integer Hero_Level, resurrect_cost;
+
+
+begin
+	if ($IsValidGamePiece ( thisagent ))
+		begin
+			Hero_Level = $GetAttribute (ThisAgent, #ATTRIB_ExperienceLevel);
+
+			resurrect_cost = 1000 + (Hero_Level * 250);
+
+			//there is a min cost for res
+			If (Resurrect_cost < #Mausoleum_min_res_cost)
+				resurrect_cost = #Mausoleum_min_res_cost;
+
+			return resurrect_cost;
+		end
+	else
+		return #Mausoleum_min_res_cost;
+end
+
+//Dwarfeh
+//Added a fix to a bug in the game that is only caused by the AI.
+//Issue is mausoleum can die and occupants list is destroyed. We need to ensure it's still alive
+Function Mausoleum_Resurrect_Begin ( agent thisagent )
+////////////////////////////////////////////////////////////////////
+// This kicks off the special effects for character resurrection and
+// removes the unit from the mausoleum's occupant listing.
+////////////////////////////////////////////////////////////////////
+declare
+	agent mausoleum;
+	integer temp;
+
+begin
+	
+
+	mausoleum = $GetBuildingContainer ( thisagent );
+	//
+	///////////////////////////////////////////////////////////////////
+	if ($IsDead(mausoleum) == FALSE && $IsValidGamePiece ( thisagent))
+		begin
+			$SpecifyIntent ( thisagent, #intent_reanimating );
+			$ClearEngineDeathFlags ( thisagent );
+			mausoleum's "occupants" -= thisagent;
+			$unhide ( thisagent );
+			$createeffector ( thisagent, "Mausoleum_Resurrect_Effector", 1700 );
+		end
+end

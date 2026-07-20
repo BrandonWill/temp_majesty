@@ -1,0 +1,2178 @@
+<Majesty>
+	<Description type="Unit" subType="Building" ID="ABA0" Name="placeholder_building" Description="Building">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="DontBlock"/>
+			<Info value="AllocateLocalID"/>
+			<Info value="NotVisibleInOverheadView"/>
+			<Info value="NoGPLAgent"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABA0"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<Flags value="NotBuildable"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBA1" Name="Animal_Den" Description="Creature Den">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBA1"/>
+			<DefaultSound value="Animal_Den"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APd4"/>
+			<MaxHP value="300"/>
+			<SightRange value="75"/>
+			<Gold value="50"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABB1" Name="Ballista_Tower" Description="Ballista Tower">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABB1"/>
+			<DefaultSound value="Ballista_Tower"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP76"/>
+			<Cost value="1000"/>
+			<Multiplier value="2.5"/>
+			<IncomeType value="3"/>
+			<IncomeAmount value="-3"/>
+			<MaxHP value="350"/>
+			<SightRange value="300"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<HelpID value="h072"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBB1" Name="Dark_Castle1" Description="Dark Castle">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBB1"/>
+			<DefaultSound value="Dark_Castle"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="800"/>
+			<SightRange value="100"/>
+			<Gold value="1000"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABC1" Name="Blacksmith1" Description="Blacksmith">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABC1"/>
+			<DefaultSound value="Blacksmith"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP02"/>
+			<Cost value="500"/>
+			<UpgradeTo value="Blacksmith2"/>
+			<Multiplier value="1.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="250"/>
+			<SightRange value="100"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h061"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABD1" Name="Fairgrounds" Description="Fairgrounds">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABD1"/>
+			<DefaultSound value="Fairground"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP08"/>
+			<Cost value="3000"/>
+			<Multiplier value="3.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="100"/>
+			<MaxHP value="800"/>
+			<SightRange value="225"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h064"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABE1" Name="Guardhouse1" Description="Guardhouse">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABE1"/>
+			<DefaultSound value="Guard_House"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP17"/>
+			<Cost value="600"/>
+			<UpgradeTo value="Guardhouse2"/>
+			<Multiplier value="1.5"/>
+			<IncomeType value="3"/>
+			<MaxHP value="200"/>
+			<SightRange value="400"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<HelpID value="h073"/>
+			<Produces>
+				<Unit ID="City_Guard"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABF1" Name="Inn" Description="Inn">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABF1"/>
+			<DefaultSound value="Inn"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP23"/>
+			<Cost value="400"/>
+			<Multiplier value="1.2"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="120"/>
+			<SightRange value="100"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<NameGenType value="NM17"/>
+			<HelpID value="h065"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABG1" Name="Library1" Description="Library">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABG1"/>
+			<DefaultSound value="Library"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP26"/>
+			<Cost value="600"/>
+			<UpgradeTo value="Library2"/>
+			<Multiplier value="1.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="100"/>
+			<SightRange value="100"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h066"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABH1" Name="Marketplace1" Description="Marketplace">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABH1"/>
+			<DefaultSound value="Marketplace"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP31"/>
+			<Cost value="1500"/>
+			<UpgradeTo value="Marketplace2"/>
+			<Multiplier value="1.3"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="200"/>
+			<SightRange value="150"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h068"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBH1" Name="Goblin_Camp" Description="Goblin Camp">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBH1"/>
+			<DefaultSound value="Goblin_Hovel"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="200"/>
+			<SightRange value="100"/>
+			<Gold value="250"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBI1" Name="Goblin_Hovel" Description="Goblin Hovel">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBI1"/>
+			<DefaultSound value="Goblin_Hovel"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="100"/>
+			<SightRange value="64"/>
+			<Gold value="50"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABJ1" Name="Palace1" Description="Palace">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABJ1"/>
+			<DefaultSound value="Palace"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP39"/>
+			<UpgradeTo value="Palace2"/>
+			<MaxHP value="550"/>
+			<SightRange value="400"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h030"/>
+			<Produces>
+				<Unit ID="Palace_Guard"/>
+				<Unit ID="Tax_Collector"/>
+				<Unit ID="Peasant"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBJ1" Name="Graveyard" Description="Graveyard">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="3"/>
+			<ImageIDBase value="BBJ1"/>
+			<DefaultSound value="Graveyard"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP15"/>
+			<MaxHP value="250"/>
+			<SightRange value="75"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<HelpID value="h080"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBK1" Name="Ruined_Altar1" Description="Ruined Altar">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBK1"/>
+			<DefaultSound value="Ruined_Bldgs"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="500"/>
+			<SightRange value="75"/>
+			<Gold value="300"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABL1" Name="Trading_Post" Description="Trading Post">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABL1"/>
+			<DefaultSound value="Trading_Post"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP51"/>
+			<Cost value="600"/>
+			<Multiplier value="1.75"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="150"/>
+			<SightRange value="100"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h071"/>
+			<Produces>
+				<Unit ID="Caravan"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBL1" Name="Ruined_Keep1" Description="Ruined Keep">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBL1"/>
+			<DefaultSound value="Ruined_Bldgs"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="500"/>
+			<SightRange value="100"/>
+			<Gold value="150"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABM1" Name="Wizards_Tower" Description="Wizards Tower">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABM1"/>
+			<DefaultSound value="BP32"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP54"/>
+			<Cost value="500"/>
+			<Multiplier value="1.8"/>
+			<IncomeType value="3"/>
+			<MaxHP value="250"/>
+			<SightRange value="300"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<HelpID value="h075"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBM1" Name="Ruined_Shrine1" Description="Ruined Shrine">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBM1"/>
+			<DefaultSound value="Ruined_Bldgs"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="500"/>
+			<SightRange value="75"/>
+			<Gold value="200"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABN1" Name="Sewers" Description="Sewer Entrance">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="3"/>
+			<ImageIDBase value="BBN1"/>
+			<DefaultSound value="Sewer"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa9"/>
+			<IncomeType value="3"/>
+			<MaxHP value="200"/>
+			<SightRange value="64"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NumberedName"/>
+			<HelpID value="h081"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABO1" Name="Temple_Agrela1" Description="Temple to Agrela">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABO1"/>
+			<DefaultSound value="Agrella Temple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP01"/>
+			<Cost value="1000"/>
+			<UpgradeTo value="Temple_Agrela2"/>
+			<Multiplier value="1.5"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="50"/>
+			<MaxHP value="250"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="100"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h040"/>
+			<Produces>
+				<Unit ID="Healer"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABP1" Name="Temple_Dauros1" Description="Temple to Dauros">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABP1"/>
+			<DefaultSound value="Daros Temple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP05"/>
+			<Cost value="1600"/>
+			<UpgradeTo value="Temple_Dauros2"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="45"/>
+			<MaxHP value="400"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="100"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h043"/>
+			<Produces>
+				<Unit ID="Monk"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABQ1" Name="Temple_Fervus1" Description="Temple to Fervus">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABQ1"/>
+			<DefaultSound value="FervisTemple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP10"/>
+			<Cost value="900"/>
+			<UpgradeTo value="Temple_Fervus2"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="35"/>
+			<MaxHP value="235"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="100"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h046"/>
+			<Produces>
+				<Unit ID="Cultist"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABR1" Name="Temple_Helia1" Description="Temple to Helia">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABR1"/>
+			<DefaultSound value="Temple_Solarus"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP19"/>
+			<Cost value="1000"/>
+			<UpgradeTo value="Temple_Helia2"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="400"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="150"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h049"/>
+			<Produces>
+				<Unit ID="Solarus"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABS1" Name="Temple_Krolm" Description="Temple to Krolm">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABS1"/>
+			<DefaultSound value="Krolm_Temple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP24"/>
+			<Cost value="900"/>
+			<Multiplier value="1.5"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="800"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="155"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h051"/>
+			<Produces>
+				<Unit ID="Barbarian"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABT1" Name="Temple_Krypta1" Description="Temple to Krypta">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABT1"/>
+			<DefaultSound value="Krypta Temple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP25"/>
+			<Cost value="1400"/>
+			<UpgradeTo value="Temple_Krypta2"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="350"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="100"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h052"/>
+			<Produces>
+				<Unit ID="Priestess"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABU1" Name="Temple_Lunord1" Description="Temple to Lunord">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABU1"/>
+			<DefaultSound value="Temple_Lunord"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP28"/>
+			<Cost value="1000"/>
+			<UpgradeTo value="Temple_Lunord2"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="350"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="125"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h056"/>
+			<Produces>
+				<Unit ID="Adept"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABV1" Name="Warriors_Guild" Description="Warriors Guild">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="1"/>
+			<ImageIDBase value="ABV1"/>
+			<DefaultSound value="Warriors_Guild"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP52"/>
+			<Cost value="800"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="700"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="175"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h036"/>
+			<Produces>
+				<Unit ID="Paladin"/>
+				<Unit ID="Warrior"/>
+				<Unit ID="Warrior_of_Discord"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABW1" Name="Rangers_Guild" Description="Rangers Guild">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="1"/>
+			<ImageIDBase value="ABW1"/>
+			<DefaultSound value="Rangers_Guild"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP47"/>
+			<Cost value="700"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="250"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="175"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h033"/>
+			<Produces>
+				<Unit ID="Ranger"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABX1" Name="Rogues_Guild1" Description="Rogues Guild">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="1"/>
+			<ImageIDBase value="ABX1"/>
+			<DefaultSound value="Rogues_Guild"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP48"/>
+			<Cost value="600"/>
+			<UpgradeTo value="Rogues_Guild2"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="30"/>
+			<MaxHP value="250"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="100"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h034"/>
+			<Produces>
+				<Unit ID="Rogue"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABY1" Name="Wizards_Guild1" Description="Wizards Guild">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="1"/>
+			<ImageIDBase value="ABY1"/>
+			<DefaultSound value="Wizards_Guild"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP53"/>
+			<Cost value="1500"/>
+			<UpgradeTo value="Wizards_Guild2"/>
+			<Multiplier value="4.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="350"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="150"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h037"/>
+			<Produces>
+				<Unit ID="Wizard"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABa1" Name="Brothel" Description="Elven Lounge">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="3"/>
+			<ImageIDBase value="ABa1"/>
+			<DefaultSound value="Brothel"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APb7"/>
+			<IncomeType value="3"/>
+			<MaxHP value="130"/>
+			<SightRange value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h076"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBa1" Name="Brashnards_Sphere" Description="Brashnard's Sphere">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBa1"/>
+			<DefaultSound value="Brashnards_Bldg"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="200"/>
+			<Gold value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h139"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABb1" Name="Dwarven_Settlement" Description="Dwarven Settlement">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="1"/>
+			<ImageIDBase value="ABb1"/>
+			<DefaultSound value="Dwarf_Settlement"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP06"/>
+			<Cost value="1250"/>
+			<Multiplier value="4.0"/>
+			<IncomeType value="3"/>
+			<MaxHP value="600"/>
+			<MaxGuildMembers value="3"/>
+			<SightRange value="400"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h058"/>
+			<Produces>
+				<Unit ID="Dwarf"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBb1" Name="Dragon_Lair" Description="Dragon Lair">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBb1"/>
+			<DefaultSound value="Dragons_Lair"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="600"/>
+			<Gold value="1000"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABc1" Name="Elven_Bungalow" Description="Elven Bungalow">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="1"/>
+			<ImageIDBase value="ABc1"/>
+			<DefaultSound value="Elven_Bungalow"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP07"/>
+			<Cost value="750"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="3"/>
+			<MaxHP value="300"/>
+			<MaxGuildMembers value="2"/>
+			<SightRange value="100"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h059"/>
+			<Produces>
+				<Unit ID="Elf"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBc1" Name="Dragon_Tomb" Description="Dragon King Tomb">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBc1"/>
+			<DefaultSound value="Dragons_Lair"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="1500"/>
+			<SightRange value="100"/>
+			<Gold value="500"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h138"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABd1" Name="Gambling_Hall" Description="Gambling Hall">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="3"/>
+			<ImageIDBase value="ABd1"/>
+			<DefaultSound value="Gambling_Hall"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APb8"/>
+			<IncomeType value="3"/>
+			<MaxHP value="180"/>
+			<SightRange value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h077"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBd1" Name="Elven_Hideout" Description="Elven Hideout">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBd1"/>
+			<DefaultSound value="Elven_Bungalow"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="1000"/>
+			<SightRange value="250"/>
+			<Gold value="15000"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABe1" Name="General_Housing" Description="House">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="3"/>
+			<ImageIDBase value="ABe1"/>
+			<DefaultSound value="General_Housing"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP96"/>
+			<MaxHP value="75"/>
+			<SightRange value="75"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h006"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBe1" Name="Hidden_sword_site" Description="Magic Sword Site">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBe1"/>
+			<DefaultSound value="HiddenSword_Bldg"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="200"/>
+			<Gold value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h133"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABf1" Name="Gnome_Hovel" Description="Gnome Hovel">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="1"/>
+			<ImageIDBase value="ABf1"/>
+			<DefaultSound value="Gnome_Camp"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP14"/>
+			<Cost value="100"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="3"/>
+			<MaxHP value="75"/>
+			<MaxGuildMembers value="3"/>
+			<SightRange value="64"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h060"/>
+			<Produces>
+				<Unit ID="Gnome"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBf1" Name="Hidden_Chalice_Site" Description="Hidden Chalice Site">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBf1"/>
+			<DefaultSound value="HiddenSword_Bldg"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="1000"/>
+			<Gold value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h132"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABg1" Name="Gazebo" Description="Gazebo">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABg1"/>
+			<DefaultSound value="gazebo"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APb3"/>
+			<MaxHP value="150"/>
+			<SightRange value="150"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h007"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBg1" Name="Hidden_Ring_Site" Description="Hidden Ring Site">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBg1"/>
+			<DefaultSound value="HiddenSword_Bldg"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="500"/>
+			<Gold value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h135"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABh1" Name="Royal_Gardens" Description="Royal Gardens">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABh1"/>
+			<DefaultSound value="Royal_Gardens"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APc4"/>
+			<Cost value="1200"/>
+			<Multiplier value="1.2"/>
+			<MaxHP value="250"/>
+			<SightRange value="55"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h008"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBh1" Name="Liche_Queen_Lair" Description="Liche Queen Lair">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBh1"/>
+			<DefaultSound value="Lich_Queen_Lair"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="1000"/>
+			<Gold value="15000"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h136"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBi1" Name="Slave_Pits" Description="Slave Pits">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBi1"/>
+			<DefaultSound value="Slave_Pit"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="350"/>
+			<Gold value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h130"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABj1" Name="Fountain" Description="Fountain">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABj1"/>
+			<DefaultSound value="Fountain"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APc3"/>
+			<IncomeType value="3"/>
+			<MaxHP value="100"/>
+			<SightRange value="75"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h009"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABk1" Name="Statue" Description="Statue">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABk1"/>
+			<DefaultSound value="Statue"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APb2"/>
+			<Cost value="600"/>
+			<Multiplier value="1.0"/>
+			<IncomeType value="3"/>
+			<MaxHP value="60"/>
+			<SightRange value="40"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h150"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBl1" Name="Tower_Prison" Description="Tower Prison">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBl1"/>
+			<DefaultSound value="Tower_Prison"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="1000"/>
+			<Gold value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h140"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBm1" Name="Witch_King_Tower" Description="Witch King Tower">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBm1"/>
+			<DefaultSound value="Witch_King_Tower"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="1000"/>
+			<SightRange value="90"/>
+			<Gold value="15000"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h137"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBp1" Name="Crown_Site" Description="Crown Site">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBp1"/>
+			<DefaultSound value="Crown_Site"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="1000"/>
+			<Gold value="30000"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h134"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBs1" Name="banner_wood" Description="Wooden Banner">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBs1"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa7"/>
+			<MaxHP value="10"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBt1" Name="treasure_chest1" Description="Treasure Chest">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBt1"/>
+			<SoundOverride type="chest_open" ID="Chestopen"/>
+			<DefaultSound value="Chestopen"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa6"/>
+			<MaxHP value="20"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h155"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBB2" Name="Dark_Castle2" Description="Evil Castle">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBB2"/>
+			<DefaultSound value="Dark_Castle"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="800"/>
+			<SightRange value="100"/>
+			<Gold value="1500"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABC2" Name="Blacksmith2" Description="Blacksmith Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABC2"/>
+			<DefaultSound value="Blacksmith"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP02"/>
+			<Cost value="600"/>
+			<UpgradeTo value="Blacksmith3"/>
+			<UpgradeFrom value="Blacksmith1"/>
+			<Multiplier value="1.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="300"/>
+			<SightRange value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h062"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABE2" Name="Guardhouse2" Description="Guardhouse Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABE2"/>
+			<DefaultSound value="Guard_House"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP17"/>
+			<Cost value="500"/>
+			<UpgradeFrom value="Guardhouse1"/>
+			<IncomeType value="3"/>
+			<MaxHP value="275"/>
+			<SightRange value="450"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<HelpID value="h074"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABG2" Name="Library2" Description="Library Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABG2"/>
+			<DefaultSound value="Library"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP26"/>
+			<Cost value="800"/>
+			<UpgradeFrom value="Library1"/>
+			<Multiplier value="1.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="200"/>
+			<SightRange value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h067"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABH2" Name="Marketplace2" Description="Marketplace Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABH2"/>
+			<DefaultSound value="Marketplace"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP31"/>
+			<Cost value="1000"/>
+			<UpgradeTo value="Marketplace3"/>
+			<UpgradeFrom value="Marketplace1"/>
+			<Multiplier value="1.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="250"/>
+			<SightRange value="150"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h069"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABJ2" Name="Palace2" Description="Palace Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABJ2"/>
+			<DefaultSound value="Palace"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP39"/>
+			<Cost value="3000"/>
+			<UpgradeTo value="Palace3"/>
+			<UpgradeFrom value="Palace1"/>
+			<MaxHP value="700"/>
+			<SightRange value="500"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h031"/>
+			<Produces>
+				<Unit ID="Palace_Guard"/>
+				<Unit ID="Tax_Collector"/>
+				<Unit ID="Peasant"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABO2" Name="Temple_Agrela2" Description="Temple to Agrela Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABO2"/>
+			<DefaultSound value="Agrella Temple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP01"/>
+			<Cost value="1500"/>
+			<UpgradeTo value="Temple_Agrela3"/>
+			<UpgradeFrom value="Temple_Agrela1"/>
+			<Multiplier value="1.5"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="50"/>
+			<MaxHP value="300"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="150"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h041"/>
+			<Produces>
+				<Unit ID="Healer"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABP2" Name="Temple_Dauros2" Description="Temple to Dauros Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABP2"/>
+			<DefaultSound value="Daros Temple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP05"/>
+			<Cost value="2200"/>
+			<UpgradeTo value="Temple_Dauros3"/>
+			<UpgradeFrom value="Temple_Dauros1"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="45"/>
+			<MaxHP value="500"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="150"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h044"/>
+			<Produces>
+				<Unit ID="Monk"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABQ2" Name="Temple_Fervus2" Description="Temple to Fervus Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABQ2"/>
+			<DefaultSound value="FervisTemple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP10"/>
+			<Cost value="1300"/>
+			<UpgradeTo value="Temple_Fervus3"/>
+			<UpgradeFrom value="Temple_Fervus1"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="35"/>
+			<MaxHP value="336"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="150"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h047"/>
+			<Produces>
+				<Unit ID="Cultist"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABR2" Name="Temple_Helia2" Description="Temple to Helia Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABR2"/>
+			<DefaultSound value="Temple_Solarus"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP19"/>
+			<Cost value="2000"/>
+			<UpgradeFrom value="Temple_Helia1"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="600"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="200"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h050"/>
+			<Produces>
+				<Unit ID="Solarus"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABT2" Name="Temple_Krypta2" Description="Temple to Krypta Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABT2"/>
+			<DefaultSound value="Krypta Temple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP25"/>
+			<Cost value="1800"/>
+			<UpgradeTo value="Temple_Krypta3"/>
+			<UpgradeFrom value="Temple_Krypta1"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="425"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="150"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h054"/>
+			<Produces>
+				<Unit ID="Priestess"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABU2" Name="Temple_Lunord2" Description="Temple to Lunord Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABU2"/>
+			<DefaultSound value="Temple_Lunord"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP28"/>
+			<Cost value="2000"/>
+			<UpgradeFrom value="Temple_Lunord1"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="500"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="200"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h057"/>
+			<Produces>
+				<Unit ID="Adept"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABX2" Name="Rogues_Guild2" Description="Rogues Guild Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="1"/>
+			<ImageIDBase value="ABX2"/>
+			<DefaultSound value="Rogues_Guild"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP48"/>
+			<Cost value="850"/>
+			<UpgradeFrom value="Rogues_Guild1"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="30"/>
+			<MaxHP value="350"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h035"/>
+			<Produces>
+				<Unit ID="Rogue"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABY2" Name="Wizards_Guild2" Description="Wizards Guild Level 2">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="1"/>
+			<ImageIDBase value="ABY2"/>
+			<DefaultSound value="Wizards_Guild"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP53"/>
+			<Cost value="2500"/>
+			<UpgradeTo value="Wizards_Guild3"/>
+			<UpgradeFrom value="Wizards_Guild1"/>
+			<Multiplier value="4.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="500"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="175"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h038"/>
+			<Produces>
+				<Unit ID="Wizard"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBi2" Name="Slave_Cross" Description="Slave Cross">
+		<Engine version="1">
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBi2"/>
+			<DefaultSound value="Slave_Cross"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APc6"/>
+			<IncomeType value="3"/>
+			<MaxHP value="50"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<HelpID value="h131"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBs2" Name="goblin_marker_med" Description="Goblin marker">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBs2"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa7"/>
+			<HelpID value="h151"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBt2" Name="treasure_chest2" Description="Treasure Chest">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBt2"/>
+			<DefaultSound value="Chestopen"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa6"/>
+			<MaxHP value="10"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h155"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBB3" Name="Dark_Castle3" Description="Ancient Castle">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBB3"/>
+			<DefaultSound value="Dark_Castle"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="800"/>
+			<SightRange value="100"/>
+			<Gold value="1500"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABC3" Name="Blacksmith3" Description="Blacksmith Level 3">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABC3"/>
+			<DefaultSound value="Blacksmith"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP02"/>
+			<Cost value="800"/>
+			<UpgradeFrom value="Blacksmith2"/>
+			<Multiplier value="1.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="400"/>
+			<SightRange value="100"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h063"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABH3" Name="Marketplace3" Description="Marketplace Level 3">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABH3"/>
+			<DefaultSound value="Marketplace"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP31"/>
+			<Cost value="1000"/>
+			<UpgradeFrom value="Marketplace2"/>
+			<Multiplier value="1.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="300"/>
+			<SightRange value="150"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="NumberedName"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h070"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABJ3" Name="Palace3" Description="Palace Level 3">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABJ3"/>
+			<DefaultSound value="Palace"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP39"/>
+			<Cost value="3750"/>
+			<UpgradeFrom value="Palace2"/>
+			<MaxHP value="1000"/>
+			<SightRange value="600"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h032"/>
+			<Produces>
+				<Unit ID="Palace_Guard"/>
+				<Unit ID="Tax_Collector"/>
+				<Unit ID="Peasant"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABO3" Name="Temple_Agrela3" Description="Temple to Agrela Level 3">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABO3"/>
+			<DefaultSound value="Agrella Temple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP01"/>
+			<Cost value="2600"/>
+			<UpgradeFrom value="Temple_Agrela2"/>
+			<Multiplier value="1.5"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="50"/>
+			<MaxHP value="400"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="200"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h042"/>
+			<Produces>
+				<Unit ID="Healer"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABP3" Name="Temple_Dauros3" Description="Temple to Dauros Level 3">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABP3"/>
+			<DefaultSound value="Daros Temple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP05"/>
+			<Cost value="3400"/>
+			<UpgradeFrom value="Temple_Dauros2"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="45"/>
+			<MaxHP value="700"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="200"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h045"/>
+			<Produces>
+				<Unit ID="Monk"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABQ3" Name="Temple_Fervus3" Description="Temple to Fervus Level 3">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABQ3"/>
+			<DefaultSound value="FervisTemple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP10"/>
+			<Cost value="2500"/>
+			<UpgradeFrom value="Temple_Fervus2"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="35"/>
+			<MaxHP value="444"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="200"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h048"/>
+			<Produces>
+				<Unit ID="Cultist"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABT3" Name="Temple_Krypta3" Description="Temple to Krypta Level 3">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="0"/>
+			<ImageIDBase value="ABT3"/>
+			<DefaultSound value="Krypta Temple"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP25"/>
+			<Cost value="2200"/>
+			<UpgradeFrom value="Temple_Krypta2"/>
+			<Multiplier value="2.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="475"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="200"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h055"/>
+			<Produces>
+				<Unit ID="Priestess"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="ABY3" Name="Wizards_Guild3" Description="Wizards Guild Level 3">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="1"/>
+			<ImageIDBase value="ABY3"/>
+			<DefaultSound value="Wizards_Guild"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP53"/>
+			<Cost value="3500"/>
+			<UpgradeFrom value="Wizards_Guild2"/>
+			<Multiplier value="4.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="700"/>
+			<MaxGuildMembers value="4"/>
+			<SightRange value="200"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="IsGuild"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h039"/>
+			<Produces>
+				<Unit ID="Wizard"/>
+			</Produces>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBs3" Name="goblin_marker_small" Description="Goblin marker">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBs3"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa7"/>
+			<HelpID value="h151"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBt3" Name="treasure_chest3" Description="Treasure Chest">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBt3"/>
+			<DefaultSound value="Chestopen"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa6"/>
+			<MaxHP value="20"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h155"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBB4" Name="Dark_Castle4" Description="Abandoned Castle">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<Info value="ModifyTerrainHeightOnPlacement"/>
+			<CanUse value="Monster"/>
+			<Menu value="2"/>
+			<ImageIDBase value="BBB4"/>
+			<DefaultSound value="Dark_Castle"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa5"/>
+			<MaxHP value="800"/>
+			<SightRange value="100"/>
+			<Gold value="1500"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h141"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBs4" Name="monster_marker" Description="Runic Marker">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBs4"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa7"/>
+			<MaxHP value="20"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBt4" Name="treasure_chest4" Description="Treasure Chest">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBt4"/>
+			<DefaultSound value="Chestopen"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa6"/>
+			<MaxHP value="20"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+			<Flags value="HasGoldToolTip"/>
+			<HelpID value="h155"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBs5" Name="note_stump" Description="Note Stump">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBs5"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa7"/>
+			<MaxHP value="5"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBs6" Name="obelisk" Description="Obelisk">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBs6"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa7"/>
+			<MaxHP value="20"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBs7" Name="sign_fancy_iron" Description="Fancy Iron Sign">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBs7"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa7"/>
+			<MaxHP value="10"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBs8" Name="sign_wood" Description="Wooden Sign">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBs8"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa7"/>
+			<MaxHP value="10"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+		</Game>
+	</Description>
+	<Description type="Unit" subType="Building" ID="BBs9" Name="stone_tablet" Description="Stone Tablet">
+		<Engine version="1">
+			<Info value="Static"/>
+			<Info value="Directionless"/>
+			<Info value="BlockGround"/>
+			<CanUse value="Monster"/>
+			<Menu value="12"/>
+			<ImageIDBase value="BBs9"/>
+			<DefaultSound value="0"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="APa7"/>
+			<MaxHP value="10"/>
+			<Flags value="NotBuildable"/>
+			<Flags value="NoFlaggable"/>
+			<Flags value="NotSpellTarget"/>
+			<Flags value="NotInMiniMap"/>
+		</Game>
+	</Description>
+</Majesty>

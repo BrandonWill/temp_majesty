@@ -1,0 +1,1578 @@
+///////////////////////////////////////////////////////////////////////////////
+//Copyright (c) 1999 Cyberlore Studios, Inc. All rights Reserved.
+//CONFIDENTIAL MATERIAL
+///////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+// All MX prototype changes should be placed at the END of their respective //
+// prototypes for easier reference of changes made.  If its anywhere else   //
+// please note it in the header comments for the prototype in question.     //
+//////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+/// This is a prototype for the global container unit
+//
+prototype AIRoot()
+declare
+	list activeAgents;
+	integer Done_setup;
+
+	function KickoffFunction;
+	function VictoryCondition;
+	function VictoryCondition2;
+	function SpecialSpawnScript; 	//These hold the functions (if any) that spawns a creature after a
+	function SpecialSpawnScript2;	//certain amount of time (Like Dirgo in Brashnard)
+
+
+	function UtilityScript; 		//This is a generic script for runtheading events. For instance, it is used in the demo
+									//as the script that delays victory for x amount of time so that the player understands
+									//that they won before the actual victory screen comes up.
+
+
+
+	function MusicScript; 			//This is the thread that plays cd tracks
+	integer	Track_Number; 			//This stores which track the game is going to be played next
+	integer	Lair_extra_Delay; 		//This holds the time that is added onto a lair's spawnrate for every extra lair on a map
+									//This is frequently overwritten on a per-quest basis in Epic_quest_scripts
+
+	boolean	Quest_Flag_1;  			//Used for victory coditions in certain Epic Quest scenarios
+	boolean	Quest_Flag_2;
+	boolean Quest_Flag_3;
+	boolean	Quest_Flag_4;
+	boolean	Quest_Flag_5;
+	boolean	Quest_Flag_6;
+	boolean	Quest_Flag_7;
+	boolean	Quest_Flag_8;
+	boolean	Quest_Flag_9;
+	boolean	Quest_Flag_10;
+	boolean	Quest_Flag_11;
+	boolean	Quest_Flag_12;
+	boolean	Quest_Flag_13;
+	boolean	Quest_Flag_14;
+	boolean	Quest_Flag_15;
+	boolean	Quest_Flag_16;
+	boolean	Quest_Flag_17;
+	boolean	Quest_Flag_18;
+	boolean	Quest_Flag_19;
+	boolean	Quest_Flag_20;
+
+	boolean Message_Check_1;  		//Used to check whether to instantiate chained message flags in quests
+	boolean	Message_Check_2;
+	boolean	Message_Check_3;
+	boolean	Message_Check_4;
+	boolean Message_Check_5;
+
+	boolean Lair_Delay_Override; 	//This is set to TRUE in freestyle games, where there is a minimum
+									//time that MUST be added to all lair's spawnrates. This is because
+									//there are times when there are no lairs onmap, but many offmap.
+
+	coordinate end_coord;
+
+	integer	Quest_Number; 			//This holds the number that corresponds to the current quest (1-indexed)
+									//This is 0 if there is no Quest Running
+ // list	Quest_Items;
+
+	integer Survive_Limit; 			//This stores the amount of time that Freestyle survive time conditions need to last
+									//it is in place because if we don't break the v.c. into chunks, we can overflow the 2mil
+									//integer limit
+
+	integer Victory_Score;  		// These integers are used to track victory / defeat scores in
+	integer Defeat_Score;			// some missions. They are used on a quest by quest basis.
+
+	integer day_counter;    		// This is used to keep track of how many days have elapsed in certain
+									// quests.
+
+	list AI_Reward_Flags; 			// Used by the AI player in SIEGE quest.
+
+	boolean Permanent_Hostility;	// When this is TRUE, removing attack flags will no longer cause
+									// a kingdom to revert to the neutral team.  They will be stuck
+									// as a hostile team permanently.
+
+	boolean Deathmatch_Rules;		// When this is TRUE, all the special deathmatch
+									// Mods will be enforced.
+
+	boolean Spawn_High_Level_Heroes;//If this is TRUE, then a special event script has been kicked off
+									//that makes heroes spawn at high levels.
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype hero ()
+
+declare
+	string type;
+	string subtype;
+	string title;
+	string Original_type;
+
+	integer percentageHPretreat;
+	float Enemy_estimation;
+	float self_estimation;
+
+	integer Greed;
+	integer Loyalty;
+	integer Luck;
+
+	integer critical_chance; 		// how likely a character is to deliver a killing blow
+
+	Boolean resist_critical; 		// does this guy resist critical hits? (reduce their damage)
+	Boolean Immune_to_poison;
+	Boolean rangeIncrease; 			// does this hero get a attackrange bonus per level up?
+	boolean criticalIncrease; 		// does this hero get a point of critical attack per level?
+
+	agent leader;  					// Chris hackarama so heros can be controlled monsters
+
+	integer Counter; 				// Exactly what it says it is.
+
+	coordinate destination;
+
+	string special_splat; 			// does this creature need a special splat player
+									// when it hits its target?
+
+	agent target; 					// this holds the target for any particular task
+	agent BackTarget; 				// this is for those special times when a Hero has to remember their target
+	string taskname; 				// used to tell what the hero is up to
+
+	list hostiles; 					// this is a list used by the unit to help determine
+									// targets and strength of enemies nearby
+
+	string	Friend; 				//This holds subtype that this Hero is Friendly with
+
+//	integer num_guards; 			// this is the number of guards this unit currently has
+									// or the Number of Healers that are currently following and Healing it
+
+	integer num_followers; 			// used by Priestess, and probably Cultist in regards to controlled monsters
+
+	integer Reborn_Counter; 		//This holds how many free "go home and Ressurect"s the Healer has
+
+	integer	Task_Number; 			//This typically holds Attrib references. For things like figuring out what a hero
+									//wanted to buy at a blacksmith. They would store #Attrib_Weapon_Struct_Bonus in this case
+
+	function StartingScript; 		//this holds the core start script that is inited with the agent. never change, because we rely
+									//on this to always hold the agent's starting/basic behavior. this script is never 'executed'
+
+	function basicscript; 			// this holds the basic decision tree a hero
+									// always returns to checking
+	function backscript;
+	function activescript;			// this holds the current activity of the hero
+
+	function evaluationScript; 		// holds the script which the hero uses to check nearby them fro danger
+
+	function birthScript;  			// This script will be called once, when the unit is created;
+	function IGdeathScript; 		// This script will be called once, when the unit is killed;
+	function deathScript; 			// This script will be called once, when the unit is killed;
+
+	agent home; 					// where the hero lives, set by the engine upon recruition
+
+	agent palace; 					// the palace that this Hero is loyal to. set in the engine.
+
+	boolean Raider_respond; 		// jim hackerama so heroes can become raider mosnters
+
+	function teleportScript; 		// callback for the teleport spell
+
+	function QuestScript; 			//This holds Quest-Specific logic
+
+	// the distance a hero casts spells from
+	integer castingrange;
+
+  	integer PrimaryStat;
+
+	integer num_picked_goodies;		//These may be stored in the engine
+
+	integer	Upgrade_Armor_Chance;	//The chance that a hero will decide to think about upgrading their armor
+  
+	integer	Upgrade_Weapon_Chance;	//The chance that a hero will decide to think about upgrading their weapon
+  
+	integer	Poison_Weapon_Chance;	//The chance that a hero will decide to think about poisoning their weapon
+
+	boolean	Special_Boolean; 		//This is quest specific. For instance, in WCurse, it is TRUE if a Hooligan has been found.
+
+	string Enemytype;				// What the agent attacks, can be "Hero", "Monster" or "Nothing"
+	integer attacktype;				// The agent's attack type
+	string attack_action;			// The name of the action to perform when attacking
+	string Special_attack_action; 	// This holds special attack actions (currently only used for Fire Balm)
+									// Gets swapped with Attack_action for a duration, then swapped back again
+	string cast_action;				// The name of the action to perform when casting a spell
+	string Pickup_Action;			// The name of the action to perform when picking something up
+	string Idle_Action;				// The name of the action to perform when going into idle
+
+	// -- New MX additions below this line -- //
+	function PlagueScript;
+	function FreezeScript;
+	function ShieldScript; 			//This is for the Frost Field spell
+
+	boolean	Resists_Fire;
+	
+	// -- Dwarfeh AI additions below this line -- //
+	
+	integer cost; //unable to find correct #ATTRIB to pull cost so just integrating it here to make it easy for me to pull
+	
+	//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+	integer custh1;
+	integer custh2;
+	integer custh3;
+	integer custh4;
+	integer custh5;
+	integer custh6;
+	integer custh7;
+	integer custh8;
+	integer custh9;
+	integer custh0;
+	
+	function specFunc1; 
+	function specFunc2;
+	function specFunc3;
+	function specFunc4;
+	function specFunc5;
+	function specFunc6;
+	function specFunc7;
+	function specFunc8;
+	function Hold_Attack_Script;// used to store attack_object function. Possible optimization. Never executed, just for comparisons. // didn't work as expected :<
+	
+	boolean cusb1;
+	boolean cusb2;
+	boolean cusb3;
+	boolean cusb4;
+	boolean cusb5;
+	boolean cusb6;
+	boolean cusb7;
+	
+	list custl1;
+	list custl2;
+	list custl3;
+	list custl4;
+	list custl5;
+	
+	agent cusa1;
+	agent cusa2;
+	agent cusa3;
+	agent cusa4;
+	agent cusa5;
+	agent cusa6;
+	agent cusa7;
+	
+	string custs1;
+	string custs2;
+	string custs3;
+	string custs4;
+	string custs5;
+	string custs6;	
+	
+//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+integer extraint1; boolean extrabool1; list extralist1; agent extraagent1; string extrastring1; function extrafunction1;
+integer extraint2; boolean extrabool2; list extralist2; agent extraagent2; string extrastring2; function extrafunction2;
+integer Bank_Visit_rolls_CD; boolean extrabool3; list extralist3; agent MyPreviousTarget; string extrastring3; function extrafunction3;
+integer Hero_Count_Number; boolean extrabool4; list extralist4; agent extraagent4; string extrastring4; function extrafunction4;
+integer Day_Bank_Visited; boolean extrabool5; list extralist5; agent extraagent5; string extrastring5; function extrafunction5;
+integer Bank_Acc_Gold; boolean extrabool6; list extralist6; agent extraagent6; string extrastring6; function extrafunction6;
+integer Bank_Visit_Delay; boolean extrabool7; list extralist7; agent extraagent7; string extrastring7; function extrafunction7;
+integer Library_Bonus_Visit_Chance; boolean extrabool8; list extralist8; agent extraagent8; string extrastring8; function extrafunction8;
+integer Library_Learned_Spells_Count; boolean extrabool9; list extralist9; agent extraagent9; string extrastring9; function extrafunction9;
+integer check_rewards_Delay; boolean extrabool10; list extralist10; agent extraagent10; string extrastring10; function extrafunction10;
+integer Eval_enemies_Delay; boolean extrabool11; list extralist11; agent extraagent11; string extrastring11; function extrafunction11;
+integer extraint12;// using this for another portal check delay for optimizations
+boolean extrabool12; list extralist12; agent extraagent12; string extrastring12; function extrafunction12;
+integer BM_MonstersKilled; boolean BM_HasTempleStone; list extralist13; agent extraagent13; string extrastring13; function extrafunction13;
+integer BM_MonstersLVL; boolean BM_HasDebuffSpell; list extralist14; agent extraagent14; string extrastring14; function extrafunction14;
+integer BM_HeroREP; boolean BM_Pure_DMG; list extralist15; agent extraagent15; string extrastring15; function extrafunction15;
+integer BM_MonsterLoot; boolean extrabool16; list extralist16; agent extraagent16; string extrastring16; function extrafunction16;
+integer BM_temp; boolean extrabool17; list extralist17; agent extraagent17; string extrastring17; function extrafunction17;
+integer BM_Perm_REP; boolean extrabool18; list extralist18; agent extraagent18; string extrastring18; function extrafunction18;
+integer extraint19; boolean extrabool19; list extralist19; agent extraagent19; string extrastring19; function extrafunction19;
+integer extraint20; boolean extrabool20; list extralist20; agent extraagent20; string extrastring20; function extrafunction20;
+integer extraint21; boolean extrabool21; list extralist21; agent extraagent21; string extrastring21; function extrafunction21;
+integer extraint22; boolean extrabool22; list extralist22; agent extraagent22; string extrastring22; function extrafunction22;
+integer extraint23; boolean extrabool23; list extralist23; agent extraagent23; string extrastring23; function extrafunction23;
+integer extraint24; boolean extrabool24; list extralist24; agent extraagent24; string extrastring24; function extrafunction24;
+integer extraint25; boolean extrabool25; list extralist25; agent extraagent25; string extrastring25; function extrafunction25;
+integer extraint26; boolean extrabool26; list extralist26; agent extraagent26; string extrastring26; function extrafunction26;
+integer extraint27; boolean extrabool27; list extralist27; agent extraagent27; string extrastring27; function extrafunction27;
+integer extraint28; boolean extrabool28; list extralist28; agent extraagent28; string extrastring28; function extrafunction28;
+integer extraint29; boolean extrabool29; list extralist29; agent extraagent29; string extrastring29; function extrafunction29;
+integer extraint30; boolean extrabool30; list extralist30; agent extraagent30; string extrastring30; function extrafunction30;
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype monster ()
+// the mx monster prototype currently differs only in that it has an attribute to store
+// a zoo flag agent that has been placed on it.
+
+declare
+	string type;
+	string subtype;
+	string title;
+	string Original_type;
+
+	string family; 					//This is used by buff-ing monsters, so they know which monster types to buff
+
+	Boolean resist_critical; 		// does this guy resist critical hits? (reduce their damage)
+	Boolean Immune_to_poison; 		// does poison not affect this monster
+	boolean Familiar; 				// if this is true, a monster is someone's 'familiar'
+	boolean Relentless; 			// will the monster relentlessly pursue its target (ignore range cheking)
+
+	integer critical_chance; 		// how likely a monster is to deliver a killing blow
+
+	coordinate destination;
+
+	string special_splat; 			// does this creature need a special splat player
+									// when it hits its target?
+
+	agent target;
+	list hostiles; 					// this a list used by the unit to help determine
+									// targets and strength of enemies nearby
+
+	string Friend; 					//This holds Hero Title that this Monster is friends with.
+
+	coordinate	Coord_Home; 		//This holds the coord home for all monsters that use it (ie. Guardians and Offmap Sleepers)
+
+	agent	Sleeper_Home; 			//This is for Sleepers. It holds their agent home.
+
+	integer castingrange; 			// their spell range
+
+	boolean isLeader; 				// used by war_party logic
+
+	agent leader;
+
+	integer num_followers; 			// used by war_party
+	integer max_followers;
+
+	boolean Raider_respond; 		// sets whether a raider will respond to being attacked
+									// while in the midst of pounding on a building
+
+
+	integer	Guardian_Mod; 			//This is multiplied times a Guardian Monster's sightrange to find the area that
+									//they will pick a random coord to move to (around their home)
+
+	function StartingScript; 		//this holds the core start script that is inited with the agent. never change, because we rely
+									//on this to always hold the agent's starting/basic behavior
+	function basicscript; 			// this holds the basic script the monster
+									// always returns to when done with tasks
+	function backscript;
+	function activescript;
+
+	function SleeperScript; 		//This holds the script that calls the unit back to its lair after a duration.
+
+	function evaluationScript; 		// holds the script the monster uses to check nearby them for danger
+
+	integer	Target_Item; 			//This is for Item_Hunters (like the Black Phantoms in Magic Ring
+									//It holds the index of the item they are after
+
+	boolean	Special_Boolean; 		//This is quest specific. For instance, in WCurse, it is TRUE if a Hooligan has been found.
+
+	function teleportScript; 		// callback for the teleport spell
+
+	function birthScript;  			// This script will be called once, when the unit is created;
+	function IGdeathScript; 		// This script will be called once, when the unit is killed;
+	function deathScript; 			// This script will be called once, when the unit is killed;
+
+	integer counter;
+	string Enemytype;
+
+	integer attacktype;
+	string attack_action;
+	string idle_action;
+
+// New MX stuff below this point //
+	agent zoo_agent;
+	function PlagueScript;
+	function FreezeScript;
+	function ShieldScript; 			//This is for the Frost Field spell
+
+	boolean	Resists_Fire;
+	
+	// Dwarfeh AI stuff below this point //
+	
+	function player2AI;
+	
+//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+	integer DangerLevel;			// this is to be used in future for target evaluation. instead of how it now works. ay too heavy in terms of perfomance
+	integer MonsterLevel;
+	integer MonsterExp; // keep it simple. Every 5 hits monster level up	
+	
+integer extraint1; boolean extrabool1; list extralist1; agent extraagent1; string extrastring1; function extrafunction1;
+integer extraint2; boolean extrabool2; list extralist2; agent extraagent2; string extrastring2; function extrafunction2;
+integer extraint3; boolean extrabool3; list extralist3; agent extraagent3; string extrastring3; function extrafunction3;
+integer extraint4; boolean extrabool4; list extralist4; agent extraagent4; string extrastring4; function extrafunction4;
+integer extraint5; boolean extrabool5; list extralist5; agent extraagent5; string extrastring5; function extrafunction5;
+integer extraint6; boolean extrabool6; list extralist6; agent extraagent6; string extrastring6; function extrafunction6;
+integer extraint7; boolean extrabool7; list extralist7; agent extraagent7; string extrastring7; function extrafunction7;
+integer extraint8; boolean extrabool8; list extralist8; agent extraagent8; string extrastring8; function extrafunction8;
+integer extraint9; boolean extrabool9; list extralist9; agent extraagent9; string extrastring9; function extrafunction9;
+integer extraint10; boolean extrabool10; list extralist10; agent extraagent10; string extrastring10; function extrafunction10;
+integer extraint11; boolean extrabool11; list extralist11; agent extraagent11; string extrastring11; function extrafunction11;
+integer extraint12; boolean extrabool12; list extralist12; agent extraagent12; string extrastring12; function extrafunction12;
+integer extraint13; boolean extrabool13; list extralist13; agent extraagent13; string extrastring13; function extrafunction13;
+integer extraint14; boolean extrabool14; list extralist14; agent extraagent14; string extrastring14; function extrafunction14;
+integer extraint15; boolean extrabool15; list extralist15; agent extraagent15; string extrastring15; function extrafunction15;
+integer extraint16; boolean extrabool16; list extralist16; agent extraagent16; string extrastring16; function extrafunction16;
+integer extraint17; boolean extrabool17; list extralist17; agent extraagent17; string extrastring17; function extrafunction17;
+integer extraint18; boolean extrabool18; list extralist18; agent extraagent18; string extrastring18; function extrafunction18;
+integer extraint19; boolean extrabool19; list extralist19; agent extraagent19; string extrastring19; function extrafunction19;
+integer extraint20; boolean extrabool20; list extralist20; agent extraagent20; string extrastring20; function extrafunction20;
+integer extraint21; boolean extrabool21; list extralist21; agent extraagent21; string extrastring21; function extrafunction21;
+integer extraint22; boolean extrabool22; list extralist22; agent extraagent22; string extrastring22; function extrafunction22;
+integer extraint23; boolean extrabool23; list extralist23; agent extraagent23; string extrastring23; function extrafunction23;
+integer extraint24; boolean extrabool24; list extralist24; agent extraagent24; string extrastring24; function extrafunction24;
+integer extraint25; boolean extrabool25; list extralist25; agent extraagent25; string extrastring25; function extrafunction25;
+integer extraint26; boolean extrabool26; list extralist26; agent extraagent26; string extrastring26; function extrafunction26;
+integer extraint27; boolean extrabool27; list extralist27; agent extraagent27; string extrastring27; function extrafunction27;
+integer extraint28; boolean extrabool28; list extralist28; agent extraagent28; string extrastring28; function extrafunction28;
+integer extraint29; boolean extrabool29; list extralist29; agent extraagent29; string extrastring29; function extrafunction29;
+integer extraint30; boolean extrabool30; list extralist30; agent extraagent30; string extrastring30; function extrafunction30;
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype RewardFlag()
+// added the charm_percentage integer for zoo flags.
+declare
+	string type;
+	string subtype;
+	string title;
+	function birthscript;
+	function deathScript;
+	function activescript;
+	boolean gavereward;
+	list heroes;
+
+// New MX stuff below this point //
+	integer charm_percentage;
+	
+//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+	integer flagNumber; boolean extrabool1; list extralist1; string extrastring1; function extrafunction1;
+	integer extraint2; boolean extrabool2; list extralist2; string extrastring2; function extrafunction2;	
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Lair ()
+Declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+
+	integer	History_Modifier; 			//A counter that is incremented depending on a monster's strength. Used to adjust spawn_rate.
+
+	// These are both used when a building is too close to a Lair. The lair become annoyed,
+	// and sets the offending building as its target, which all of the Lairs spawned creatures querry.
+	// boolean	Annoyed;
+	
+	agent		Target;
+
+	integer	Dispersion_Range;
+	
+	function activescript;
+	function Spawn_Function; 			// This Holds the agent's Spawning mechanism
+
+
+	integer	Base_Spawn_Rate; 			// This is for lairs, it holds BaseLine interval between monster creations
+
+	integer	difficulty; 				// this holds the relative difficulty of the lair for a character to undertake
+
+	string Spawn_Type; 					// Holds the type of monster the lair spawns
+	string Special_Spawn_Type; 			// Holds the "special" monster to spawn when the Lair is destroyed
+
+	integer	Multi_Spawn_Num; 			// Number of spawns a lair will do when it dies if it uses Lair_Multispawn_Death
+	integer  Stored_Spawns; 			// Number of spawns a lair has stored up to release when hit. Used only by Goblin fort.
+
+	integer  Max_Simul_Spawns; 			// Currently Used by the Goblin Fortress. Max number of Gobs it spawns at a time.
+	integer	Max_Stored_Spawns; 			// Currently used by the Goblin Fortress. Max number of spawns that the unit can store up
+										// To dump on enemies that come up and whack it.
+
+	boolean	Has_Special_Spawn; 			// This is set to TRUE if the lair wants to spawn its special spawn type instead of its
+										// lairdata special spawn list
+
+	//removed because now we only use inventory attribs
+	//integer	Epic_Quest_Item; //This	holds and integer that corresponed to an entry in qitmes.txt (if applicable)
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+	
+//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+integer extraint1; boolean extrabool1; list extralist1; agent extraagent1; string extrastring1; function extrafunction1;
+integer extraint2; boolean extrabool2; list extralist2; agent extraagent2; string extrastring2; function extrafunction2;
+integer extraint3; boolean extrabool3; list extralist3; agent extraagent3; string extrastring3; function extrafunction3;
+integer extraint4; boolean extrabool4; list extralist4; agent extraagent4; string extrastring4; function extrafunction4;
+integer extraint5; boolean extrabool5; list extralist5; agent extraagent5; string extrastring5; function extrafunction5;
+integer extraint6; boolean extrabool6; list extralist6; agent extraagent6; string extrastring6; function extrafunction6;
+integer extraint7; boolean extrabool7; list extralist7; agent extraagent7; string extrastring7; function extrafunction7;
+integer extraint8; boolean extrabool8; list extralist8; agent extraagent8; string extrastring8; function extrafunction8;
+integer extraint9; boolean extrabool9; list extralist9; agent extraagent9; string extrastring9; function extrafunction9;
+integer extraint10; boolean extrabool10; list extralist10; agent extraagent10; string extrastring10; function extrafunction10;
+integer extraint11; boolean extrabool11; list extralist11; agent extraagent11; string extrastring11; function extrafunction11;
+integer extraint12; boolean extrabool12; list extralist12; agent extraagent12; string extrastring12; function extrafunction12;
+integer extraint13; boolean extrabool13; list extralist13; agent extraagent13; string extrastring13; function extrafunction13;
+integer extraint14; boolean extrabool14; list extralist14; agent extraagent14; string extrastring14; function extrafunction14;
+integer extraint15; boolean extrabool15; list extralist15; agent extraagent15; string extrastring15; function extrafunction15;
+integer extraint16; boolean extrabool16; list extralist16; agent extraagent16; string extrastring16; function extrafunction16;
+integer extraint17; boolean extrabool17; list extralist17; agent extraagent17; string extrastring17; function extrafunction17;
+integer extraint18; boolean extrabool18; list extralist18; agent extraagent18; string extrastring18; function extrafunction18;
+integer extraint19; boolean extrabool19; list extralist19; agent extraagent19; string extrastring19; function extrafunction19;
+integer extraint20; boolean extrabool20; list extralist20; agent extraagent20; string extrastring20; function extrafunction20;
+integer extraint21; boolean extrabool21; list extralist21; agent extraagent21; string extrastring21; function extrafunction21;
+integer extraint22; boolean extrabool22; list extralist22; agent extraagent22; string extrastring22; function extrafunction22;
+integer extraint23; boolean extrabool23; list extralist23; agent extraagent23; string extrastring23; function extrafunction23;
+integer extraint24; boolean extrabool24; list extralist24; agent extraagent24; string extrastring24; function extrafunction24;
+integer extraint25; boolean extrabool25; list extralist25; agent extraagent25; string extrastring25; function extrafunction25;
+integer extraint26; boolean extrabool26; list extralist26; agent extraagent26; string extrastring26; function extrafunction26;
+integer extraint27; boolean extrabool27; list extralist27; agent extraagent27; string extrastring27; function extrafunction27;
+integer extraint28; boolean extrabool28; list extralist28; agent extraagent28; string extrastring28; function extrafunction28;
+integer extraint29; boolean extrabool29; list extralist29; agent extraagent29; string extrastring29; function extrafunction29;
+integer extraint30; boolean extrabool30; list extralist30; agent extraagent30; string extrastring30; function extrafunction30;	
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Tower_Lair ()
+// This is the prototype for a tower lair.  These are MX monster buildings that are capable of firing
+// bolts as well as potentially spawning creatures.
+
+Declare
+	string type;
+	string subtype;
+	string title;
+
+	integer	History_Modifier; 			//A counter that is incremented depending on a monster's strength. Used to adjust spawn_rate.
+
+	// These are both used when a building is too close to a Lair. The lair become annoyed,
+	// and sets the offending building as its target, which all of the Lairs spawned creatures querry.
+	// boolean	Annoyed;
+	
+	agent Target;
+
+	integer	Dispersion_Range;
+
+	function activescript;
+	function basicscript; 				// this holds the basic script the monster
+										// always returns to when done with tasks
+	function backscript;
+
+	function Spawn_Function; 			//This Holds the agent's Spawning mechanism
+
+	integer	Base_Spawn_Rate; 			//This is for lairs, it holds BaseLine interval between monster creations
+
+	integer	difficulty; 				// this holds the relative difficulty of the lair for a character to undertake
+
+	string Spawn_Type; 					// Holds the type of monster the lair spawns
+	string Special_Spawn_Type; 			// Holds the "special" monster to spawn when the Lair is destroyed
+
+	integer	Multi_Spawn_Num; 			//Number of spawns a lair will do when it dies if it uses Lair_Multispawn_Death
+
+	boolean	Has_Special_Spawn; 			//This is set to TRUE if the lair wants to spawn its special spawn type instead of its
+										//lairdata special spawn list
+
+	integer  Max_Simul_Spawns; 			//Currently Used by the Spire. Max number of Gobs it spawns at a time.
+	integer	Max_Stored_Spawns; 			//Currently used by the Spire. Max number of spawns that the unit can store up
+										//To dump on enemies that come up and whack it.
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+
+	/////////////////////////////////////////////////////////////////////////
+	// This stuff below was scavenged from the ballista tower to handle tower
+	// weapon functions for the special MX guntower lairs.
+	boolean in_danger;
+
+	integer	Strength;
+	integer	HtoH;
+	integer	Ranged;
+	integer	AttackType;
+
+	string current_gun; 				// Used for spires of death only.
+
+  	string attack_action;
+	string EnemyType;
+	//
+	/////////////////////////////////////////////////////////////////////////
+
+	list grovelist; 					// used by the Fortress of Ixmil only.
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype building ()
+
+declare
+	string type;
+	string subtype;
+	string title;
+
+	boolean in_danger; 					// has the building been hit lately
+
+	integer Level; 						//This is what Level this building is
+
+	integer Sleep_For; 					//This holds how long a building holds Heroes for
+
+	function visited_script; 			//holds the Building's visited function. Requested by Heroes.
+
+	function ActiveScript; 				//For any buildings, like the TradingPost, that have ActiveScripts
+
+	list Occupants;  					//List of all Occupants currently being held in this building
+
+	function RevenueScript; 			//This holds the script that either Auto Adds or Subracts money from the player's gold
+	integer	Revenue_Amount; 			//Either Pos or Neg, this is the amount of gold the Revenue Script adds or subtracts
+	integer	Revenue_Time; 				//This is how frequently a building executes its RevenueScript
+
+	integer Magical_Build_Rate; 		// Used to determine how fast magical buildings construct or upgrade.
+
+	function spawn_1;  					// these are used if the building needs to spawn other buildings
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function birthScript2;  			// This script will be called once, when the building is completed;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+
+	function upgradescript;
+	
+	// -- AI additions below this line -- //
+	
+	integer cost; //The cost of the building. This is the upgrade cost of upgraded buildings
+	integer upgradeCost; //cost to upgrade the building
+	float costMultiplier; //cost multiplier for each building
+	
+	//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+integer Visits_count; boolean extrabool1; list extralist1; agent extraagent1; string extrastring1; function extrafunction1;
+integer Building_custom_lvl; boolean extrabool2; list extralist2; agent extraagent2; string extrastring2; function extrafunction2;
+integer extraint3; boolean extrabool3; list extralist3; agent extraagent3; string extrastring3; function extrafunction3;
+integer extraint4; boolean extrabool4; list extralist4; agent extraagent4; string extrastring4; function extrafunction4;
+integer BM_caravan_toggle; boolean extrabool5; list extralist5; agent extraagent5; string extrastring5; function BM_spawn_caravans;
+integer extraint6; boolean extrabool6; list extralist6; agent extraagent6; string extrastring6; function extrafunction6;
+integer extraint7; boolean extrabool7; list extralist7; agent extraagent7; string extrastring7; function extrafunction7;
+integer extraint8; boolean extrabool8; list extralist8; agent extraagent8; string extrastring8; function extrafunction8;
+integer extraint9; boolean extrabool9; list extralist9; agent extraagent9; string extrastring9; function extrafunction9;
+integer Building_Count_Number; boolean extrabool10; list extralist10; agent extraagent10; string extrastring10; function extrafunction10;
+integer extraint11; boolean extrabool11; list extralist11; agent extraagent11; string extrastring11; function extrafunction11;
+integer extraint12; boolean extrabool12; list extralist12; agent extraagent12; string extrastring12; function extrafunction12;
+integer extraint13; boolean extrabool13; list extralist13; agent extraagent13; string extrastring13; function extrafunction13;
+integer extraint14; boolean extrabool14; list extralist14; agent extraagent14; string extrastring14; function extrafunction14;
+integer extraint15; boolean extrabool15; list extralist15; agent extraagent15; string extrastring15; function extrafunction15;
+integer extraint16; boolean extrabool16; list extralist16; agent extraagent16; string extrastring16; function extrafunction16;
+integer extraint17; boolean extrabool17; list extralist17; agent extraagent17; string extrastring17; function extrafunction17;
+integer extraint18; boolean extrabool18; list extralist18; agent extraagent18; string extrastring18; function extrafunction18;
+integer BM_gold_bonus; boolean extrabool19; list extralist19; agent extraagent19; string extrastring19; function extrafunction19;
+integer extraint20; boolean extrabool20; list extralist20; agent extraagent20; string extrastring20; function extrafunction20;
+integer extraint21; boolean extrabool21; list extralist21; agent extraagent21; string extrastring21; function extrafunction21;
+integer extraint22; boolean extrabool22; list extralist22; agent extraagent22; string extrastring22; function extrafunction22;
+integer extraint23; boolean extrabool23; list extralist23; agent extraagent23; string extrastring23; function extrafunction23;
+integer extraint24; boolean extrabool24; list extralist24; agent extraagent24; string extrastring24; function extrafunction24;
+integer extraint25; boolean extrabool25; list extralist25; agent extraagent25; string extrastring25; function extrafunction25;
+integer extraint26; boolean extrabool26; list extralist26; agent extraagent26; string extrastring26; function extrafunction26;
+integer extraint27; boolean extrabool27; list extralist27; agent extraagent27; string extrastring27; function extrafunction27;
+integer extraint28; boolean extrabool28; list extralist28; agent extraagent28; string extrastring28; function extrafunction28;
+integer extraint29; boolean extrabool29; list extralist29; agent extraagent29; string extrastring29; function extrafunction29;
+integer extraint30; boolean extrabool30; list extralist30; agent extraagent30; string extrastring30; function extrafunction30;	
+	
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Outpost ()
+
+Declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+
+	function activescript;
+	integer level;
+
+	agent Target;
+
+	boolean in_danger;
+
+	function Guard_Function;			//This Holds the Guard script that the Building constantly runs (after being set off by trigger)
+
+	function Guard_Spawn_Function; 		//This holds the Spawn_Function for the Palace. It is on the agent because
+										//it gets $RunThread-ed, so it needs to be persistent.
+
+	list Waiting_Guards;				//This list holds Guards that have suspended their threads, and don't have targets
+	list Guards;  						//List of this building's Guards
+
+	list Waiting_Guardhouses; 			//This is a list of Guardhouses that are waiting for Guards.
+
+	integer	Max_Guards; 				//Holds the Maximum number of Guards a palace can have
+	integer	Num_Guards; 				//Keeps track of current number of Guards Palace has or is spawning
+
+	integer	AttackType; 				//These are so the outpost can fire missiles.
+	integer Ranged;
+	integer	Strength;
+
+	function Lived_In_Script; 			//Holds script that tells the character what to do here
+
+	integer	Sleep_For;  				//This holds the duration a unit stays here for
+	list Occupants;  					//List of all Occupants currently being held in this building
+
+	list members; 						// all the current guild members
+	// integer max_members;
+	
+	function spell_callback;			// special callback for spells (only used for supercharge for now)
+
+	function tax_spawn;
+
+	integer num_tax_collectors;
+	integer max_tax_collectors;
+
+	list tax_route;
+	list tax_targets;
+
+	list spawn_taxman_return_list; 		//These lists hold deadtax collectors tax attribs so
+	list spawn_taxman_pickup_list; 		//that the next one gets spawned with the same Attribs
+
+	integer tax_route_dead;
+
+	function peasant_spawn;
+
+	integer num_peasants;
+	integer max_peasants;
+	integer busy_peasants;
+
+	list buildings_waiting;
+	list buildings_under_construction;
+
+	list Under_Const_In_Sight; 			//This is the list of all Buildings Under construction within sight
+
+	integer	Vaporized_Gold; 			//Gold that has been vapoized when heroes spend money, etc.
+	integer  troll_gold; 				// gold that is counting up to produce a troll somewhere in town
+
+	agent Swarm_Target; 				//Holds the target that the Swarmers refer to/fill up when they want to combat wandering monsters
+
+	function gnome_camp_spawner; 		// holds the function which spawns Gnome Camps
+
+	Boolean Gambling_hall_building;
+	boolean gazebo_building;
+
+	integer Population_counter; 		// counts total # heroes recruited in town
+	integer Waiting_population; 		// how much extras are waiting for housing
+
+	integer num_deceased_heroes;
+
+	integer total_buildings; 			// counts how many buildings have been built
+	integer buildings_lately; 			// counts how many buildings have been built since the last sewer
+
+	integer henchmen_dead_lately; 		//counts how many henchmen have died since last broken sewer main spawn
+
+	integer fountain_buildings; 		// counts how many buildings towards a fountain have been built
+
+	integer blacksmith_trips; 			// how many visits to the blacksmith?
+
+	string  TaskName;
+
+	integer heroes_to_upgrade; 			// how many heroes are needed to upgrade the palace
+
+	integer num_resources;
+
+	string 	Enemytype;
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+
+	function BirthScript2;
+
+	function upgradescript;
+	function upgradescript2;
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Palace ()
+
+Declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+
+	function activescript;
+	integer level;
+
+	boolean in_danger;
+
+	function Guard_Function;			//This Holds the Guard script that the Building constantly runs (after being set off by trigger)
+
+	function Guard_Spawn_Function; 		//This holds the Spawn_Function for the Palace. It is on the agent because
+										//it gets $RunThread-ed, so it needs to be persistent.
+
+	list Waiting_Guards;				//This list holds Guards that have suspended their threads, and don't have targets
+	list Guards;  						//List of this building's Guards
+
+	list Waiting_Guardhouses; 			//This is a list of Guardhouses that are waiting for Guards.
+
+	integer	Max_Guards; 				//Holds the Maximum number of Guards a palace can have
+	integer	Num_Guards; 				//Keeps track of current number of Guards Palace has or is spawning
+	
+	function spell_callback;			// special callback for spells (only used for supercharge for now)
+
+	function tax_spawn;
+
+	integer num_tax_collectors;
+	integer max_tax_collectors;
+
+	list tax_route;
+	list tax_targets;
+
+	list spawn_taxman_return_list; 		//These lists hold deadtax collectors tax attribs so
+	list spawn_taxman_pickup_list; 		//that the next one gets spawned with the same Attribs
+
+	integer tax_route_dead;
+
+	function peasant_spawn;
+
+	integer num_peasants;
+	integer max_peasants;
+	integer busy_peasants;
+
+	list buildings_waiting;
+	list buildings_under_construction;
+
+	list	Under_Const_In_Sight; 		//This is the list of all Buildings Under construction within sight
+
+	integer	Vaporized_Gold; 			// Gold that has been vapoized when heroes spend money, etc.
+	integer  troll_gold; 				// Gold that is counting up to produce a troll somewhere in town
+
+	agent Swarm_Target; 				//Holds the target that the Swarmers refer to/fill up when they want to combat wandering monsters
+
+	function gnome_camp_spawner; 		// holds the function which spawns Gnome Camps
+
+	Boolean Gambling_hall_building;
+	boolean gazebo_building;
+
+	integer Population_counter; 		// counts total # heroes recruited in town
+	integer Waiting_population; 		// how much extras are waiting for housing
+
+	integer num_deceased_heroes;
+
+	integer total_buildings; 			// counts how many buildings have been built
+	integer buildings_lately; 			// counts how many buildings have been built since the last sewer
+
+	integer henchmen_dead_lately; 		// counts how many henchmen have died since last broken sewer main spawn
+
+	integer fountain_buildings; 		// counts how many buildings towards a fountain have been built
+
+	integer blacksmith_trips; 			// how many visits to the blacksmith?
+
+	string  TaskName;
+
+	integer heroes_to_upgrade; 			// how many heroes are needed to upgrade the palace
+
+	string 	Enemytype;
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+	
+	function upgradescript;
+	function upgradescript2;
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Library ()
+
+declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+
+	boolean in_danger; 					// has the building been hit lately
+
+	integer Sleep_For; 					//This holds how long a building holds Heroes for
+
+	function visited_script; 			//holds the Building's visited function. Requested by Heroes.
+	list Occupants;  					//List of all Occupants currently being held in this building
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function birthScript2;  			// This script will be called once, when the building is 'completed;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+
+	function upgradescript;
+	
+	//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+integer extraint1; boolean extrabool1; list extralist1; agent extraagent1; string extrastring1; function extrafunction1;
+integer extraint2; boolean extrabool2; list extralist2; agent extraagent2; string extrastring2; function extrafunction2;
+integer extraint3; boolean extrabool3; list extralist3; agent extraagent3; string extrastring3; function extrafunction3;
+integer extraint4; boolean extrabool4; list extralist4; agent extraagent4; string extrastring4; function extrafunction4;
+integer extraint5; boolean extrabool5; list extralist5; agent extraagent5; string extrastring5; function extrafunction5;
+integer extraint6; boolean extrabool6; list extralist6; agent extraagent6; string extrastring6; function extrafunction6;
+integer extraint7; boolean extrabool7; list extralist7; agent extraagent7; string extrastring7; function extrafunction7;
+integer extraint8; boolean extrabool8; list extralist8; agent extraagent8; string extrastring8; function extrafunction8;
+integer extraint9; boolean extrabool9; list extralist9; agent extraagent9; string extrastring9; function extrafunction9;
+integer Building_Count_Number; boolean extrabool10; list extralist10; agent extraagent10; string extrastring10; function extrafunction10;
+integer extraint11; boolean extrabool11; list extralist11; agent extraagent11; string extrastring11; function extrafunction11;
+integer extraint12; boolean extrabool12; list extralist12; agent extraagent12; string extrastring12; function extrafunction12;
+integer extraint13; boolean extrabool13; list extralist13; agent extraagent13; string extrastring13; function extrafunction13;
+integer extraint14; boolean extrabool14; list extralist14; agent extraagent14; string extrastring14; function extrafunction14;
+integer extraint15; boolean extrabool15; list extralist15; agent extraagent15; string extrastring15; function extrafunction15;
+integer extraint16; boolean extrabool16; list extralist16; agent extraagent16; string extrastring16; function extrafunction16;
+integer extraint17; boolean extrabool17; list extralist17; agent extraagent17; string extrastring17; function extrafunction17;
+integer extraint18; boolean extrabool18; list extralist18; agent extraagent18; string extrastring18; function extrafunction18;
+integer extraint19; boolean extrabool19; list extralist19; agent extraagent19; string extrastring19; function extrafunction19;
+integer extraint20; boolean extrabool20; list extralist20; agent extraagent20; string extrastring20; function extrafunction20;
+integer extraint21; boolean extrabool21; list extralist21; agent extraagent21; string extrastring21; function extrafunction21;
+integer extraint22; boolean extrabool22; list extralist22; agent extraagent22; string extrastring22; function extrafunction22;
+integer extraint23; boolean extrabool23; list extralist23; agent extraagent23; string extrastring23; function extrafunction23;
+integer extraint24; boolean extrabool24; list extralist24; agent extraagent24; string extrastring24; function extrafunction24;
+integer extraint25; boolean extrabool25; list extralist25; agent extraagent25; string extrastring25; function extrafunction25;
+integer extraint26; boolean extrabool26; list extralist26; agent extraagent26; string extrastring26; function extrafunction26;
+integer extraint27; boolean extrabool27; list extralist27; agent extraagent27; string extrastring27; function extrafunction27;
+integer extraint28; boolean extrabool28; list extralist28; agent extraagent28; string extrastring28; function extrafunction28;
+integer extraint29; boolean extrabool29; list extralist29; agent extraagent29; string extrastring29; function extrafunction29;
+integer extraint30; boolean extrabool30; list extralist30; agent extraagent30; string extrastring30; function extrafunction30;	
+	
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Fairgrounds ()
+
+declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+
+	boolean in_danger; 					// has the building been hit lately
+
+	boolean  Cleaning_Combatants ; 		// TRUE when the fair is not letting in new combatants because
+										// it is resetting
+
+	function visited_script; 			//holds the Building's visited function. Requested by Heroes.
+	list Occupants;  					//List of all Occupants currently being held in this building
+
+	list Combatants; 					//List of Heroes who are currently waiting for a Tourney, or on their way to the fair
+
+	integer	Counter; 					//This is used to inform the number of execuction cycles that a Fairground will run
+										//before it gives exp to winners, and releases them
+
+	integer	Current_Contest; 			//This is the Fairgrounds current contest. It is directly informed by the ATTRIB
+										//Used to see if the fairgrounds has changed its contest or not
+
+	integer Current_XPLevel; 			//This is the Fairgrounds current max XP level. It is directly informed by the ATTRIB
+										//Used to see if the fairgrounds has changed its max XP level or not
+
+	function ResetScript; 				// This function will callback and reset the fairgrounds to Fairgrounds_poll after a certain
+										//(global) amount of time. It is so the fairgrounds will sit and clean up its combatants list
+										//for a few cycles before it starts the next tourney (to deal with execution lag/mis-timing)
+
+	function RevenueScript; 			//This holds the script that either Auto Adds or Subracts money from the player's gold
+	integer	Revenue_Amount; 			//Either Pos or Neg, this is the amount of gold the Revenue Script adds or subtracts
+	integer	Revenue_Time; 				//This is how frequently a building executes its RevenueScript
+
+	function ActiveScript;
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function birthScript2;  			// This script will be called once, when the building is 'completed;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+	
+	function upgradescript;
+	
+	//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+integer extraint1; boolean extrabool1; list extralist1; agent extraagent1; string extrastring1; function extrafunction1;
+integer extraint2; boolean extrabool2; list extralist2; agent extraagent2; string extrastring2; function extrafunction2;
+integer extraint3; boolean extrabool3; list extralist3; agent extraagent3; string extrastring3; function extrafunction3;
+integer extraint4; boolean extrabool4; list extralist4; agent extraagent4; string extrastring4; function extrafunction4;
+integer extraint5; boolean extrabool5; list extralist5; agent extraagent5; string extrastring5; function extrafunction5;
+integer extraint6; boolean extrabool6; list extralist6; agent extraagent6; string extrastring6; function extrafunction6;
+integer extraint7; boolean extrabool7; list extralist7; agent extraagent7; string extrastring7; function extrafunction7;
+integer extraint8; boolean extrabool8; list extralist8; agent extraagent8; string extrastring8; function extrafunction8;
+integer extraint9; boolean extrabool9; list extralist9; agent extraagent9; string extrastring9; function extrafunction9;
+integer Building_Count_Number; boolean extrabool10; list extralist10; agent extraagent10; string extrastring10; function extrafunction10;
+integer extraint11; boolean extrabool11; list extralist11; agent extraagent11; string extrastring11; function extrafunction11;
+integer extraint12; boolean extrabool12; list extralist12; agent extraagent12; string extrastring12; function extrafunction12;
+integer extraint13; boolean extrabool13; list extralist13; agent extraagent13; string extrastring13; function extrafunction13;
+integer extraint14; boolean extrabool14; list extralist14; agent extraagent14; string extrastring14; function extrafunction14;
+integer extraint15; boolean extrabool15; list extralist15; agent extraagent15; string extrastring15; function extrafunction15;
+integer extraint16; boolean extrabool16; list extralist16; agent extraagent16; string extrastring16; function extrafunction16;
+integer extraint17; boolean extrabool17; list extralist17; agent extraagent17; string extrastring17; function extrafunction17;
+integer extraint18; boolean extrabool18; list extralist18; agent extraagent18; string extrastring18; function extrafunction18;
+integer extraint19; boolean extrabool19; list extralist19; agent extraagent19; string extrastring19; function extrafunction19;
+integer extraint20; boolean extrabool20; list extralist20; agent extraagent20; string extrastring20; function extrafunction20;
+integer extraint21; boolean extrabool21; list extralist21; agent extraagent21; string extrastring21; function extrafunction21;
+integer extraint22; boolean extrabool22; list extralist22; agent extraagent22; string extrastring22; function extrafunction22;
+integer extraint23; boolean extrabool23; list extralist23; agent extraagent23; string extrastring23; function extrafunction23;
+integer extraint24; boolean extrabool24; list extralist24; agent extraagent24; string extrastring24; function extrafunction24;
+integer extraint25; boolean extrabool25; list extralist25; agent extraagent25; string extrastring25; function extrafunction25;
+integer extraint26; boolean extrabool26; list extralist26; agent extraagent26; string extrastring26; function extrafunction26;
+integer extraint27; boolean extrabool27; list extralist27; agent extraagent27; string extrastring27; function extrafunction27;
+integer extraint28; boolean extrabool28; list extralist28; agent extraagent28; string extrastring28; function extrafunction28;
+integer extraint29; boolean extrabool29; list extralist29; agent extraagent29; string extrastring29; function extrafunction29;
+integer extraint30; boolean extrabool30; list extralist30; agent extraagent30; string extrastring30; function extrafunction30;	
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Guild()
+
+declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+
+	integer	Level; 						//This is what level the Guild is
+
+	function Lived_In_Script; 			//Holds script that tells the character what to do here
+	function Visited_Script; 			//This holds the script Heroes call when they are "Visiting" a building
+
+	function ActiveScript; 				//This is for the Embassy, which can run a script which keeps producing heroes.
+
+	Boolean	in_danger;
+	integer	Sleep_For;  				//This holds the duration a unit stays here for
+	list Occupants;  					//List of all Occupants currently being held in this building
+
+	function spawn_1;  					// these are used if the building needs to spawn other
+	function spawn_2;  					// buildings and or units automatically when built. (Fervus uses this for spawning Monsters)
+
+	string	Spawn_Type; 				//This is for Fervus. It holds the animal type that the Temple spawns.
+
+	integer hero_lvl_upgrade; 			// minimum lvl any hero in this guild needs to be
+										// before the player can upgrade it
+										
+	list members; 						// all the current guild members
+	string member_title;
+	function member_basicscript;
+	//integer max_members;
+
+	function SpecialScript; 			//This holds any quest-specific functionality for the guild. For instance, in
+										//Magic Ring, it runs Hero_Generator
+
+	list SpecialList; 					//This is used for setup-type stuff, like having a rescued building spawn heroes
+
+	integer num_resources;
+	
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function birthScript2;  			// This script will be called once, when the building is 'completed;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+	
+	function upgradescript;
+
+	integer  Magical_Build_Rate; 		// Used to determine how fast magical buildings construct or upgrade.
+	
+	//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+integer Visits_count; boolean extrabool1; list extralist1; agent extraagent1; string extrastring1; function extrafunction1;
+integer Building_custom_lvl; boolean extrabool2; list extralist2; agent extraagent2; string extrastring2; function extrafunction2;
+integer extraint3; boolean extrabool3; list extralist3; agent extraagent3; string extrastring3; function extrafunction3;
+integer extraint4; boolean extrabool4; list extralist4; agent extraagent4; string extrastring4; function extrafunction4;
+integer extraint5; boolean extrabool5; list extralist5; agent extraagent5; string extrastring5; function extrafunction5;
+integer extraint6; boolean extrabool6; list extralist6; agent extraagent6; string extrastring6; function extrafunction6;
+integer extraint7; boolean extrabool7; list extralist7; agent extraagent7; string extrastring7; function extrafunction7;
+integer extraint8; boolean extrabool8; list extralist8; agent extraagent8; string extrastring8; function extrafunction8;
+integer extraint9; boolean extrabool9; list extralist9; agent extraagent9; string extrastring9; function extrafunction9;
+integer Building_Count_Number; boolean extrabool10; list extralist10; agent extraagent10; string extrastring10; function extrafunction10;
+integer extraint11; boolean extrabool11; list extralist11; agent extraagent11; string extrastring11; function extrafunction11;
+integer extraint12; boolean extrabool12; list extralist12; agent extraagent12; string extrastring12; function extrafunction12;
+integer extraint13; boolean extrabool13; list extralist13; agent extraagent13; string extrastring13; function extrafunction13;
+integer extraint14; boolean extrabool14; list extralist14; agent extraagent14; string extrastring14; function extrafunction14;
+integer extraint15; boolean extrabool15; list extralist15; agent extraagent15; string extrastring15; function extrafunction15;
+integer extraint16; boolean extrabool16; list extralist16; agent extraagent16; string extrastring16; function extrafunction16;
+integer extraint17; boolean extrabool17; list extralist17; agent extraagent17; string extrastring17; function extrafunction17;
+integer extraint18; boolean extrabool18; list extralist18; agent extraagent18; string extrastring18; function extrafunction18;
+integer extraint19; boolean extrabool19; list extralist19; agent extraagent19; string extrastring19; function extrafunction19;
+integer extraint20; boolean extrabool20; list extralist20; agent extraagent20; string extrastring20; function extrafunction20;
+integer extraint21; boolean extrabool21; list extralist21; agent extraagent21; string extrastring21; function extrafunction21;
+integer extraint22; boolean extrabool22; list extralist22; agent extraagent22; string extrastring22; function extrafunction22;
+integer extraint23; boolean extrabool23; list extralist23; agent extraagent23; string extrastring23; function extrafunction23;
+integer extraint24; boolean extrabool24; list extralist24; agent extraagent24; string extrastring24; function extrafunction24;
+integer extraint25; boolean extrabool25; list extralist25; agent extraagent25; string extrastring25; function extrafunction25;
+integer extraint26; boolean extrabool26; list extralist26; agent extraagent26; string extrastring26; function extrafunction26;
+integer extraint27; boolean extrabool27; list extralist27; agent extraagent27; string extrastring27; function extrafunction27;
+integer extraint28; boolean extrabool28; list extralist28; agent extraagent28; string extrastring28; function extrafunction28;
+integer extraint29; boolean extrabool29; list extralist29; agent extraagent29; string extrastring29; function extrafunction29;
+integer extraint30; boolean extrabool30; list extralist30; agent extraagent30; string extrastring30; function extrafunction30;
+	
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Dwarven_Settlement()
+
+declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+
+	integer	Level; 						//This is what level the Guild is
+
+	function Lived_In_Script; 			//Holds script that tells the character what to do here
+	function Visited_Script; 			//This holds the script Heroes call when they are "Visiting" a building
+
+	Boolean	in_danger;
+	integer	Sleep_For;  				//This holds the duration a unit stays here for
+	list Occupants;  					//List of all Occupants currently being held in this building
+
+	function spawn_1;  					// these are used if the building needs to spawn other
+	function spawn_2;  					// buildings and or units automatically when built
+
+	list members; 						// all the current guild members
+	string member_title;
+	function member_basicscript;
+	//integer max_members;
+
+	agent		Target;
+
+	integer	Strength;
+	integer	HtoH;
+	integer	Ranged;
+//	integer	SightRange;
+	integer	AttackType;
+
+  	string attack_action;
+
+	function basicscript; 				// this holds the basic script the monster
+										// always returns to when done with tasks
+	function backscript;
+	function activescript;
+
+
+	list SpecialList; 					//This is used for setup-type stuff, like having a rescued building spawn heroes
+
+	function SpecialScript; 			//This holds any quest-specific functionality for the guild. For instance, in
+										//Magic Ring, it runs Hero_Generator
+
+	string EnemyType;
+
+	integer num_resources;
+	
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function birthScript2;  			// This script will be called once, when the building is 'completed;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+	
+	function upgradescript;
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype GuardHouse ()
+
+declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+
+	function Guard_Function;			//Guardhouse's version of an ActiveScript
+										//This Holds the Guard script that the Building constantly runs
+
+	function Guard_Spawn_Function;
+
+	integer	Strength;
+	integer	AttackType;
+	integer	Ranged;
+
+
+	boolean in_danger; 					// has the building been hit lately
+
+	list Waiting_Guards;				//This list holds Guards that have suspended their threads
+	list Guards;  						//List of this building's Guards
+
+	list Occupants; 					//This holds all of the Heroes who are currently in the Guardhouse. For Use_Building.
+
+	list Under_Const_In_Sight; 			//This is the list of all Buildings Under construction within sight
+
+	integer	Max_Guards; 				//Holds the Maximum number of Guards a guardhouse can have
+	integer	Num_Guards; 				//Keeps track of current number of Guards Guardhouse has or is spawning
+
+ //	boolean	Hero_Guarded; 				//TRUE if the Guardhouse currently has a Hero Guard. FALSE if they don't.
+
+	integer	Sleep_For; 					//This tells Heroes how long to stay IN the Guardhouse for.
+
+	agent Target; 						//This holds the Guardhouse's target. It is for firing arrows.
+
+	string	TaskName;
+
+	string 	Enemytype;
+
+	function RevenueScript; 			//This holds the script that either Auto Adds or Subracts money from the player's gold
+	integer	Revenue_Amount; 			//Either Pos or Neg, this is the amount of gold the Revenue Script adds or subtracts
+	integer	Revenue_Time; 				//This is how frequently a building executes its RevenueScript
+
+	function Visited_Script; 			//This holds the script that Heroes call when they enter the Guardhouse
+
+	function upgradescript;
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function birthScript2;  			// This script will be called once, when the building is 'completed;
+	function IGdeathScript; 			// This script will be called once, when the unit is ki  lled;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Tower ()
+declare
+	string type;
+	string subtype;
+	string title;
+	agent Target;
+
+	boolean in_danger; 					// has the building been hit lately
+
+	integer	Strength;
+	integer	HtoH;
+	integer	Ranged;
+	integer	AttackType;
+
+  	string attack_action;
+
+	function basicscript; 				// this holds the basic script the monster
+										// always returns to when done with tasks
+	function backscript;
+	function activescript;
+
+	string EnemyType;
+
+	function RevenueScript; 			//This holds the script that either Auto Adds or Subracts money from the player's gold
+	integer	Revenue_Amount; 			//Either Pos or Neg, this is the amount of gold the Revenue Script adds or subtracts
+	integer	Revenue_Time; 				//This is how frequently a building executes its RevenueScript
+
+	function birthScript;  				// This scpt will be called once, when the unit is created;
+	function birthScript2;  			// This script will be called once, when the building is 'completed;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+	
+	function upgradescript;
+
+	integer  Magical_Build_Rate; 		// Used to determine how fast magical buildings construct or upgrade.
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype tax_collector()
+
+declare
+	string type;
+	string subtype;
+	string title;
+	string Original_type;
+
+	agent leader;  						// Chris hackarama so heros can be controlled monsters
+
+	function activeScript;
+	function basicscript; 				// this holds the basic script the taxman
+										// always returns to when done with tasks
+	function backscript;
+
+	agent target;
+	coordinate destination;
+	agent home;
+
+	list hostiles;
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+	
+	integer attacktype;
+
+	string Idle_Action;
+
+	// -- New MX additions below this line -- //
+	function PlagueScript;
+	function FreezeScript;
+	function ShieldScript; 				//This is for the Frost Field spell
+
+	boolean	Resists_Fire;
+	function teleportScript; 			// callback for the teleport spell
+	
+	//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	integer percentageHPretreat;	
+	string	TaskName;
+	function evaluationScript; 
+	integer custh1;
+	integer custh2;
+	integer custh3;
+	integer custh4;
+	integer custh5;
+	integer custh6;
+	integer custh7;
+	integer custh8;
+	integer custh9;
+	integer custh0;
+	
+	function specFunc1;
+	function specFunc2;
+	function specFunc3;
+	function specFunc4;
+	function specFunc5;
+	function specFunc6;
+	function specFunc7;
+	function specFunc8;
+	function specFunc9;
+	
+	boolean cusb1;
+	boolean cusb2;
+	boolean cusb3;
+	boolean cusb4;
+	boolean cusb5;
+	boolean cusb6;
+	boolean cusb7;
+	
+	list custl1;
+	list custl2;
+	list custl3;
+	list custl4;
+	list custl5;
+	
+	agent cusa1;
+	agent cusa2;
+	agent cusa3;
+	agent cusa4;
+	agent cusa5;
+	agent cusa6;
+	agent cusa7;
+	
+	string custs1;
+	string custs2;
+	string custs3;
+	string custs4;
+	string custs5;
+	string custs6;	
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Caravan()
+
+declare
+	string type;
+	string subtype;
+	string title;
+	string Original_type;
+
+	function activeScript;
+	function basicscript; 				// this holds the basic script the monster
+										// always returns to when done with tasks
+	function backscript;
+
+	agent target;
+	coordinate destination;
+	agent home;
+
+	list hostiles;
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function IGdeathScript; 			// This script will be called once, when the unit is killed;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+	integer attacktype;
+
+	string Idle_Action;
+	// -- New MX additions below this line -- //
+	function PlagueScript;
+	function FreezeScript;
+	function ShieldScript; 				//This is for the Frost Field spell
+
+	boolean	Resists_Fire;
+	function teleportScript; 			// callback for the teleport spell
+
+	//////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////Majesty extras fields//////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	integer percentageHPretreat;	
+	string	TaskName;
+	function evaluationScript; 
+	integer custh1;
+	integer custh2;
+	integer custh3;
+	integer custh4;
+	integer custh5;
+	integer custh6;
+	integer custh7;
+	integer custh8;
+	integer custh9;
+	integer custh0;
+	
+	function specFunc1;
+	function specFunc2;
+	function specFunc3;
+	function specFunc4;
+	function specFunc5;
+	function specFunc6;
+	function specFunc7;
+	function specFunc8;
+	function specFunc9;
+	
+	boolean cusb1;
+	boolean cusb2;
+	boolean cusb3;
+	boolean cusb4;
+	boolean cusb5;
+	boolean cusb6;
+	boolean cusb7;
+	
+	list custl1;
+	list custl2;
+	list custl3;
+	list custl4;
+	list custl5;
+	
+	agent cusa1;
+	agent cusa2;
+	agent cusa3;
+	agent cusa4;
+	agent cusa5;
+	agent cusa6;
+	agent cusa7;
+	
+	string custs1;
+	string custs2;
+	string custs3;
+	string custs4;
+	string custs5;
+	string custs6;	
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Generic_Object()
+declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+
+	function IGDeathScript; 			// not used, but attribute must exist for $Unit_Call_Deathscript()
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Resource()
+Declare
+	string type;
+	string subtype;
+	string title;
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+	function IGDeathScript; 			// not used, but attribute must exist for $Unit_Call_Deathscript()
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Special_Item()
+Declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+
+	//For treasure chests////
+	integer	Armor;
+	integer	Weapon;
+	//////////
+
+	function transferScript;  	// This script will be called when the item is transfered to its new owner.
+
+	function birthScript;  				// This script will be called once, when the unit is created;
+	function deathScript; 				// This script will be called once, when the unit is killed;
+	function IGDeathScript;
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype Spell()
+declare
+	string type;
+	string subtype;
+	string title;
+	function birthscript; 				// not used, but attribute must exist for $NewUnitInit()
+	function deathScript; 				// not used, but attribute must exist for $UnitDelete()
+	function activescript;
+
+	function IGDeathScript; 			// not used, but attribute must exist for $Unit_Call_Deathscript()
+
+	list TargetsHit; 					// Primarily used by Chain Lightning for cleanup purposes
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+prototype map_goodie()
+declare
+	string 	type;
+	string 	subtype;
+	string 	title;
+	function birthscript; 				// not used, but attribute must exist for $NewUnitInit()
+	function deathScript; 				// not used, but attribute must exist for $UnitDelete()
+	function activescript;
+
+	function IGDeathScript; 			// not used, but attribute must exist for $Unit_Call_Deathscript()
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+Prototype Parabolic_Missile ()
+Declare
+
+	function birthscript;
+	function IGDeathscript;
+	function deathscript;
+
+	string	subtype; 					//This is so NewUnitInit/Spawnunit doesn't complain
+	string	type;
+
+begin
+end
+
+///////////////////////////////////////////////////////////////////////////////
+Prototype EventAgent ()
+Declare
+
+	function EventScript;
+
+	boolean	Event_Flag_1;
+	boolean	Event_Flag_2;
+	boolean	Event_Flag_3;
+	boolean	Event_Flag_4;
+	boolean	Event_Flag_5;
+	boolean	Event_Flag_6;
+	boolean	Event_Flag_7;
+	boolean	Event_Flag_8;
+	boolean	Event_Flag_9;
+	boolean	Event_Flag_10;
+
+Begin
+End

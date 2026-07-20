@@ -1,0 +1,24 @@
+<Majesty>
+	<Description type="Unit" subType="Building" ID="ABz1" Name="TestShop1" Description="Test Shop">
+		<Engine version="1">
+			<Info value="BlockGround"/>
+			<Info value="BlockFlying"/>
+			<Info value="ModifyTerrainTextureOnPlacement"/>
+			<CanUse value="HumanPlayer"/>
+			<Menu value="2"/>
+			<ImageIDBase value="ABl1"/>
+			<DefaultSound value="Magic_Bazzar"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="TS01"/>
+			<Cost value="500"/>
+			<Multiplier value="1.0"/>
+			<IncomeType value="2"/>
+			<IncomeAmount value="40"/>
+			<MaxHP value="200"/>
+			<SightRange value="150"/>
+			<Flags value="HasHPBar"/>
+			<HelpID value="h159"/>
+		</Game>
+	</Description>
+</Majesty>

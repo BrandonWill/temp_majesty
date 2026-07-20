@@ -1,0 +1,183 @@
+///////////////////////////////////////////////////////////////////////////////
+
+
+function Dwarfeh_AI_castSpells(agent palace)
+declare
+
+begin
+	//$debugout(911, "Dwarfeh AI: In CastSpells Loop");
+	
+	$Dwarfeh_AI_castGate(palace);
+	
+	if (palace's "build_krolm")
+		begin
+			$Dwarfeh_AI_castRageOfKrolm( palace );
+		end
+end
+
+function Dwarfeh_AI_castGate(agent palace)
+declare
+	agent spell, target, flag;
+	list flags;
+begin
+
+	//Using this method we ensure only 1 agent is created for the entire game
+
+	spell = $RetrieveAgent("Dwarfeh_AI_Gate");
+	if ( spell == $NullAgent() )
+		begin
+			$CreateAgent("Dwarfeh_AI_Gate", "Dwarfeh_AI_Gate");
+		
+			spell = $RetrieveAgent("Dwarfeh_AI_Gate");
+		
+			//This will evaluate the canCast with arguments of palace and itself
+			if ( (spell's "canCast")( palace, spell ) && $CountPlacedFlags(palace) >= 1)
+				begin
+					flags = palace's "AI_Reward_Flags";
+		
+					if ( $ListSize ( flags ) > 0 )
+						begin
+							flag = $ListMember ( flags, 1 );
+							if ( $IsValidGamePiece ( flag ) )
+								begin
+									target = $AgentNumber ( $GetAttribute ( flag, #ATTRIB_TargetID ));
+									$CreateSpellUnit (palace, "Gate", target);
+									$AdjustPlayerData (palace, "gold", -spell's "cost");
+								end
+							else
+								begin
+									$Dwarfeh_AI_cleanupOldFlags(palace);
+								end
+						end						
+				end
+		end
+	else
+		begin
+			//This will evaluate the canCast with arguments of palace and itself
+			if ( (spell's "canCast")( palace, spell ) && $CountPlacedFlags(palace) >= 1)
+				begin
+					flags = palace's "AI_Reward_Flags";
+		
+					if ( $ListSize ( flags ) > 0 )
+						begin
+							flag = $ListMember ( flags, 1 );
+							if ( $IsValidGamePiece ( flag ) )
+								begin
+									target = $AgentNumber ( $GetAttribute ( flag, #ATTRIB_TargetID ));
+									$CreateSpellUnit (palace, "Gate", target);
+									$AdjustPlayerData (palace, "gold", -spell's "cost");
+								end
+							else
+								begin
+									$Dwarfeh_AI_cleanupOldFlags(palace);
+								end
+						end						
+				end	
+		end
+
+end
+
+function Dwarfeh_AI_castRageOfKrolm(agent palace)
+declare
+	agent spell;
+begin
+
+	//Using this method we ensure only 1 agent is created for the entire game
+
+	spell = $RetrieveAgent("Dwarfeh_AI_Rage_of_Krolm");
+	if ( spell == $NullAgent() )
+		begin
+				$CreateAgent("Dwarfeh_AI_Rage_of_Krolm", "Dwarfeh_AI_Rage_of_Krolm");
+	
+				spell = $RetrieveAgent("Dwarfeh_AI_Rage_of_Krolm");
+
+				$debugout(911, "Dwarfeh AI: After Create Agent");
+				//This will evaluate the canCast with arguments of palace and itself
+				if ( (spell's "canCast")( palace, spell ) && $Dwarfeh_AI_shouldCastRageOfKrolm(palace) )
+					begin
+						$debugout(911, "Dwarfeh AI: castRageOfKrolm is true");
+						//This will cast the spell
+						(spell's "castSpell" )( palace );
+						$AdjustPlayerData (palace, "gold", -spell's "cost");
+					end
+		end
+	else
+		begin
+			$debugout(911, "Dwarfeh AI: After Create Agent");
+			//This will evaluate the canCast with arguments of palace and itself
+			if ( (spell's "canCast")( palace, spell ) && $Dwarfeh_AI_shouldCastRageOfKrolm(palace))
+				begin
+					$debugout(911, "Dwarfeh AI: castRageOfKrolm is true");
+					//This will cast the spell
+					(spell's "castSpell" )( palace );
+					$AdjustPlayerData (palace, "gold", -spell's "cost");
+				end		
+		end
+
+end
+
+function Dwarfeh_AI_shouldCastRageOfKrolm(agent palace) is boolean
+declare
+	list heroList;
+	integer numberOfBarbarians;
+begin
+	numberOfBarbarians = $ListObjects ( palace, "hero", -1, heroList, #CheckTitles, "Barbarian", #MyPlayer, #InsideOtherUnits );
+	//We don't want to cast the spell too early in the game before we build up an army
+	//TODO we should probably change how often the thread runs for rage of krolm based on army size! 
+	//For now let's at least have a flag up on something before we blow threw gold
+	if (numberOfBarbarians >= 10 && $CountPlacedFlags (palace) > 0)
+		begin
+			return true;
+		end
+	
+	return false;
+end
+
+
+function Dwarfeh_AI_canCast(agent palace, agent spell) is boolean
+declare
+	agent tempBuilding;
+	list requiredBuildings;
+	string spellName;
+	integer gold, spellCost, requiredBuildingsListSize;
+
+begin
+
+	$debugout(911, "Dwarfeh AI: In canCast beginning");
+	spellName = spell's "title";
+	gold = $GetPlayerData (palace, "gold");
+	
+	//$debugout(911, "Dwarfeh AI: in canCast for: ", spellName, " with gold: ",gold);
+	spellCost = spell's "cost";
+	//$debugout(911, "Dwarfeh AI: in canCast spell cost:", spellCost);
+
+	if (spellName == "Rage_of_Krolm")
+		begin
+			//$debugout(911, "Dwarfeh AI: in canCast for: ", spellName);
+			requiredBuildingsListSize = $ListObjects ( palace, "building", -1, requiredBuildings, #MyPlayer, #CheckTitles, "Temple_Krolm", #ATTRIB_FirstStageBuilt, 1 );
+			//$debugout(911, "Dwarfeh AI: in canCast requiredBuildings List: ", requiredBuildings, "list size:", requiredBuildingsListSize);
+			
+			if (requiredBuildingsListSize >= 1 && gold >= spellCost && $getTotalHeroLevel(palace) > 0)
+				begin
+					$debugout(911, "Dwarfeh AI: Returning True to cast:", spellName);
+					return true;
+				end
+		end
+	else if (spellName == "Gate")
+		begin
+			//$debugout(911, "Dwarfeh AI: in canCast for: ", spellName);
+			requiredBuildingsListSize = $ListObjects ( palace, "building", -1, requiredBuildings, #MyPlayer, #CheckTitles, "SorcerersAbode", #ATTRIB_FirstStageBuilt, 1 );
+			//$debugout(911, "Dwarfeh AI: in canCast requiredBuildings List: ", requiredBuildings, "list size:", requiredBuildingsListSize);
+			
+			if (requiredBuildingsListSize >= 1 && gold >= spellCost && $getTotalHeroLevel(palace) > 100)
+				begin
+					tempBuilding = $ListMember ( requiredBuildings, 1 );
+					if (tempBuilding's "level" == 3)
+						begin
+							$debugout(911, "Dwarfeh AI: Returning True to cast:", spellName);
+							return true;						
+						end
+				end
+		end
+	return false;
+end

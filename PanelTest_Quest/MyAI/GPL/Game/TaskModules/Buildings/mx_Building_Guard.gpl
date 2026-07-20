@@ -1,0 +1,87 @@
+
+// This implements a bug fix for a game bug that can crash the game from guards dying at the perfect moment
+Function Release_Guards (agent ThisAgent)
+Declare
+	agent	Guard;
+	list	Intruders;
+
+
+Begin
+	//Continually refresh your Under_Const_In_Sight list
+	ThisAgent's "Under_Const_In_Sight" = $Bldgs_Under_Constuct_In_Sight (ThisAgent);
+
+	//If I am a Guardhouse, and I have researched arrows, then see if anybody is within range of my arrows.
+	// If so, get 'em.
+	If (ThisAgent's "Title" == "Guardhouse")
+		begin
+			//make sure that Arrows have been researched
+			If ($GetAttribute (ThisAgent, #ATTRIB_ResearchArrows) != 0)
+				begin
+					intruders = $list_enemies_seen(thisagent,#guardhouse_arrow_range);
+					if ($listsize(intruders) > 0)
+						begin
+							ThisAgent's "Target" = $ListMember (Intruders, 1);
+
+							$PerformAction (ThisAgent, "Guardhouse_Arrow", ThisAgent's "Target");
+						end
+				end
+		end
+
+	Foreach Guard in ThisAgent's "Waiting_Guards" do
+		begin
+			if ($isDead(Guard) == false)
+				begin
+					If ($IsHidden (Guard))
+						begin
+							$DebugOut ("Guardhouse releases a Hidden Guard!");
+							//Guard's "Type" = "Hero";
+							$UnHide (Guard);
+						end
+					$DebugOut ("Guardhouse is setting Guard's ActiveScript to Guard Find Target.");
+					Guard's "ActiveScript" = $Guard_Find_Target;
+					$DebugOut ("Resuming Guard's ActiveScript");
+					$ResumeThread (Guard's "ActiveScript");
+					thisagent's "waiting_guards" -= guard;				
+				end
+		end
+End
+
+///////////////////////////////////////////////////////////////////////////////
+// This scans for enemies within range of the Guardhouse.
+// Hero also has a chance of just exiting
+Function Garrison_Scan_Or_Leave (agent ThisAgent)
+Declare
+	agent		Guardhouse;
+	integer	Guardhouse_Range;
+	list		Enemies;
+
+Begin
+	Guardhouse = $GetBuildingContainer ( thisagent );
+	
+	if ($IsValidGamePiece (Guardhouse))
+		begin
+			Guardhouse_Range = $GetAttribute (Guardhouse, #ATTRIB_SightRange);
+
+			enemies = $list_enemies_seen(guardhouse,Guardhouse_range);
+
+			//If there are baddies around the guardhouse, go fight the closest one.
+			If ($ListSize (Enemies) > 0)
+				begin
+					$Exit_Building (ThisAgent, Guardhouse);
+
+					ThisAgent's "Target" = $ListMember (Enemies, 1);
+
+					ThisAgent's "ActiveScript" = $Attack_Object;
+				end
+
+
+			Else
+				If ($RandomNumber (100) + 1 < #Stop_Garrisoning_Chance)
+					begin
+
+						$Exit_Building (ThisAgent, Guardhouse);
+
+					end
+		end
+End
+

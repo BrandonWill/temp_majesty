@@ -1,0 +1,36 @@
+<Majesty>
+	<!-- Ice Elemental: Test monster that casts the Ice Freeze spell -->
+	<!-- Uses the Ice Dragon sprite (BVm1) as placeholder for initial testing -->
+	<Description type="Unit" subType="Character" ID="BVm1" Name="IceElemental" Description="Ice Elemental">
+		<Engine version="1">
+			<Info value="BlockFlying"/>
+			<CanUse value="Monster"/>
+			<Menu value="5"/>
+			<ImageIDBase value="BVm1"/>
+			<Attachment kind="Movement" type="Fly" ID="Large Flyer"/>
+			<DefaultSound value="Ice_dragon"/>
+		</Engine>
+		<Game version="1">
+			<DialogID value="AP97"/>
+			<Experience value="1200"/>
+			<MaxHP value="120"/>
+			<SightRange value="250"/>
+			<Speed value="3"/>
+			<AttackRange min="1" max="200"/>
+			<Intelligence value="20"/>
+			<Strength value="12"/>
+			<MagicResistance value="60"/>
+			<RangedAttack value="70"/>
+			<Parry value="35"/>
+			<Dodge value="40"/>
+			<ArmorBasicDamage value="2"/>
+			<Gold value="400"/>
+			<RecruitDelay value="15000"/>
+			<Flags value="HasHPBar"/>
+			<Flags value="CanHighlight"/>
+			<AllowedSpells>
+				<Spell ID="0" Value="Ice_Freeze"/>
+			</AllowedSpells>
+		</Game>
+	</Description>
+</Majesty>

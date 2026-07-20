@@ -1,0 +1,94 @@
+//General spawn cap for monsters (they won't spawn if this many monsters are already on the map)
+//Original value is 85 which is rather small for huge maps.
+expression #Monster_Spawn_Cap 500
+
+//Nerfed Plague because screw plague
+expression #Dwarfeh_AI_Ratman_Plague_Callback_Time	1000
+expression #Dwarfeh_AI_Plague_Radius				10
+expression #Dwarfeh_AI_Plague_Chance				1
+expression #Dwarfeh_AI_Ratman_Plague_Generations   1
+
+//All code revolving around Dwarfeh AI constants
+expression #AI_max_reward_flag 2000
+
+
+// ####### NOTE: None of below values have been changed. Just added here since we use them #########
+// We also use the LPS variables, but forced set them in the .xml files since they didn't work here.
+
+// This overrides normal magical build rates during deathmatch play.
+expression #Deathmatch_magical_build_amount 2
+
+expression #Deathmatch_repair_amount 2
+
+expression #Deathmatch_Hero_Repair_Cap 6
+
+expression #Deathmatch_Elf_Auto_Revenue_Mod 1.5
+
+expression #Deathmatch_Rage_Krolm_Duration 45000
+expression #Deathmatch_Rage_Armor_Bonus 4
+
+expression #Deathmatch_max_toavoid 85
+expression #Deathmatch_Hero_Magic_Resist 30
+
+expression #Deathmatch_Lightning_Storm_Min_Damage 5
+expression #Deathmatch_Lightning_Storm_Max_Damage 14
+
+expression #Deathmatch_Agrella_Healing_Multiplier 4
+expression #Deathmatch_Agrella_Healing_Cap 24
+
+expression #Deathmatch_Temple_Heal 30
+
+// This expression controls the reducing rate of returns on marketplaces and
+// trading posts in deathmatch mode.  The higher it is set, the better the
+// rate of returns on additional markets/tradeposts.
+// IT SHOULD NEVER BE SET TO A VALUE OF LESS THAN 2!!!
+expression #Deathmatch_income_modifier 3
+
+expression #Deathmatch_Building_Damage_Multiplier 1.5
+expression #Deathmatch_Sewer_Limit 3
+expression #Deathmatch_Graveyard_Limit 2
+expression #Deathmatch_Housing_Limit 6
+expression #Deathmatch_Small_Trade_Radius 1700
+expression #Deathmatch_Large_Trade_Radius 2800
+
+// cost for player-cast spells
+expression #SpellCost_Farseeing			200
+expression #SpellCost_Invisibility		400
+expression #SpellCost_LightningBolt		400
+expression #SpellCost_AntiMagicShield	500
+expression #SpellCost_SuperCharge		500
+expression #SpellCost_LightningStorm	1600
+expression #SpellCost_FireStrike		350
+expression #SpellCost_SunScorch			1200
+expression #SpellCost_WingedFeet		400
+expression #SpellCost_WindStorm			1000
+expression #SpellCost_AgrelaHealing		200
+expression #SpellCost_Blessing			100
+expression #SpellCost_Resurrection		1500
+expression #SpellCost_AnimateBones		800
+expression #SpellCost_Wither			300
+expression #SpellCost_ReAnimate			2000
+expression #SpellCost_StoneSkin			200
+expression #SpellCost_Petrify			1500
+expression #SpellCost_Vigilance			800
+expression #SpellCost_FervusHealing		400
+expression #SpellCost_Vines				1000
+expression #SpellCost_IllusionaryHero	500
+
+// Sorcerer's abode spells :
+expression #SpellCost_ChangeOfHeart		400
+expression #SpellCost_FrostField		1000
+expression #SpellCost_Dismiss			1000
+expression #SpellCost_ChainLightning	1200
+expression #SpellCost_Earthquake		2000
+expression #SpellCost_Gate				2000
+
+// cost for guild skills
+expression #RageOfKrolmCost 1500
+expression #AssemblyCost 500
+expression #MoveCampCost 800
+
+//duration of Rage of Krolm
+expression #Rage_Krolm_Duration 25000
+
+

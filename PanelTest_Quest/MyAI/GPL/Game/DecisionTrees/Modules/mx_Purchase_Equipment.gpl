@@ -1,0 +1,537 @@
+///////////////////////////////////////////////////////////////////////////////
+//Copyright (c) 1999 Cyberlore Studios, Inc. All rights Reserved.
+//CONFIDENTIAL MATERIAL
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+Function Purchase_Equipment (agent ThisAgent) is boolean
+Declare
+	boolean 	Flag,Wants_Armor,Wants_Weapon,Wants_Poison;
+	list blacksmiths,wizguilds,markets,shops,fairgrounds,buildings;
+	integer search_dist;
+
+Begin
+	//See if ThisAgent can use Weapons, and if they want to think about upgrading
+	If ($GetAttribute (ThisAgent, #ATTRIB_WeaponTypeIndex) > 0)
+		begin
+			If (ThisAgent's "Upgrade_Weapon_Chance" > $RandomNumber (100) + 1)
+				Wants_Weapon = TRUE;
+		end
+	//See if ThisAgent can wear Armor, and if they want to think about upgrading
+	If ($GetAttribute (ThisAgent, #ATTRIB_ArmorTypeIndex) > 0)
+		begin
+			If (ThisAgent's "Upgrade_Armor_Chance" > $RandomNumber (100) + 1)
+				Wants_Armor = TRUE;
+		end
+
+	// construct some lists here, and pass them as parameters,
+	// instead of over and over again in the lower level subroutines.
+	Search_Dist = $GetAttribute (ThisAgent, #ATTRIB_SightRange) * ($GetAttribute (ThisAgent, #ATTRIB_Intelligence) / 2);
+
+	$listobjects(thisagent,"building",search_Dist,buildings,#ATTRIB_FirstStageBuilt, 1 );
+	//buildings = $listcompleted(buildings);
+
+	Blacksmiths = $RemoveTitles(buildings,"blacksmith");
+	wizGuilds = $RemoveTitles(buildings,"Wizards_Guild");
+	fairgrounds = $RemoveTitles(buildings,"fairgrounds");
+	Markets = $listTitles(buildings,"Marketplace");
+	shops = $listsubtypes(buildings,"shop");
+
+	//Pass the string "Equipment", because it is used to determine tasknames and debug messages
+	If (Wants_Weapon && $BlackSmith_Check (ThisAgent, "Weapon", $GetAttribute (ThisAgent, #ATTRIB_Weapon_Struct_Bonus),Blacksmiths))
+		begin
+ 			Flag = TRUE;
+			$SpecifyIntent (ThisAgent, #Intent_Purchasing_Blacksmith_Weapon);
+		end
+	Else
+		If (Wants_Armor && $BlackSmith_Check (ThisAgent, "Armor", $GetAttribute (ThisAgent, #ATTRIB_Armor_Struct_Bonus),Blacksmiths))
+			begin
+				Flag = TRUE;
+				$SpecifyIntent (ThisAgent, #Intent_Purchasing_Blacksmith_Armor);
+			end
+		Else
+	 		If (Wants_Weapon && $WizGuild_Check (ThisAgent, "Weapon", $GetAttribute (ThisAgent, #ATTRIB_Weapon_Magic_Bonus),Wizguilds))
+				begin
+		  			Flag = TRUE;
+					$SpecifyIntent (ThisAgent, #Intent_Enchanting_Wiz_Weapon);
+				end
+			Else
+	 			If (Wants_Armor && $WizGuild_Check (ThisAgent, "Armor", $GetAttribute (ThisAgent, #ATTRIB_Armor_Magic_Bonus),Wizguilds))
+					begin
+						Flag = TRUE;
+						$SpecifyIntent (ThisAgent, #Intent_Enchanting_Wiz_Armor);
+					end
+				Else
+			 		begin
+						If (ThisAgent's "Poison_Weapon_Chance" > $RandomNumber (100) + 1)
+							Wants_Poison = TRUE;
+
+						If (Wants_Poison && $Poison_Check (ThisAgent))
+							begin
+								Flag = TRUE;
+							end
+						Else
+							If ($Potion_Check (ThisAgent,shops))
+				 				begin
+									Flag = TRUE;
+								end
+							Else
+								If ($Ring_Check (ThisAgent,markets))
+									begin
+										Flag = TRUE;
+									end
+								Else
+									If ($Market3_Check (ThisAgent,markets))
+										begin
+											Flag = TRUE;
+										end
+									Else
+										If ($Stat_Boost_Check (ThisAgent,fairgrounds))
+											begin
+												Flag = TRUE;
+											end
+					end
+
+	If (Flag)
+		begin
+			ThisAgent's "ActiveScript" = $Use_Building;
+			return TRUE;
+		end
+
+	return False;
+End
+
+///////////////////////////////////////////////////////////////////////////////
+Function BlackSmith_Check (agent ThisAgent, string Equipment, integer Bonus,list blacksmiths) is boolean
+Declare
+	integer	Search_Dist;
+//	list		Blacksmiths;
+	agent		Blacksmith;
+	list		Potentials;
+	integer	Gold_Needed;
+
+Begin
+	If (Bonus >= 3)
+		begin
+			$DebugOut ("This",equipment,"is already at the Blacksmith's Maximum Structural Bonus!");
+			return False;
+		end
+
+	If (Bonus == 0)
+		Gold_Needed = #Cost_Per_Struct_Upgrade1;
+
+	If (Bonus == 1)
+		Gold_Needed = #Cost_Per_Struct_Upgrade2;
+
+	If (Bonus == 2)
+		Gold_Needed = #Cost_Per_Struct_Upgrade3;
+
+	if (equipment == "armor")
+		gold_needed = gold_needed * #armor_multiplier;
+
+	If ($Total_Gold (ThisAgent) < Gold_Needed)
+		begin
+			$DebugOut ("I can't afford a Struct upgrade!");
+			return False;
+		end
+
+
+//	Search_Dist = $GetAttribute (ThisAgent, #ATTRIB_SightRange) * ($GetAttribute (ThisAgent, #ATTRIB_Intelligence) / 2);
+//    	//Insert Loyalty Logic
+//	BlackSmiths = $ListCompletedTitles (ThisAgent, "Building", "Blacksmith", Search_Dist);
+
+	If ($ListSize (BlackSmiths) == 0)
+		begin
+			$DebugOut ("No blacksmiths within an Intel modified sightrange!");
+			return False;
+		end
+
+
+
+	//See which blacksmiths have researched enough to offer the upgrade
+
+	//Check to see if hero needs armor or weapon
+	If (Equipment == "Armor")
+		begin
+			//This is used by the Upgrade Equipment script
+			ThisAgent's "Task_Number" = #ATTRIB_Armor_Struct_Bonus;
+
+			If (Bonus == 0)
+				Potentials = $List_Attribs (Blacksmiths, #ATTRIB_ResearchArmorLevel_2 );
+
+			Else If (Bonus == 1)
+				Potentials = $List_Attribs (Blacksmiths, #ATTRIB_ResearchArmorLevel_3 );
+
+			Else If (Bonus == 2)
+				Potentials = $List_Attribs (Blacksmiths, #ATTRIB_ResearchArmorLevel_4 );
+		end
+
+
+	If (Equipment == "Weapon")
+		begin
+			//This is used by the Upgrade Equipment script
+			ThisAgent's "Task_Number" = #ATTRIB_Weapon_Struct_Bonus;
+
+			If (Bonus == 0)
+				Potentials = $List_Attribs (Blacksmiths, #ATTRIB_ResearchWeaponLevel_2 );
+
+			Else If (Bonus == 1)
+				Potentials = $List_Attribs (Blacksmiths, #ATTRIB_ResearchWeaponLevel_3 );
+
+			Else If (Bonus == 2)
+				Potentials = $List_Attribs (Blacksmiths, #ATTRIB_ResearchWeaponLevel_4 );
+		end
+
+
+	If ($ListSize (Potentials) == 0)
+		begin
+			$DebugOut ("No Blacksmiths that are high enough level to upgrade my",equipment);
+			return False;
+		end
+
+
+	//Removed because we want this to be a loyalty check
+	//ThisAgent's "Target" = $PickHighestLevelBuilding (ThisAgent, Potentials);
+
+	ThisAgent's "Target" = $Loyalty_Mod_Pick_Closest (ThisAgent, Potentials);
+	$DebugOut ("I've got a Blacksmith- going to upgrade my",equipment);
+	thisagent's "taskname" = "visiting";
+	return True;
+
+End
+
+///////////////////////////////////////////////////////////////////////////////
+Function WizGuild_Check (agent ThisAgent, string Equipment, integer Bonus,list WizGuilds) is boolean
+Declare
+	integer	Search_Dist;
+//	list		WizGuilds;
+	agent		WizGuild;
+	list		Potentials;
+	integer 	Intel_Roll;
+	integer	Gold_Needed;
+
+Begin
+	If (Bonus >= 3)
+		begin
+			$DebugOut ("My weapon is already at the WizGuild Maximum Magical Bonus!");
+			return False;
+		end
+
+	If (Bonus == 0)
+		Gold_Needed = #Cost_Per_Magic_Enchantment1;
+
+	If (Bonus == 1)
+		Gold_Needed = #Cost_Per_Magic_Enchantment2;
+
+	If (Bonus == 2)
+		Gold_Needed = #Cost_Per_Magic_Enchantment3;
+
+
+
+
+	If ($Total_Gold (ThisAgent) < Gold_Needed)
+		begin
+			$DebugOut ("I can't afford a Magic upgrade!");
+			return False;
+		end
+
+
+
+//	Search_Dist = $GetAttribute (ThisAgent, #ATTRIB_SightRange) * ($GetAttribute (ThisAgent, #ATTRIB_Intelligence) / 2);
+
+//	//Insert Loyalty Logic
+
+//	WizGuilds = $ListCompletedTitles (ThisAgent, "Building", "Wizards_Guild", Search_Dist);
+
+	If ($ListSize (WizGuilds) == 0)
+		begin
+			$DebugOut ("No WizGuilds within an Intel modified sightrange!");
+			return False;
+		end
+
+	Foreach WizGuild in WizGuilds do
+		begin
+			If (WizGuild's "Level" > Bonus)
+				Potentials << WizGuild;
+		end
+
+	If ($ListSize (Potentials) == 0)
+		begin
+			$DebugOut ("No WizGuilds that are high enough level to enhance my",equipment);
+			return False;
+		end
+
+
+	Intel_Roll = $RandomNumber (30) + 1;
+
+	If ($GetAttribute (ThisAgent, #ATTRIB_Intelligence) > Intel_Roll)
+		begin
+
+			If (Equipment == "Weapon")
+				begin
+					ThisAgent's "Task_Number" = #ATTRIB_Weapon_Magic_Bonus;
+				end
+
+			Else
+				begin
+					ThisAgent's "Task_Number" = #ATTRIB_Armor_Magic_Bonus;
+				end
+	 //Removed because we want this to be a loyalty check
+	 //		ThisAgent's "Target" = $PickHighestLevelBuilding (ThisAgent, Potentials);
+
+
+			ThisAgent's "Target" = $Loyalty_Mod_Pick_Closest (ThisAgent, Potentials);
+
+			$DebugOut ("I've got a WizGuild to get my",equipment,"enchanted at!");
+			thisagent's "taskname" = "visiting";
+
+			return True;
+		end
+
+	$DebugOut ("I'm too dumb to go to a WizGuild!");
+	return False;
+End
+
+///////////////////////////////////////////////////////////////////////////////
+Function Poison_Check (agent ThisAgent) is boolean
+Declare
+	list  Potentials;
+	integer Search_Dist;
+	integer Artifice_Roll;
+
+Begin
+	$DebugOut ("Should I poison my Weapon?");
+
+	//Do I need poison?
+	If ($GetAttribute (ThisAgent, #ATTRIB_WeaponPoisoned) == 1)
+		begin
+			$DebugOut (thisagent's "title","already has their weapons poisoned");
+			return False;
+		end
+
+	//Modify my Sightrange by my artifice to see how far I'll search for Level 2 Rogue's Guilds
+	Search_Dist = $GetAttribute (ThisAgent, #ATTRIB_SightRange) * ($GetAttribute (ThisAgent, #ATTRIB_Artifice) / 2);
+
+	Potentials = $ListBuildLevelsInRadius (ThisAgent, "Building", "Rogues_Guild", 2, Search_Dist);
+
+	//Did I find any? If not, return False;
+	If ($ListSize (Potentials) == 0)
+		begin
+			$DebugOut ("Either there aren't any Rogues Guild2s or they are too far for me!");
+			return False;
+		end
+
+	Else
+		begin
+			Artifice_Roll = $RandomNumber (30) + 1;
+
+			//If I make my roll, set the Best One as my Target and, return True
+			If ($GetAttribute (ThisAgent, #ATTRIB_Artifice) > Artifice_Roll)
+				begin
+					ThisAgent's "TaskName" = "visiting";
+					ThisAgent's "Target" = $Loyalty_Mod_Pick_Closest (ThisAgent, Potentials);
+					$DebugOut ("Yes!");
+					$SpecifyIntent (ThisAgent, #Intent_Poisoning_Weapon);
+					return True;
+	         end
+		end
+
+	return False;
+
+End
+
+///////////////////////////////////////////////////////////////////////////////
+Function Potion_Check (agent ThisAgent,list potentials) is boolean
+Declare
+//	list Potentials;
+	integer	Intel_Roll;
+//	integer Search_Dist;
+
+Begin
+	$DebugOut ("Should I buy some Healing Potions?");
+	If ($GetAttribute(ThisAgent,#ATTRIB_NumHealingPotions) >= #Max_Heal_Potions)
+		begin
+//			$DebugOut ("I already have",$GetAttribute(ThisAgent,#ATTRIB_NumHealingPotions),"so I don't want any more!");
+			return False;
+		end
+
+	If ($Total_Gold (ThisAgent) < #Heal_Potion_Price)
+		begin
+//			$DebugOut ("I don't have enough money for even 1 healing potion!");
+			return False;
+		end
+
+//	Search_Dist = $GetAttribute (ThisAgent, #ATTRIB_SightRange) * ($GetAttribute (ThisAgent, #ATTRIB_Intelligence) / 2);
+
+//	Potentials = $ListCompletedSubtypes (ThisAgent, "Building", "Shop", Search_Dist);
+
+
+	Potentials = $List_Attribs (Potentials, #ATTRIB_ResearchHealingPotions );
+
+
+	If ($ListSize (Potentials) == 0)
+		begin
+			// $DebugOut ("There either aren't any Potion Shops, or they aren't close enough to me!");
+			return False;
+		end
+
+	Else
+		begin
+			Intel_Roll = $RandomNumber (30) + 1;
+			If ($GetAttribute (ThisAgent, #ATTRIB_Intelligence) > Intel_Roll)
+				begin
+					ThisAgent's "TaskName" = "visiting";
+					ThisAgent's "Target" = $Loyalty_Mod_Pick_Closest (ThisAgent, Potentials);
+					//$DebugOut ("Yes!");
+					$SpecifyIntent (ThisAgent, #Intent_purchasing_heal_potions);
+					return True;
+				end
+		end
+
+	//$DebugOut ("No!");
+	return False;
+
+End
+
+///////////////////////////////////////////////////////////////////////////////
+Function Ring_Check (agent ThisAgent,list potentials) is boolean
+Declare
+//	list Potentials;
+	integer	Intel_Roll;
+//	integer Search_Dist;
+
+Begin
+	//$DebugOut ("Should I buy a Ring of Protection?");
+
+	//See if ThisAgent already has a ring on them
+	If ($AgentHasInventoryItem (#MarketItem_Ring_Protection, ThisAgent))
+		begin
+			//$DebugOut ("I already have a Ring, so I don't need another one.");
+			return False;
+		end
+
+	If ($Total_Gold (ThisAgent) < #Ring_Protection_Price)
+		begin
+			//$DebugOut ("I don't have enough money for a Ring of Protection!");
+			return False;
+		end
+
+//	Search_Dist = $GetAttribute (ThisAgent, #ATTRIB_SightRange) * ($GetAttribute (ThisAgent, #ATTRIB_Intelligence) / 2);
+
+//	//Find all Markets that have researched the ring
+//	Potentials = $listtitlesinRadius (ThisAgent, "Building", "MarketPlace", Search_Dist);
+
+	Potentials = $List_Attribs (Potentials, #ATTRIB_ResearchRingsofProtection );
+
+	If ($ListSize (Potentials) == 0)
+		begin
+			// $DebugOut ("There either aren't any Markets that have researched Rings of Prot, or they aren't close enough!");
+			return False;
+		end
+
+	Else
+		begin
+			Intel_Roll = $RandomNumber (30) + 1;
+			If ($GetAttribute (ThisAgent, #ATTRIB_Intelligence) > Intel_Roll)
+				begin
+					ThisAgent's "TaskName" = "Ring_Protection";
+					ThisAgent's "Target" = $Loyalty_Mod_Pick_Closest (ThisAgent, Potentials);
+					//$DebugOut ("Yes!");
+					$SpecifyIntent (ThisAgent, #Intent_purchasing_prot_ring);
+					return True;
+				end
+		end
+
+	//$DebugOut ("No!");
+	return False;
+
+End
+
+///////////////////////////////////////////////////////////////////////////////
+Function Market3_Check (agent ThisAgent,list potentials) is boolean
+Declare
+//	list Potentials;
+	integer	Intel_Roll;
+//	integer Search_Dist;
+
+Begin
+	$DebugOut ("Should I buy a Market3 Item?");
+
+	//See if ThisAgent already has a ring on them
+	If ($AgentHasInventoryItem (#MarketItem_Market3_Item, ThisAgent))
+		begin
+			$DebugOut ("I already have a Market3 Item, so I don't need another one.");
+			return False;
+		end
+
+	If ($Total_Gold (ThisAgent) < #Market3_Item_Price)
+		begin
+			$DebugOut ("I don't have enough money for a Market3 Item!");
+			return False;
+		end
+
+//	Search_Dist = $GetAttribute (ThisAgent, #ATTRIB_SightRange) * ($GetAttribute (ThisAgent, #ATTRIB_Intelligence) / 2);
+
+//	//Find all Markets that have researched the powerful item
+//	Potentials = $ListTitlesInRadius (ThisAgent, "Building", "Marketplace", Search_Dist);
+
+	Potentials = $List_Attribs (Potentials, #ATTRIB_ResearchPowerfulItem );
+
+	If ($ListSize (Potentials) == 0)
+		begin
+			$DebugOut ("There either aren't any level 3 Markets, or they aren't close enough to me!");
+			return False;
+		end
+
+	Else
+		begin
+			Intel_Roll = $RandomNumber (30) + 1;
+			If ($GetAttribute (ThisAgent, #ATTRIB_Intelligence) > Intel_Roll)
+				begin
+					ThisAgent's "TaskName" = "Market3_Item";
+					ThisAgent's "Target" = $Loyalty_Mod_Pick_Closest (ThisAgent, Potentials);
+					$DebugOut ("Yes!");
+					$SpecifyIntent (ThisAgent, #Intent_purchasing_Market3_Item);
+					return True;
+				end
+		end
+
+	$DebugOut ("No!");
+	return False;
+
+End
+
+///////////////////////////////////////////////////////////////////////////////
+Function Stat_Boost_Check (agent ThisAgent,list potentials) is boolean
+Declare
+//	integer	Search_Dist;
+//	list		Potentials;
+
+Begin
+	//Roll a random against the percent to buy stats
+	If ($RandomNumber (100) + 1 >= #Percent_Chance_To_Buy_Stats)
+		return FALSE;
+
+	// if my dodge or parry are high I can't go to the fairgrounds any longer.
+	if (($getattribute(thisagent,#Attrib_Dodge) > 94) || ($getattribute(thisagent,#Attrib_Parry) > 94))
+		return FALSE;
+
+	//Can afford a stat boost?
+	If ($Total_Gold (ThisAgent) > #Stat_Boost_Price)
+		begin
+			//Look around within a modified sightrange for Potential Fairground targets
+//					Search_Dist = $GetAttribute (ThisAgent, #ATTRIB_SightRange) * #Purchase_Stats_Sight_Mod;
+
+//					Potentials = $ListCompletedTitles (ThisAgent, "Building", "Fairgrounds", Search_Dist);
+
+			If ($ListSize (Potentials) > 0)
+				begin
+					ThisAgent's "Target" = $Loyalty_Mod_Pick_Closest (ThisAgent, Potentials);
+					ThisAgent's "Taskname" = "Stat_Boost";
+					$SpecifyIntent (ThisAgent, #intent_purchasing_stats_at_fair);
+					return True;
+				end
+		end
+
+	return False;
+End

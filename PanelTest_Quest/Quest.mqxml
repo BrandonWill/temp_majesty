@@ -1,0 +1,38 @@
+<Majesty>
+	<Quest id="{C8F4B32D-6A90-4E23-AB4F-8D7G3E9F2C15}">
+		<DataConfiguration>
+			<Dataset base="MajestyExpansion">
+				<Load>
+					<Template>Quest.q</Template>
+					<Constants>Quest.rgs</Constants>
+					<Descriptions>Data\PanelTest_Buildings.xml</Descriptions>
+					<Descriptions>Data\IceSpell_Actions.xml</Descriptions>
+					<Descriptions>Data\IceSpell_Characters.xml</Descriptions>
+					<Descriptions>Data\IceSpell_Overlays.xml</Descriptions>
+					<Descriptions>MyAI\Data\M_Buildings.xml</Descriptions>
+					<Descriptions>MyAI\Data\MX_Buildings.xml</Descriptions>
+					<CAM>Data\Quest_maindata.cam</CAM>
+					<CAM>Data\Quest_textdata.cam</CAM>
+					<GPL>
+						<Target>Data\IceSpell_Quest.bcd</Target>
+						<Source>GPL\IceSpell.gpl</Source>
+						<Source>GPL\IceSpell_Globals.dat</Source>
+						<Source>MyAI\GPL\custom_rules.gpl</Source>
+						<Source>MyAI\GPL\Game\mx_Building_Data.dat</Source>
+						<Source>MyAI\GPL\Game\mx_Globals.gpl</Source>
+						<Source>MyAI\GPL\Game\mx_Hero_Data.dat</Source>
+						<Source>MyAI\GPL\Game\mx_prototype.gpl</Source>
+						<Source>MyAI\GPL\Game\DecisionTrees\Modules\mx_defend_home.gpl</Source>
+					</GPL>
+				</Load>
+			</Dataset>
+		</DataConfiguration>
+		<DisplayName lang="en_US">Panel Navigation Test</DisplayName>
+		<Description lang="en_US">
+			<Short>Test quest for SMNU panel navigation. Build the Test Shop to verify sub-panel resolution.</Short>
+			<Long>Build the Test Shop (uses Magic Bazaar sprite). Click it and try the Research button. If a research panel appears, sequential naming convention is confirmed.</Long>
+		</Description>
+		<Difficulty>Normal</Difficulty>
+		<Name>basicAI</Name>
+	</Quest>
+</Majesty>

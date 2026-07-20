@@ -1,0 +1,1901 @@
+[AI_Takeover]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			AI_Takeover)
+		(cost 1)
+		(Level			1)
+		(birthscript		playerOneAI)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[Zoo1]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			Zoo)
+		(Level			1)
+		(Visited_Script		Upgrade_Equipment)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Zoo2]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			Zoo)
+		(Level			2)
+		(Visited_Script		Upgrade_Equipment)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Zoo3]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			Zoo)
+		(Level			3)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+
+[SorcerersAbode]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			SorcerersAbode)
+		(cost 2000)		
+		(Level			1)
+		(birthscript		magical_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		magical_upgrade)
+		(Magical_build_rate     2)
+	}
+[end]
+
+[SorcerersAbode2]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			SorcerersAbode)
+		(cost 2500)
+		(Level			2)
+		(birthScript		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		magical_upgrade)
+	}
+[end]
+
+[SorcerersAbode3]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			SorcerersAbode)
+		(cost 3000)
+		(Level			3)
+		(birthScript		Building_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[MagicBazaar]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			Magic_Bazaar)
+		(cost 1400)
+		(costMultiplier 1.5)
+		(Level			1)
+		(Visited_Script		Bazaar_Visited)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+		(Sleep_For		10000)
+	}
+[end]
+
+[MagicBazaar2]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			Magic_Bazaar)
+		(cost 1200)
+		(Level			2)
+		(Visited_Script		Bazaar_Visited)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+		(Sleep_For		10000)
+	}
+[end]
+
+[MagicBazaar3]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			Magic_Bazaar)
+		(cost 1200)
+		(Level			3)
+		(Visited_Script		Bazaar_Visited)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+		(Sleep_For		10000)
+	}
+[end]
+
+[HallOfChampions]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			HallOfChampions)
+		(cost 1000)
+		(Level			1)
+		(Visited_Script		Hall_Of_Champions_visited)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+
+[Mausoleum]
+	{Building
+		(type 			building)
+		(subtype		xx)
+		(title 			Mausoleum)
+		(cost 1500)
+		(costMultiplier 2.0)
+		(Level			1)
+		(Visited_Script		Upgrade_Equipment)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		mausoleum_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+
+[Outpost]
+	{Outpost
+		(type 			building)
+		(subtype 		Outpost)
+		(AttackType 		5)
+		(Ranged  		75)
+		(Strength       	25)
+		(title 			Outpost)
+		(cost 3000)
+		(costMultiplier 4.0)		
+		(Level 			1)
+		(heroes_to_upgrade 	4)
+		(EnemyType 		Monster)
+		(Max_Guards		2)
+		(Guard_Function		Building_Guard)
+		(Guard_Spawn_Function	Palace_Guard_Spawner)
+		(tax_spawn		tax_spawner)
+		(max_tax_collectors 	1)
+		(peasant_spawn		peasant_spawner)
+		(max_peasants 		2)
+		(Lived_In_Script	Lived_In)
+		(Sleep_for		30000)
+		(gnome_camp_spawner 	gnome_camp_spawn)
+		(activescript 		palace_revenue)
+		(birthscript		basic_birth)
+		(birthScript2		Outpost_Birth)
+		(IGdeathscript		Outpost_death)
+	}
+[end]
+
+[Embassy]
+	{Guild
+		(type 			building)
+		(subtype		Guild)
+		(title 			Embassy)
+		(cost 3000)
+		(costMultiplier 3.5)
+		(Level			1)
+		(Lived_In_Script	Lived_In)
+		(Sleep_for		30000)
+		(activescript		Embassy_Active)
+		(birthscript		basic_birth)
+		(birthScript2		Embassy_Birth)
+		(IGdeathscript		Embassy_death)
+	}
+[end]
+
+[Goblin_Watchtower]
+	{Tower_Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			Goblin_Watchtower)
+		(difficulty 		2)
+		(EnemyType 		Hero)
+		(Attack_Action  	Ballista_Bolt)
+		(Strength		15)
+		(AttackType		5)
+		(Ranged			85)
+		(Special_Spawn_Type	Goblin_Archer)
+		(ActiveScript		Tower_scan)
+		(BasicScript		Tower_scan)
+		(BackScript		Tower_scan)
+		(birthscript		Goblin_Watchtower_birth)
+		(IGdeathscript		lair_death)
+	}
+[end]
+
+[GoblinFortress]
+	{Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			GoblinFortress)
+		(difficulty 		4)
+		(Dispersion_Range	300)
+		(Spawn_Type		Goblin_Fighter)
+		(Special_Spawn_Type	GoblinOverlord)
+		(Base_Spawn_Rate	20000)
+		(activeScript		Lair_Brains)
+		(Spawn_function         GoblinFortSpawn)
+		(birthScript		Lair_Birth)
+		(IGdeathscript		Lair_death)
+		(Stored_Spawns		3)
+		(Max_Simul_Spawns	4)
+		(Max_Stored_Spawns	3)
+	}
+[end]
+
+
+[RatsNest]
+	{Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			RatsNest)
+		(difficulty 		4)
+		(Dispersion_Range	300)
+		(Spawn_Type		Ratman)
+		(Special_Spawn_Type	Ratman)
+		(Base_Spawn_Rate	20000)
+		(activeScript		Lair_Brains)
+		(Spawn_function         Rats_Nest)
+		(birthScript		Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Ancient_Graveyard]
+	{Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			Ancient_Graveyard)
+		(difficulty 		4)
+		(Dispersion_Range	300)
+		(Spawn_Type		Skeleton)
+		(Special_Spawn_Type	Vampire)
+		(Base_Spawn_Rate	20000)
+		(activeScript		Lair_Brains)
+		(Spawn_function         Spawn)
+		(birthScript		Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+
+[FortressofIxmil]
+	{Tower_Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			FortressOfIxmil)
+		(difficulty 		4)
+		(EnemyType		Hero)
+		(Attack_Action  	Ixmil_Blast)
+		(AttackType		5)
+		(Dispersion_Range	300)
+		(Spawn_Type		xx)
+		(Special_Spawn_Type	xx)
+		(Base_Spawn_Rate	20000)
+		(ActiveScript		Ixmil_Scan)
+		(BasicScript		Ixmil_Scan)
+		(BackScript		Ixmil_Scan)
+		(Spawn_function         Spawn)
+		(birthScript		Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+
+[BrokenSewerMain]
+	{Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			BrokenSewerMain)
+		(difficulty 		3)
+		(Dispersion_Range	300)
+		(Spawn_Type		Giant_Rat)
+		(Special_Spawn_Type	RatmanChampion)
+		(Base_Spawn_Rate	90000)
+		(activeScript		Lair_Brains)
+		(Spawn_function         Rat_Spawn)
+		(birthScript		Broken_sewer_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Ice_Cave]
+	{Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			Ice_Cave)
+		(difficulty 		3)
+		(Dispersion_Range	300)
+		(Spawn_Type		IceElemental)
+		(Special_Spawn_Type	IceElemental)
+		(Base_Spawn_Rate	30000)
+		(activeScript		Lair_Brains)
+		(Spawn_function 	Spawn)
+		(birthScript		Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[AncientBarrow]
+	{Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			AncientBarrow)
+		(difficulty 		4)
+		(Dispersion_Range	300)
+		(Spawn_Type		Zombie)
+		(Special_Spawn_Type	Skeleton)
+		(Base_Spawn_Rate	60000)
+		(activeScript		Lair_Brains)
+		(Spawn_function 	Spawn)
+		(birthScript		Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[WightsTomb]
+	{Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			WightsTomb)
+		(difficulty 		10)
+		(Dispersion_Range	300)
+		(Spawn_Type		Zombie)
+		(Special_Spawn_Type	Skeleton)
+		(Base_Spawn_Rate	60000)
+		(activeScript		Lair_Brains)
+		(Spawn_function 	Spawn)
+		(birthScript		Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+
+[SnakePit]
+	{Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			SnakePit)
+		(difficulty 		10)
+		(Dispersion_Range	300)
+		(Spawn_Type		Medusa)
+		(Special_Spawn_Type	GreaterGorgon)
+		(Base_Spawn_Rate	60000)
+		(activeScript		Lair_Brains)
+		(Spawn_function 	Snake_Pit_Spawn)
+		(birthScript		Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+
+[SpireOfDeath]
+	{Tower_Lair
+		(type 			Lair)
+		(subtype 		xx)
+		(title 			SpireOfDeath)
+		(difficulty 		4)
+		(EnemyType 		Hero)
+		(Attack_Action  	Spire_Blast_One)
+		(Strength		0)
+		(AttackType		5)
+		(Ranged			255)
+		(Max_Simul_Spawns	4)
+		(ActiveScript		Spire_Scan)
+		(BasicScript		Spire_Scan)
+		(BackScript		Spire_Scan)
+		(birthscript		Spire_Birth)
+		(IGdeathscript		Spire_Death)
+		(Spawn_Function 	Spire_Spawn_One)
+		(Special_Spawn_Type	xx)
+		(Dispersion_Range	200)
+	}
+[end]
+
+[EvilPalace]
+	{Palace
+		(type 			building)
+		(subtype 		Palace)
+		(title 			Palace)
+		(Level			3)
+		(EnemyType 		Monster)
+		(Max_Guards		2)
+		(Guard_Spawn_Function	Palace_Guard_Spawner)
+		(Guard_Function		Building_Guard)
+		(tax_spawn		tax_spawner)
+		(max_tax_collectors 	3)
+		(peasant_spawn		peasant_spawner)
+		(max_peasants 		6)
+		(activescript 		palace_revenue)
+		(gnome_camp_spawner 	gnome_camp_spawn)
+		(birthScript		Palace_Birth)
+		(IGdeathscript		Palace_death)
+	}
+[end]
+
+[Palace1]
+	{Palace
+		(type 			building)
+		(subtype 		Palace)
+		(title 			Palace)
+		(upgradeCost 3000)
+		(Level 			1)
+		(heroes_to_upgrade 	4)
+		(EnemyType 		Monster)
+		(Max_Guards		0)
+		(Guard_Function		Building_Guard)
+		(Guard_Spawn_Function	Palace_Guard_Spawner)
+		(tax_spawn		tax_spawner)
+		(max_tax_collectors 	1)
+		(peasant_spawn		peasant_spawner)
+		(max_peasants 		2)
+		(gnome_camp_spawner 	gnome_camp_spawn)
+		(activescript 		palace_revenue)
+		(birthScript		Palace_Birth)
+		(IGdeathscript		Palace_death)
+		(upgradescript		Palace_upgrade)
+		(upgradescript2		Palace_upgrade2)
+	}
+[end]
+
+[Palace2]
+	{Palace
+		(type 			building)
+		(subtype 		Palace)
+		(title 			Palace)
+		(Level			2)
+		(cost 3000)
+		(upgradeCost 3750)
+		(heroes_to_upgrade 	12)
+		(EnemyType 		Monster)
+		(Max_Guards		1)
+		(Guard_Spawn_Function	Palace_Guard_Spawner)
+		(Guard_Function		Building_Guard)
+		(tax_spawn		tax_spawner)
+		(max_tax_collectors 	2)
+		(peasant_spawn		peasant_spawner)
+		(max_peasants 		4)
+		(gnome_camp_spawner 	gnome_camp_spawn)
+		(activescript 		palace_revenue)
+		(birthScript		Palace_Birth)
+		(IGdeathscript		Palace_death)
+		(upgradescript		Palace_upgrade)
+		(upgradescript2		Palace_upgrade2)
+	}
+[end]
+
+[Palace3]
+	{Palace
+		(type 			building)
+		(subtype 		Palace)
+		(title 			Palace)
+		(cost 3750)
+		(Level			3)
+		(EnemyType 		Monster)
+		(Max_Guards		2)
+		(Guard_Spawn_Function	Palace_Guard_Spawner)
+		(Guard_Function		Building_Guard)
+		(tax_spawn		tax_spawner)
+		(max_tax_collectors 	3)
+		(peasant_spawn		peasant_spawner)
+		(max_peasants 		6)
+		(activescript 		palace_revenue)
+		(gnome_camp_spawner 	gnome_camp_spawn)
+		(birthScript		Palace_Birth)
+		(IGdeathscript		Palace_death)
+	}
+[end]
+
+[Ballista_Tower]
+	{Tower
+		(type 			building)
+		(subtype 		xx)
+		(title 			Ballista_Tower)
+		(cost 1000)
+		(costMultiplier 4.0)
+		(EnemyType 		Monster)
+		(Attack_Action  	Ballista_Bolt)
+		(Strength		25)
+		(AttackType		5)
+		(Ranged			85)
+		(ActiveScript		Tower_scan)
+		(BasicScript		Tower_scan)
+		(BackScript		Tower_scan)
+		(birthscript		basic_birth)
+		(birthScript2		Tower_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[BlackSmith1]
+	{Building
+		(type 			building)
+		(subtype 		xx)
+		(title 			Blacksmith)
+		(cost 500)
+		(upgradeCost 600)
+		(costMultiplier 1.0)
+		(Level			1)
+		(Visited_Script		Upgrade_Equipment)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[BlackSmith2]
+	{Building
+		(type 			building)
+		(subtype 		xx)
+		(title 			Blacksmith)
+		(cost 600)
+		(upgradeCost 800)
+		(costMultiplier 1.0)
+		(Level			2)
+		(Visited_Script		Upgrade_Equipment)
+		(birthScript		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[BlackSmith3]
+	{Building
+		(type 			building)
+		(subtype 		xx)
+		(title 			Blacksmith)
+		(cost 800)
+		(costMultiplier 1.0)
+		(Level			3)
+		(Visited_Script		Upgrade_Equipment)
+		(birthScript		Building_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[Fairgrounds]
+	{Fairgrounds
+		(type 			building)
+		(subtype 		xx)
+		(title 			Fairgrounds)
+		(cost 3000)
+		(costMultiplier 3.0)
+		(RevenueScript		Fairgrounds_Revenue)
+		(Revenue_Amount		100)
+		(Revenue_Time		60000)
+		(Visited_Script 	Fairgrounds_Visited)
+		(birthscript		basic_birth)
+		(birthScript2		Fairgrounds_Birth)
+		(IGdeathscript		building_death)
+		(ActiveScript		Fairgrounds_Poll)
+		(ResetScript		Fairgrounds_Reset)
+	}
+[end]
+
+[GuardHouse1]
+	{GuardHouse
+		(type 			building)
+		(subtype 		xx)
+		(title 			GuardHouse)
+		(cost 600)
+		(upgradeCost 500)
+		(costMultiplier 1.25)
+		(EnemyType 		Monster)
+		(Max_Guards		1)
+		(Strength		9)
+		(AttackType		5)
+		(Ranged			75)
+		(Sleep_For		9000)
+		(Hero_Guarded		False)
+		(Guard_Function		Building_Guard)
+		(Guard_Spawn_Function	City_Guard_Spawner)
+		(Visited_Script		GuardHouse_Visited)
+		(birthscript		basic_birth)
+		(birthScript2		GuardHouse_Birth)
+		(IGdeathscript		GuardHouse_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+
+[GuardHouse2]
+	{GuardHouse
+		(type 			building)
+		(subtype 		xx)
+		(title 			GuardHouse)
+		(cost 500)
+		(costMultiplier 1.25)
+		(EnemyType 		Monster)
+		(Max_Guards		1)
+		(Strength		9)
+		(AttackType		5)
+		(Ranged			75)
+		(Sleep_For		9000)
+		(Hero_Guarded		False)
+		(Guard_Function		Building_Guard)
+		(Guard_Spawn_Function	City_Guard_Spawner)
+		(Visited_Script		GuardHouse_Visited)
+		(birthscript		basic_birth)
+		(birthScript2		GuardHouse_Birth)
+		(IGdeathscript		GuardHouse_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+
+[Inn]
+	{Building
+		(type 			building)
+		(subtype 		Inn)
+		(title 			Inn)
+		(cost 400)
+		(costMultiplier 1.1)
+		(RevenueScript		Inn_Revenue)
+		(Revenue_Amount		60)
+		(Revenue_Time		25000)
+		(visited_script		Inn_visited)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[Library1]
+	{Library
+		(type 			building)
+		(subtype 		xx)
+		(title 			Library)
+		(cost 600)
+		(upgradeCost 800)
+		(costMultiplier 1.0)
+		(Sleep_For 		10000)
+		(Visited_Script		Library_Visited)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Library2]
+	{Library
+		(type 			building)
+		(subtype 		xx)
+		(title 			Library)
+		(cost 800)
+		(costMultiplier 1.0)
+		(Sleep_For 		10000)
+		(Visited_Script		Library_Visited)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[Marketplace1]
+	{Building
+		(type 			building)
+		(subtype 		Shop)
+		(title 			Marketplace)
+		(cost 1500)
+		(upgradeCost 1000)
+		(costMultiplier 1.3)
+		(Level			1)
+		(RevenueScript		Revenue_adjuster)
+		(Revenue_Amount		125)
+		(Revenue_Time		30000)
+		(Visited_Script		Shop_Visited)
+		(birthscript		basic_birth)
+		(birthScript2		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Marketplace2]
+	{Building
+		(type 			building)
+		(subtype 		Shop)
+		(title 			Marketplace)
+		(cost 1000)
+		(upgradeCost 1000)
+		(costMultiplier 1.3)
+		(Level			2)
+		(RevenueScript		Revenue_adjuster)
+		(Revenue_Amount		150)
+		(Revenue_Time		22500)
+		(Visited_Script		Shop_Visited)
+		(birthScript		Building_Birth)
+		(IGdeathscript		building_death)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Marketplace3]
+	{Building
+		(type 			building)
+		(subtype 		Shop)
+		(title 			Marketplace)
+		(cost 1000)
+		(costMultiplier 1.3)
+		(Level	       		3)
+		(RevenueScript		Revenue_adjuster)
+		(Revenue_Amount		175)
+		(Revenue_Time		15000)
+		(Visited_Script		Shop_Visited)
+		(birthScript		Building_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[Trading_Post]
+	{Building
+		(type 			building)
+		(subtype 		Shop)
+		(title 			Trading_Post)
+		(cost 600)
+		(costMultiplier 1.75)
+		(Visited_Script		Shop_Visited)
+		(birthscript		basic_birth)
+		(birthScript2		Trading_Post_Birth)
+		(IGdeathscript		building_death)
+		(ActiveScript		Trading_Post)
+	}
+[end]
+
+[Wizards_Tower]
+	{Tower
+		(type 			building)
+		(subtype 		xx)
+		(title 			Wizards_Tower)
+		(cost 500)
+		(costMultiplier 1.0)
+		(EnemyType 		Monster)
+		(Strength		20)
+		(AttackType		5)
+		(Ranged			95)
+		(ActiveScript		wiz_Tower_scan)
+		(BasicScript		wiz_Tower_scan)
+		(BackScript		wiz_Tower_scan)
+		(birthscript		magical_birth)
+		(birthScript2		Tower_Birth)
+		(IGdeathscript		building_death)
+		(Magical_build_rate     5)
+	}
+[end]
+
+[Brothel]
+	{Building
+		(type 			building)
+		(subtype 		Entertainment)
+		(title 			Brothel)
+		(Sleep_For		35000)
+		(Visited_Script		Brothel)
+		(birthScript		auto_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[Dwarven_Settlement]
+	{Dwarven_Settlement
+		(type 			building)
+		(subtype 		Guild)
+		(title 			Dwarven_Settlement)
+		(cost 1250)
+		(costMultiplier 4.0)
+		(Sleep_For		35000)
+		(EnemyType 		Monster)
+		(Attack_Action  	Ballista_Bolt)
+		(strength 		30)
+		(attacktype 		5)
+		(ranged 		90)
+		(member_title 		Dwarf)
+		(member_basicscript 	dwarf_tree)
+		(Lived_In_Script	Lived_In)
+		(ActiveScript		Tower_scan)
+		(BasicScript		Tower_scan)
+		(BackScript		Tower_scan)
+		(birthscript		basic_birth)
+		(birthScript2		Guild_Birth)
+		(IGdeathscript		Guild_destroyed_a)
+	}
+[end]
+
+[Elven_Bungalow]
+	{Guild
+		(type 			building)
+		(subtype 		Guild)
+		(title 			Elven_Bungalow)
+		(cost 750)
+		(costMultiplier 2.0)
+		(member_title 		Elf)
+		(member_basicscript 	elf_tree)
+		(Sleep_For 		30000)
+		(Lived_in_Script 	Lived_In)
+		(spawn_1		brothel_timer)
+		(spawn_2  		gambling_hall_timer)
+		(birthscript		basic_birth)
+		(birthScript2		bungalow_Birth)
+		(IGdeathscript		bungalow_destroyed)
+	}
+[end]
+
+[Graveyard]
+	{Lair
+		(type 			AutoBuilding)
+		(subtype 		xx)
+		(title 			Graveyard)
+		(difficulty 		4)
+		(Dispersion_Range	300)
+		(Special_Spawn_Type	Zombie)
+		(Spawn_Type 		Skeleton)
+		(Spawn_Function		Graveyard_Spawn)
+		(Base_Spawn_Rate	90000)
+		(activeScript		Sewer_Graveyard)
+		(birthScript		City_Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Gambling_Hall]
+	{Building
+		(type 			building)
+		(subtype 		Entertainment)
+		(title 			Gambling_Hall)
+		(Sleep_For		5000)
+		(Visited_Script		Gambling_Hall)
+		(birthScript		gambling_hall_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[Gnome_Hovel]
+	{Guild
+		(type 			building)
+		(subtype 		Guild)
+		(title 			Gnome_Hovel)
+		(cost 100)
+		(costMultiplier 2.0)
+		(member_title 		Gnome)
+		(member_basicscript 	gnome_tree)
+		(Sleep_for 		30000)
+		(Lived_In_Script 	Lived_In)
+		(birthScript		built_or_auto_birth)
+		(birthScript2		gnome_camp_Birth)
+		(IGdeathscript		gnome_camp_destroyed)
+	}
+[end]
+
+[General_Housing]
+	{Building
+		(type 			building)
+		(subtype 		xx)
+		(title 			General_Housing)
+		(birthScript		auto_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[Warriors_Guild]
+	{Guild
+		(type 			building)
+		(subtype 		Guild)
+		(title 			Warriors_Guild)
+		(cost 800)
+		(costMultiplier 2.0)
+		(member_title 		warrior)
+		(member_basicscript 	warrior_tree)
+		(Lived_In_Script	Lived_In)
+		(Sleep_for		30000)
+		(birthscript		basic_birth)
+		(birthScript2		warriors_Guild_Birth)
+		(IGdeathscript		guild_destroyed_a)
+	}
+[end]
+
+[Rangers_Guild]
+	{Guild
+		(type 			building)
+		(subtype 		Guild)
+		(title 			Rangers_Guild)
+		(cost 700)
+		(costMultiplier 2.0)
+		(member_title 		ranger)
+		(member_basicscript 	ranger_tree)
+		(Lived_In_Script	Lived_In)
+		(Sleep_for		30000)
+		(birthscript		basic_birth)
+		(birthScript2		Guild_Birth)
+		(IGdeathscript		guild_destroyed_a)
+	}
+[end]
+
+[Rogues_Guild1]
+	{Guild
+		(type 			building)
+		(subtype 		Guild)
+		(title 			Rogues_Guild)
+		(cost 600)
+		(upgradeCost 850)
+		(costMultiplier 2.0)
+		(Level			1)
+		(member_title 		Rogue)
+		(member_basicscript 	rogue_tree)
+		(Lived_In_Script	Lived_In)
+		(Sleep_for		30000)
+		(spawn_1		gambling_hall_timer)
+		(birthscript		basic_birth)
+		(birthScript2		Rogues_Guild_Birth)
+		(IGdeathscript		rogues_guild_destroyed)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Rogues_Guild2]
+	{Guild
+		(type 			building)
+		(subtype 		Guild)
+		(title 			Rogues_Guild)
+		(cost 850)
+		(costMultiplier 2.0)
+		(Level			2)
+		(member_title 		rogue)
+		(member_basicscript 	rogue_tree)
+		(Visited_Script		Poison_Weapons)
+		(Lived_In_Script	Lived_In)
+		(Sleep_for		30000)
+		(spawn_1		gambling_hall_timer)
+		(birthScript		Rogues_Guild_Birth)
+		(IGdeathscript		rogues_guild_destroyed)
+	}
+[end]
+
+[Wizards_Guild1]
+	{Guild
+		(type 			building)
+		(subtype 		Guild)
+		(title 			Wizards_Guild)
+		(cost 1500)
+		(upgradeCost 2500)
+		(costMultiplier 4.0)
+		(Level			1)
+		(member_title 		wizard)
+		(member_basicscript 	wizard_tree)
+		(Visited_Script		Enchant_Equipment)
+		(Lived_In_Script	Lived_In)
+		(Sleep_for		30000)
+		(birthscript		magical_birth)
+		(birthScript2		Guild_Birth)
+		(IGdeathscript		guild_destroyed_a)
+		(upgradescript		magical_upgrade)
+		(Magical_build_rate     5)
+	}
+[end]
+
+[Wizards_Guild2]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Wizards_Guild)
+		(cost 2500)
+		(upgradeCost 3500)
+		(costMultiplier 4.0)
+		(Level		2)
+		(member_title wizard)
+		(member_basicscript wizard_tree)
+		(Visited_Script		Enchant_Equipment)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthScript					Guild_Birth)
+		(IGdeathscript		guild_destroyed_a)
+		(upgradescript		magical_upgrade)
+	}
+[end]
+
+[Wizards_Guild3]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Wizards_Guild)
+		(cost 3500)
+		(costMultiplier 4.0)
+		(Level		3)
+		(member_title wizard)
+		(member_basicscript wizard_tree)
+		(Visited_Script		Enchant_Equipment)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthScript					Guild_Birth)
+		(IGdeathscript		guild_destroyed_a)
+	}
+[end]
+
+[Temple_Agrela1]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Agrela)
+		(cost 1000)
+		(upgradeCost 1500)
+		(costMultiplier 1.5)
+		(Level		1)
+		(member_title healer)
+		(member_basicscript healer_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthscript			basic_birth)
+		(birthScript2					agrela_Birth)
+		(IGdeathscript		agrela_destroyed)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Temple_Agrela2]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Agrela)
+		(cost 1500)
+		(upgradeCost 2600)
+		(costMultiplier 1.5)
+		(Level		2)
+		(member_title healer)
+		(member_basicscript healer_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthScript					agrela_Birth)
+		(IGdeathscript		agrela_destroyed)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Temple_Agrela3]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Agrela)
+		(cost 2600)
+		(costMultiplier 1.5)
+		(Level		3)
+		(member_title healer)
+		(member_basicscript healer_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthScript					agrela_Birth)
+		(IGdeathscript		agrela_destroyed)
+	}
+[end]
+
+[Temple_Dauros1]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Dauros)
+		(cost 1600)
+		(upgradeCost 2200)
+		(costMultiplier 2.0)
+		(Level		1)
+		(member_title Monk)
+		(member_basicscript Monk_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthscript			basic_birth)
+		(birthScript2					dauros_Birth)
+		(IGdeathscript		dauros_destroyed)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Temple_Dauros2]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Dauros)
+		(cost 2200)
+		(upgradeCost 3400)
+		(costMultiplier 2.0)
+		(Level		2)
+		(member_title monk)
+		(member_basicscript monk_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthScript					dauros_Birth)
+		(IGdeathscript		dauros_destroyed)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Temple_Dauros3]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Dauros)
+		(cost 3400)
+		(costMultiplier 2.0)
+		(Level		3)
+		(member_title monk)
+		(member_basicscript monk_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthScript					dauros_Birth)
+		(IGdeathscript		dauros_destroyed)
+	}
+[end]
+
+[Temple_Fervus1]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Fervus)
+		(cost 900)
+		(upgradeCost 1300)
+		(costMultiplier 2.0)
+		(Level		1)
+		(member_title cultist)
+		(member_basicscript cultist_tree)
+		(Lived_In_Script			Fervus_Lived_In)
+		(Sleep_for						30000)
+		(Spawn_Type		Giant_Eagle)
+		(birthscript			basic_birth)
+		(birthScript2					fervus_Birth)
+		(IGdeathscript		fervus_destroyed)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Temple_Fervus2]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Fervus)
+		(cost 1300)
+		(upgradeCost 2500)
+		(costMultiplier 2.0)
+		(Level		2)
+		(member_title cultist)
+		(member_basicscript cultist_tree)
+		(Lived_In_Script			Fervus_Lived_In)
+		(Sleep_for						30000)
+		(Spawn_Type		White_Wolf)
+		(birthScript					fervus_Birth)
+		(IGdeathscript		fervus_destroyed)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Temple_Fervus3]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Fervus)
+		(cost 2500)
+		(costMultiplier 2.0)
+		(Level		3)
+		(member_title cultist)
+		(member_basicscript cultist_tree)
+		(Lived_In_Script			Fervus_Lived_In)
+		(Sleep_for						30000)
+		(Spawn_Type		Red_Bear)
+		(birthScript					fervus_Birth)
+		(IGdeathscript		fervus_destroyed)
+	}
+[end]
+
+[Temple_Helia1]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Helia)
+		(cost 1000)
+		(upgradeCost 2000)
+		(costMultiplier 2.0)
+		(Level		1)
+		(member_title Solarus)
+		(member_basicscript solarus_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthscript			basic_birth)
+		(birthScript2					guild_Birth)
+		(IGdeathscript		guild_destroyed_a)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Temple_Helia2]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Helia)
+		(cost 2000)
+		(costMultiplier 2.0)
+		(Level		2)
+		(member_title solarus)
+		(member_basicscript solarus_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthScript					guild_Birth)
+		(IGdeathscript		guild_destroyed_a)
+	}
+[end]
+
+[Temple_Krolm]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Krolm)
+		(cost 900)
+		(costMultiplier 1.5)
+		(member_title barbarian)
+		(member_basicscript barbarian_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthscript			basic_birth)
+		(birthScript2					guild_Birth)
+		(IGdeathscript		guild_destroyed_a)
+	}
+[end]
+
+[Temple_Krypta1]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Krypta)
+		(cost 1400)
+		(upgradeCost 1800)
+		(costMultiplier 2.0)
+		(Level		1)
+		(member_title priestess)
+		(member_basicscript priestess_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthscript			basic_birth)
+		(birthScript2					krypta_Birth)
+		(IGdeathscript		krypta_destroyed)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Temple_Krypta2]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Krypta)
+		(cost 1800)
+		(upgradeCost 2200)
+		(costMultiplier 2.0)
+		(Level		2)
+		(member_title priestess)
+		(member_basicscript priestess_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthScript					krypta_Birth)
+		(IGdeathscript		krypta_destroyed)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Temple_Krypta3]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Krypta)
+		(cost 2200)
+		(costMultiplier 2.0)
+		(Level		3)
+		(member_title Priestess)
+		(member_basicscript priestess_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthScript					krypta_Birth)
+		(IGdeathscript		krypta_destroyed)
+	}
+[end]
+
+[Temple_Lunord1]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Lunord)
+		(cost 1000)
+		(upgradeCost 2000)
+		(costMultiplier 2.0)
+		(Level		1)
+		(member_title adept)
+		(member_basicscript adept_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthscript			basic_birth)
+		(birthScript2					guild_Birth)
+		(IGdeathscript		guild_destroyed_a)
+		(upgradescript		basic_upgrade)
+	}
+[end]
+
+[Temple_Lunord2]
+	{Guild
+		(type building)
+		(subtype Guild)
+		(title Temple_Lunord)
+		(cost 2000)
+		(costMultiplier 2.0)
+		(Level		2)
+		(member_title adept)
+		(member_basicscript adept_tree)
+		(Lived_In_Script			Lived_In)
+		(Sleep_for						30000)
+		(birthScript					guild_Birth)
+		(IGdeathscript		guild_destroyed_a)
+	}
+[end]
+
+[Goblin_Camp]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Goblin_Camp)
+		(difficulty 2)
+		(Dispersion_Range		300)
+		(Spawn_Type		Goblin_Fighter)
+		(Special_Spawn_Type		Goblin_Champion)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			15000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Goblin_Hovel]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Goblin_Hovel)
+		(difficulty 1)
+		(Dispersion_Range		300)
+		(Spawn_Type			Goblin_Fighter)
+		(Special_Spawn_Type		Goblin_Fighter)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Dark_Castle1]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Dark_Castle)
+		(difficulty 5)
+		(Dispersion_Range		300)
+		(Spawn_Type		Rust_Spitter)
+		(Special_Spawn_Type		Vampire)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Dark_Castle2]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Dark_Castle)
+		(difficulty 5)
+		(Dispersion_Range		300)
+		(Spawn_Type		Troll)
+		(Special_Spawn_Type		Troll)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Dark_Castle3]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Dark_Castle)
+		(difficulty 5)
+		(Dispersion_Range		300)
+		(Spawn_Type		Minotaur)
+		(Special_Spawn_Type		Vampire)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Dark_Castle4]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Dark_Castle)
+		(difficulty 5)
+		(Dispersion_Range		300)
+		(Spawn_Type Werewolf)
+		(Special_Spawn_Type		Werewolf)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Ruined_Altar1]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Ruined_Altar1)
+		(difficulty 5)
+		(Dispersion_Range		300)
+		(Spawn_type			Harpy)
+		(Special_Spawn_Type		Harpy)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Ruined_Keep1]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Ruined_Keep1)
+		(difficulty 5)
+		(Dispersion_Range		300)
+		(Spawn_Type			Zombie)
+		(Special_Spawn_Type		Medusa)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Ruined_Shrine1]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Ruined_Shrine1)
+		(difficulty 5)
+		(Dispersion_Range		300)
+		(Spawn_Type			Zombie)
+		(Special_Spawn_Type		Evil_Oculus)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Sewers]
+	{Lair
+		(type AutoBuilding)
+		(subtype xx)
+		(title Sewers)
+		(difficulty 4)
+		(Dispersion_Range		300)
+		(Special_Spawn_Type		Giant_Rat)
+		(Spawn_Type 		Ratman)
+		(Spawn_Function			Sewer_Spawn)
+		(Base_Spawn_Rate			120000)
+		(activeScript					Sewer_Graveyard)
+		(birthScript					City_Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Brashnards_Sphere]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Brashnards_Sphere)
+		(HP       200)
+		(MaxHP    200)
+		(difficulty 10)
+		(Dispersion_Range		300)
+		(Spawn_Type			Ratman)
+		(Special_Spawn_Type		Medusa)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript					Sphere_death)
+	}
+[end]
+
+[Elven_Hideout]
+	{Lair
+		(type Building)
+		(subtype xx)
+		(title ElvenHideout)
+		(HP       250)
+		(MaxHP    250)
+		(difficulty 12)
+		(Dispersion_Range		300)
+		(Spawn_Type			Giant_Rat)
+		(Special_Spawn_Type		xx)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					hideout_active)
+		(birthScript					Hideout_Birth)
+		(IGdeathscript		Hideout_death)
+	}
+[end]
+
+[Slave_Pits]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Slave_Pits)
+		(difficulty 10)
+		(Dispersion_Range		300)
+		(Spawn_Type			Giant_Rat)
+		(Special_Spawn_Type		xx)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Slave_pits_death)
+	}
+[end]
+
+[Slave_Cross]
+	{Lair
+		(type mystery)
+		(subtype xx)
+		(title Slave_Cross)
+		(difficulty 5)
+		(Dispersion_Range		300)
+		(Spawn_Type			Giant_Rat)
+		(Special_Spawn_Type		xx)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			60000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Hidden_Sword_Site]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Hidden_Sword_Site)
+		(HP       500)
+		(MaxHP    500)
+		(difficulty 10)
+		(Dispersion_Range		300)
+		(Spawn_Type			Giant_Rat)
+		(Special_Spawn_Type		Harpy)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Hidden_Sword_Death)
+	}
+[end]
+
+[Hidden_Chalice_Site]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Hidden_Chalice_Site)
+		(HP       250)
+		(MaxHP    250)
+		(difficulty 10)
+		(Dispersion_Range		300)
+		(Spawn_Type			Harpy)
+		(Special_Spawn_Type		Harpy)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript				Lair_brains)
+		(birthScript				Hidden_Chalice_Birth)
+		(IGdeathscript				Hidden_Chalice_death)
+	}
+[end]
+
+[Hidden_Ring_Site]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Hidden_Ring_Site)
+		(HP       250)
+		(MaxHP    250)
+		(difficulty 10)
+		(Dispersion_Range		300)
+		(Spawn_Type			Giant_Rat)
+		(Special_Spawn_Type		Giant_Rat)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Hidden_Ring_Birth)
+		(IGdeathscript		Hidden_Ring_death)
+	}
+[end]
+
+[Crown_Site]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Crown_Site)
+		(difficulty 10)
+		(Dispersion_Range		300)
+		(Spawn_Type			Giant_Rat)
+		(Special_Spawn_Type		Giant_Rat)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Crown_site_death)
+	}
+[end]
+
+[Tower_Prison]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Tower_Prison)
+		(difficulty 8)
+		(Dispersion_Range		300)
+		(Spawn_Type 		      Giant_Rat)
+		(Special_Spawn_Type		Ratman)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Dragon_Lair]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Dragon_Lair)
+		(difficulty 9)
+		(Dispersion_Range		300)
+		(Spawn_Type		Dragon)
+		(Special_Spawn_Type		Dragon)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			60000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Witch_King_Tower]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Witch_King_Tower)
+		(difficulty 10)
+		(Dispersion_Range		300)
+		(Spawn_Type		Giant_spider)
+		(Special_Spawn_Type		Witch_king)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					Lair_Birth)
+		(IGdeathscript		Witch_king_tower_death)
+	}
+[end]
+
+[Dragon_Tomb]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Dragon_Tomb)
+		(difficulty 10)
+		(Dispersion_Range		300)
+		(Special_Spawn_Type		Dragon)
+		(Spawn_Type			Dragon)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript					tomb_Birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Liche_Queen_lair]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Liche_Queen_Lair)
+		(difficulty 10)
+		(Dispersion_Range		300)
+		(Special_Spawn_Type		liche_queen)
+		(Spawn_Type		zombie)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript		lair_birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+
+[Animal_Den]
+	{Lair
+		(type Lair)
+		(subtype xx)
+		(title Animal_Den)
+		(HP       300)
+		(MaxHP    300)
+		(difficulty 3)
+		(Dispersion_Range		300)
+		(Spawn_Type		Red_Bear)
+		(Special_Spawn_Type		Red_Bear)
+		(Spawn_Function			Spawn)
+		(Base_Spawn_Rate			20000)
+		(activeScript					Lair_brains)
+		(birthScript		lair_birth)
+		(IGdeathscript		Lair_death)
+	}
+[end]
+
+[Gazebo]
+	{Building
+		(type building)
+		(subtype gazebo)
+		(title Inn)
+		(visited_script		Inn_visited)
+		(birthScript					auto_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[Fountain]
+	{Building
+		(type building)
+		(subtype Color)
+		(title Fountain)
+		(birthScript					Fountain_Birth)
+		(IGdeathscript		building_death)
+	}
+[end]
+
+[Royal_gardens]
+	{Building
+		(type building)
+		(subtype color)
+		(title Royal_gardens)
+		(RevenueScript		Generic_Revenue)
+		(Revenue_Amount		100)
+		(Revenue_Time			27000)
+		(spawn_1	gazebo_timer)
+		(visited_script		Gardens_visited)
+		(birthscript			basic_birth)
+		(birthScript2			gardens_Birth)
+		(IGdeathscript		gardens_death)
+	}
+[end]
+
+[Statue]
+	{Building
+		(type building)
+		(subtype color)
+		(title Statue)
+		(birthscript			basic_birth)
+		(birthScript2			statue_Birth)
+		(IGdeathscript		statue_death)
+	}
+[end]
+
+[Stone_tablet]
+	{map_goodie
+		(type color)
+		(subtype color)
+		(title Stone_tablet)
+	}
+[end]
+
+[obelisk]
+	{map_goodie
+		(type color)
+		(subtype color)
+		(title obelisk)
+	}
+[end]
+
+[sign_fancy_iron]
+	{map_goodie
+		(type color)
+		(subtype color)
+		(title Sign_fancy_iron)
+	}
+[end]
+
+[banner_wood]
+	{map_goodie
+		(type color)
+		(subtype color)
+		(title Banner_wood)
+	}
+[end]
+
+[sign_wood]
+	{map_goodie
+		(type color)
+		(subtype color)
+		(title Sign_wood)
+	}
+[end]
+
+[note_stump]
+	{map_goodie
+		(type color)
+		(subtype color)
+		(title note_stump)
+	}
+[end]
+
+[monster_marker]
+	{map_goodie
+		(type color)
+		(subtype color)
+		(title Monster_Marker)
+	}
+[end]
+
+[Siege_Marker]
+	{map_goodie
+		(type color)
+		(subtype color)
+		(title Siege_Marker)
+	}
+[end]

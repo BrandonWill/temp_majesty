@@ -1,0 +1,6 @@
+data="C:\Users\Brandon\Documents\My Games\MajestyHD\Quests\MyQuest\MyAI\GPL\Game\mx_Building_Data.dat"
+data="C:\Users\Brandon\Documents\My Games\MajestyHD\Quests\MyQuest\MyAI\GPL\Game\mx_Hero_Data.dat"
+source="C:\Users\Brandon\Documents\My Games\MajestyHD\Quests\MyQuest\MyAI\GPL\custom_rules.gpl"
+source="C:\Users\Brandon\Documents\My Games\MajestyHD\Quests\MyQuest\MyAI\GPL\Game\mx_Globals.gpl"
+source="C:\Users\Brandon\Documents\My Games\MajestyHD\Quests\MyQuest\MyAI\GPL\Game\mx_prototype.gpl"
+source="C:\Users\Brandon\Documents\My Games\MajestyHD\Quests\MyQuest\MyAI\GPL\Game\DecisionTrees\Modules\mx_defend_home.gpl"
