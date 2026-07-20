@@ -30,55 +30,6 @@
 
 ---
 
-## WILD IDEA: "Hero as Building" — Use Hero Panel for Custom UI
-
-The hero panel has working multi-tab navigation (System B buttons with literal panel
-indices). What if we create a "hero" that acts like a building?
-
-### Concept
-A Character unit that:
-- Doesn't move (Speed=0, Static)
-- Has a building sprite (ImageIDBase pointing to a building)
-- When clicked, opens the hero-style panel with Stats/Spells/Items tabs
-- Those tabs are repurposed as custom content pages
-- Spawned at a fixed location via GPL, invincible
-
-### Challenges
-- [ ] Can a Character have `Info value="Static"`? Does it suppress movement?
-- [ ] Does Speed=0 prevent all AI behavior?
-- [ ] Can we suppress hero tracking window appearance?
-- [ ] Can the hero panel's tab indices (AP21/AP22/AP78) be overridden per-unit?
-- [ ] Can a static character be built from the construction menu? Or only GPL-spawned?
-- [ ] What happens if a "hero" has building-style sprites (multi-frame idle)?
-- [ ] Does clicking a static character show hero panel or something else?
-
-### Quick Test
-Define a Character with:
-```xml
-<Description type="Unit" subType="Character" ID="ZZA1" Name="ShopKeeper">
-    <Engine version="1">
-        <Info value="Static"/>
-        <Info value="Directionless"/>
-        <Info value="BlockGround"/>
-        <CanUse value="HumanPlayer"/>
-        <Menu value="6"/>
-        <ImageIDBase value="ABl1"/>  <!-- Magic Bazaar sprite -->
-        <DefaultSound value="0"/>
-    </Engine>
-    <Game version="1">
-        <MaxHP value="9999"/>
-        <Speed value="0"/>
-        <SightRange value="0"/>
-        <Flags value="HasHPBar"/>
-    </Game>
-</Description>
-```
-
-Spawn via GPL: `$SpawnUnit(palace, "ShopKeeper", 0, location);`
-Click it — does it show the hero panel with Stats/Spells/Items tabs?
-
----
-
 ## Priority 1: EXE Patch — Fix Resource Search Priority for SMNU/STRT
 
 ### Problem (CORRECTED)
@@ -207,6 +158,57 @@ New custom buildings (new DialogID) can't have Research panels without exe patch
 - STRT is found by SAME entry name as SMNU in the CAM
 
 ### CAM Override Behavior
-- SMNU entries from quest CAM DO override base/expansion entries (panel loads)
-- STRT entries from quest CAM are NOT found by the resource manager lookup
-- Workaround: direct file replacement of textdata.cam / mx_textdata.cam
+- Quest CAMs ARE loaded into the resource system (no error on load)
+- SMNU/STRT from quest CAMs are shadowed by base/expansion (first-loaded wins)
+- IMAG/TILE/SPLT/WAVE from quest CAMs DO override (last-loaded wins)
+- This is a search direction issue in `FUN_00679a80`
+
+---
+
+## Priority 4: Modder Tooling — XML Panel Definition Language
+
+### Goal
+Modders should define panels in human-readable XML, not hand-assemble binary.
+A build tool compiles XML → SMNU binary + STRT, packs into CAM.
+
+### Proposed XML Format
+```xml
+<Panels>
+    <Panel name="MX03" background="IX01" tile="1001" font="fnt4" palette="MMS1">
+        <Widget type="0">
+            <Geometry x="0" y="0" w="202" h="245"/>
+            <Image set="INBg" tile="1024"/>
+            <Action type="6" value="1"/>
+        </Widget>
+        <Widget type="0">
+            <Geometry x="20" y="70" w="160" h="25"/>
+            <Text strt="2"/>
+            <Tooltip strt="1"/>
+            <Image set="INTG" tile="1005"/>
+            <Action type="5" target="35" code="NEW_NAV_CODE"/>
+        </Widget>
+        <Widget type="0">
+            <Geometry x="3" y="223" w="25" h="20"/>
+            <Image set="INTG" tile="1005"/>
+            <Action type="5" target="9" code="8013"/>
+        </Widget>
+    </Panel>
+    <Strings name="MX03">
+        <String id="0">MAGIC BAZAAR - RESEARCH</String>
+        <String id="1">View potion research items</String>
+        <String id="2">Potions</String>
+    </Strings>
+</Panels>
+```
+
+### Build Pipeline
+```
+panel_defs.xml → smnu_compiler.py → Quest_textdata.cam (SMNU + STRT sections)
+```
+
+### Implementation Steps (after exe patches are working)
+- [ ] Write `smnu_compiler.py` that reads XML and emits valid SMNU int32 stream
+- [ ] Include STRT generation from `<Strings>` section
+- [ ] Pack into CAM using existing `build_cam()` function
+- [ ] Validate output with existing SMNU parser/verifier
+- [ ] Integrate into quest build pipeline (call from build scripts)
