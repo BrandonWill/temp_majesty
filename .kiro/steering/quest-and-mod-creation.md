@@ -13,6 +13,7 @@ A complete Quest definition in Majesty contains several parts:
 | Quest Template | `.q` | Map layout and starting conditions (edited by RGSEditor) |
 | GPL Bytecode | `.bcd` | Compiled GPL source code the Quest runs |
 | Game Object Definitions | `.xml` | Optional — create or modify Buildings, Characters, Sounds |
+| CAM Archives | `.cam` | Optional — custom sprites, sounds, UI panels (see #[[file:.kiro/steering/cam-and-sprites.md]]) |
 | Art/Sound Binary Data | `.cam` | Images and sounds for game objects |
 | RGS Constants | `.rgs` | Random Generation System data for map generation |
 
