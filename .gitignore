@@ -13,3 +13,6 @@ __pycache__/
 
 # Scratch/utility scripts (root-level only, not mod subfolders)
 /utility/
+
+# Kiro settings (machine-specific)
+.kiro/settings/
