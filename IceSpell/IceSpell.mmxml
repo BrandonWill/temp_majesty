@@ -6,6 +6,7 @@
 					<Descriptions>Data\IceSpell_Actions.xml</Descriptions>
 					<Descriptions>Data\IceSpell_Characters.xml</Descriptions>
 					<Descriptions>Data\IceSpell_Overlays.xml</Descriptions>
+					<Descriptions>Data\IceSpell_Projectiles.xml</Descriptions>
 					<CAM>Data\Quest_maindata.cam</CAM>
 					<GPL>
 						<Target>Data\IceSpell.bcd</Target>

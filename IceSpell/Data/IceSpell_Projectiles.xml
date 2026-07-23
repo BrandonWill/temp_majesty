@@ -1,0 +1,15 @@
+<Majesty>
+	<!-- Ice Freeze Projectile: Travels from caster to target, triggers freeze on hit -->
+	<Description type="Unit" subType="Projectile" ID="IR04" Name="ice_freeze_missile" Description="Ice Freeze Missile">
+		<Engine version="1">
+			<Info value="DontBlock"/>
+			<Info value="Directionless"/>
+			<Info value="NoRandomTargetOnDestination"/>
+			<Menu value="11"/>
+			<ImageIDBase value="IR04"/>
+			<Script type="0" cProc="0" GPLFunction="Ice_Freeze_Begin"/>
+			<Attachment kind="Movement" type="Walk" ID="fast missile"/>
+			<DefaultSound value="0"/>
+		</Engine>
+	</Description>
+</Majesty>

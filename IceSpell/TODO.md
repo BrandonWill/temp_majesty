@@ -1,48 +1,26 @@
 # IceSpell Mod — TODO
 
-## Needs In-Game Testing
+## Ready (needs game machine)
 
-### 1. Verify freeze_effector cleanup
+- [ ] **Compile GPL** — Run `cmd /c MakeGPL.bat` in both `IceSpell/` and `IceSpell_Quest/`
+- [ ] **Test in-game** — Load IceSpell_Quest, verify:
+  - Projectile travels from Ice Elemental to target
+  - Freeze overlay is visible (animated shimmer, 48×64)
+  - Thaw burst plays on unfreeze (32×32 shard explosion)
+  - Cold stack accumulation works (5 hits to freeze)
+  - DOT ticks during freeze
+  - Immunity window prevents re-freeze for 5 seconds
 
-Added `$DeleteEffector(ThisAgent, "freeze_effector")` to `Ice_Freeze_End`.
-Previously the visible ice overlay was created with duration 0 (persistent) and
-never deleted — it would remain on the unit after unfreezing.
+## If art needs iteration
 
-**Test:** Freeze a hero, wait for unfreeze, confirm no lingering overlay sprite.
+- Freeze overlay: increase pixel density or brightness if too subtle in-game
+- Projectile: increase to 24×24 if too small to see at game zoom level
+- Impact: consider playing on hit (before freeze) as well as on thaw
+- Rebuild CAM with `python utility/build_ice_barrage_cam.py`
 
-### 2. Verify stability without $DebugOut
+## Future enhancements
 
-All `$DebugOut` calls removed from both IceSpell and IceSpell_Quest GPL.
-The debug spam was flooding gpl.log at hundreds of lines/second and contributing
-to sharing violation crashes.
-
-**Test:** Run a game session for 5+ minutes with active Ice Elementals. Confirm no
-crashes. Check that gpl.log stays quiet (or doesn't exist).
-
-### 3. Ice overlay visibility (LOW PRIORITY)
-
-Custom ice sprites (IR01/IR02/IR03) load without crashing but may be too subtle to see
-in-game. The petrify grey tint is visible, but the blue shimmer overlay hasn't been
-confirmed visually.
-
-**Options if not visible:**
-- Increase sprite size (currently ~45×64px, vs XR47's 150-400px)
-- Increase opacity / more solid fills
-- Add brighter white highlights
-
----
-
-## Not A Bug (Confirmed Normal)
-
-**Targeting spam** — The IceElemental re-evaluates and calls Ice_Freeze_Begin on
-already-frozen targets. This is normal monster AI behavior (Gorgon does the same).
-The `HasEffectPetrify` guard returns early with no state changes. The real problem
-was $DebugOut flooding — now fixed.
-
----
-
-## Deployment
-
-- **Compile GPL:** Run `MakeGPL.bat` from the `IceSpell/` folder
-- **Deploy:** Run `deploy.bat` (copies to `Documents\My Games\MajestyHD\Mods\IceSpell`)
-- Junction link from repo → mod folder also works (edits are immediately live in-game)
+- [ ] Add sound effects (impact + freeze crackle + thaw shatter)
+- [ ] Particle system for ambient frost dust while frozen
+- [ ] Screen shake or flash on barrage hit (if engine supports)
+- [ ] Balance pass: adjust stack count, duration, damage per game testing

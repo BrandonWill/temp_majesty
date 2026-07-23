@@ -1,10 +1,10 @@
 <Majesty>
-	<!-- Ice Freeze: Monster-cast attack spell that freezes and damages over time -->
+	<!-- Ice Freeze: Monster-cast attack spell that launches a frost projectile -->
 	<Description type="Action" subType="Standard" ID="IA01" Name="Ice_Freeze" Description="Ice Freeze">
 		<Engine version="1">
 			<ImageSet value="Cast"/>
 			<CompletionImageSet value="Stand"/>
-			<Script type="0" cProc="0" GPLFunction="Ice_Freeze_Begin"/>
+			<Script type="0" cProc="0" GPLFunction="Ice_Freeze_Cast"/>
 		</Engine>
 		<Game version="1">
 			<Flags value="IsSpell"/>

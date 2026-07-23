@@ -1,51 +1,62 @@
-# Ice Spell Visual Verification — Current Test
+# Ice Barrage — Visual Verification Checklist
 
-## Status: CUSTOM CAM SPRITES CONFIRMED RENDERING (XR47 test passed)
+## Current Build (July 2026)
 
-The WoK "Dust of Death" (XR47) animation rendered correctly on frozen heroes
-when loaded from a quest-loaded CAM. Game was stable with no crashes once all
-three overlay ImageIDBase values pointed to valid IMAG IDs.
+**Architecture:** Cast → Projectile → Hit → Cold Stacks → Freeze + DOT → Thaw
 
-## This Build: Custom Ice Sprites (IR01/IR02/IR03)
+**Assets in Quest_maindata.cam (15 KB):**
+| ID | Name | Frames | Size | Purpose |
+|----|------|--------|------|---------|
+| IR01 | freeze_effector | 8 | 48×64 | Animated ice shimmer overlay on frozen unit |
+| IR02 | freeze_icon | 1 | 1×1 | Invisible timer (calls Ice_Freeze_End) |
+| IR03 | thaw_effector | 5 | 32×32 | Shard burst when freeze ends |
+| IR04 | ice_projectile | 4 | 20×20 | Icy bolt travelling to target |
 
-Now testing our actual ice sprites from the Python-built CAM.
+**Palette:** Custom ice-blue gradient (indices 1-9: white → deep blue)
 
-**What to look for:**
-- When the Ice Elemental freezes a hero, you should see:
-  1. Hero turns grey (petrify shader from HasEffectPetrify)
-  2. A blue/white shimmer overlay appears ON TOP of the grey hero
-  3. The overlay is approximately 45x64 pixels (smaller than XR47's 400px dust cloud)
-  4. It may be subtle — look for blue/cyan pixels around the frozen hero
+## Before Testing: Compile GPL
 
-**If you see the grey petrify + a blue shimmer:** Custom ice sprites are rendering! SUCCESS.
+Run `cmd /c MakeGPL.bat` from `IceSpell_Quest/` folder on game machine.
+This compiles the new `Ice_Freeze_Cast` + `Ice_Freeze_Begin` functions.
 
-**If you see ONLY the grey petrify (no blue):** The sprites aren't rendering. The issue 
-is our Python CAM writer producing TILE data the engine can't display (even though it 
-loads without crashing). Compare against XR47 which DID render.
+## What to Look For
 
-**If it crashes:** Check which ImageIDBase is causing the null pointer. All three 
-(IR01, IR02, IR03) must exist as IMAG records in the loaded Quest_maindata.cam.
+### 1. Projectile Travel
+- Ice Elemental does Cast animation
+- A small (20×20) blue/white bolt should fly from caster to target
+- Uses "fast missile" movement speed
 
-## Key Differences from XR47 (which worked)
+### 2. Cold Stack Accumulation (no visual until threshold)
+- Each hit deals 8 damage
+- No freeze overlay until 5 stacks
 
-| Property | XR47 (worked) | Our ice sprites |
-|----------|---------------|-----------------|
-| TILE size | 5-33KB per frame | ~900 bytes per frame |
-| Dimensions | 150-400px wide | 45px wide |
-| Frames | 21 | 6 (ice) / 5 (thaw) |
-| Source | Original game developer | Python sprite_injector.py |
-| Palette | WoK palette 0 | WoK palette 0 (same) |
+### 3. Freeze Application (at 5 stacks)
+- Target turns grey (petrify shader)
+- 48×64 animated ice shimmer overlay appears on unit
+- Overlay should have visible icicles/crystals around edges with sparkle animation
+- Unit stops moving (intent_petrified)
+- DOT: 5 damage every 2 seconds
 
-The biggest risk: our TILE encoding (from sprite_injector.py) might produce 
-data the engine can't render, even though it passes our round-trip tests.
+### 4. Thaw (after 10 seconds)
+- Ice overlay removed
+- 32×32 shard burst appears briefly (2 seconds)
+- Unit resumes activity
+- 5-second immunity window (stacks set to -1)
 
+## Troubleshooting
 
-## In-Game Screenshot Observations
+**Projectile not visible:**
+- Check IceSpell_Projectiles.xml is loaded (in Quest.mqxml)
+- Verify IR04 IMAG exists in CAM (`python sprite_extractor.py --cam IceSpell_Quest/Data/Quest_maindata.cam --list`)
 
-**Screenshot — Grassland/Goblin Camp area (2026-07-09 22:08 session):**
-The Ice Dragon (IceElemental) is visible as a blue/white flying creature in the center of the screen, hovering over Goblin Camp structures. Directly beneath/beside it is its frozen target — a unit that appears grey/stone-colored from the petrify shader, standing completely still while the dragon keeps casting on it. The grey tint from `#ATTRIB_HasEffectPetrify` + `GetProperUnitArt` IS visible in this version, confirming the petrify visual is working. However, no blue/cyan ice overlay is visible on top of the grey unit — only the base petrify grey recolor.
+**Freeze overlay not visible:**
+- Overlay is 48×64 — look for subtle ice border around the grey unit
+- If too subtle, the pixel art may need more density/brightness
 
-**Conclusion from all screenshots:**
-- Grey petrify tint: ✓ visible (when HasEffectPetrify + GetProperUnitArt are used)
-- Brief "hands up" petrify start animation: ✓ visible
-- Custom ice overlay sprite (IR01 from Quest_maindata.cam): ✗ NOT visible — either not rendering or too small/transparent to see
+**Crash on cast:**
+- `$CreateMissile("ice_freeze_missile", ...)` needs the projectile XML loaded
+- Verify GPL compiled successfully (check IceSpell_Quest.bcd exists and is recent)
+
+**No thaw animation:**
+- IR03 thaw_effector must exist in CAM
+- `$createeffector(ThisAgent, "thaw_effector", 2000)` in Ice_Freeze_End

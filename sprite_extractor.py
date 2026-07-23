@@ -518,9 +518,18 @@ def main():
     print(f"  Loaded {len(cam_data):,} bytes")
 
     sections = read_cam(cam_data)
-    imag, tile, splt, cut = sections
+    if len(sections) >= 4:
+        imag, tile, splt, cut = sections[0], sections[1], sections[2], sections[3]
+    elif len(sections) == 3:
+        imag, tile, splt = sections[0], sections[1], sections[2]
+        cut = None
+    else:
+        print(f"  ERROR: Expected 3-4 sections, got {len(sections)}")
+        return
+
+    cut_info = f"   CUT: {len(cut.files)} entries" if cut else ""
     print(f"  IMAG: {len(imag.files)} records   TILE: {len(tile.files)} frames   "
-          f"SPLT: {len(splt.files)} entries   CUT: {len(cut.files)} entries")
+          f"SPLT: {len(splt.files)} entries{cut_info}")
     print()
 
     if args.list:

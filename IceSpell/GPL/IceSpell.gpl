@@ -1,5 +1,9 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Ice Freeze Spell - GPL Implementation
+// Ice Barrage — Projectile + Cold Stack → Freeze System
+///////////////////////////////////////////////////////////////////////////////
+// Cast launches ice_freeze_missile projectile at target.
+// On hit: adds cold stacks. At threshold, target freezes with DOT.
+// Stacks reset on unfreeze. Brief immunity window after thaw.
 ///////////////////////////////////////////////////////////////////////////////
 
 expression #Freeze_Duration 19000
@@ -9,7 +13,22 @@ expression #Freeze_ThawDuration 3000
 
 
 ///////////////////////////////////////////////////////////////////////////////
+function Ice_Freeze_Cast ( agent ThisAgent, agent target )
+// Called when Ice Elemental finishes Cast animation.
+// Launches the visible projectile toward the target.
+declare
+begin
+	If ( $IsDead ( target ))
+		return;
+
+	$CreateMissile ( "ice_freeze_missile", ThisAgent, target );
+end
+
+
+///////////////////////////////////////////////////////////////////////////////
 function Ice_Freeze_Begin ( agent ThisAgent, agent target )
+// Called when the ice projectile arrives at the target.
+// Applies freeze immediately (standalone version — no stacks).
 declare
 	integer time;
 begin
@@ -43,6 +62,7 @@ end
 
 ///////////////////////////////////////////////////////////////////////////////
 function Ice_Freeze_End ( agent ThisAgent )
+// Called by freeze_icon timer expiry.
 declare
 begin
 	If ( $IsDead ( ThisAgent ))
@@ -51,6 +71,9 @@ begin
 	$SetAttribute ( ThisAgent, #ATTRIB_HasEffectPetrify, 0 );
 	$GetProperUnitArt ( ThisAgent );
 	$DeleteEffector ( ThisAgent, "freeze_effector" );
+
+	// Show thaw/shatter effect
+	$createeffector ( ThisAgent, "thaw_effector", #Freeze_ThawDuration );
 
 	if ( ($GetAttribute ( ThisAgent, #ATTRIB_HasEffectVines ) == 0) &&
 		 ($GetAttribute ( ThisAgent, #ATTRIB_HasEffectParalyticGaze ) == 0) &&

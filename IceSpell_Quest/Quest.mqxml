@@ -8,6 +8,7 @@
 					<Descriptions>Data\IceSpell_Actions.xml</Descriptions>
 					<Descriptions>Data\IceSpell_Characters.xml</Descriptions>
 					<Descriptions>Data\IceSpell_Overlays.xml</Descriptions>
+					<Descriptions>Data\IceSpell_Projectiles.xml</Descriptions>
 					<Descriptions>MyAI\Data\M_Buildings.xml</Descriptions>
 					<Descriptions>MyAI\Data\MX_Buildings.xml</Descriptions>
 					<CAM>Data\Quest_maindata.cam</CAM>

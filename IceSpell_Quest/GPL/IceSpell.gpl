@@ -1,8 +1,9 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Ice Elemental Cold Stack → Freeze System
+// Ice Barrage — Projectile + Cold Stack → Freeze System
 ///////////////////////////////////////////////////////////////////////////////
-// Each hit adds cold stacks. At threshold, target freezes with DOT.
-// Stacks reset on unfreeze. Brief immunity window after unfreeze.
+// Cast launches ice_freeze_missile projectile at target.
+// On hit: adds cold stacks. At threshold, target freezes with DOT.
+// Stacks reset on unfreeze. Brief immunity window after thaw.
 ///////////////////////////////////////////////////////////////////////////////
 
 expression #Cold_Stacks_To_Freeze 5
@@ -14,8 +15,22 @@ expression #Freeze_Immunity_Time 5000
 
 
 ///////////////////////////////////////////////////////////////////////////////
+function Ice_Freeze_Cast ( agent ThisAgent, agent target )
+// Called when Ice Elemental finishes Cast animation.
+// Launches the visible projectile toward the target.
+declare
+begin
+	If ( $IsDead ( target ))
+		return;
+
+	$CreateMissile ( "ice_freeze_missile", ThisAgent, target );
+end
+
+
+///////////////////////////////////////////////////////////////////////////////
 function Ice_Freeze_Begin ( agent ThisAgent, agent target )
-// Called on each Ice Dragon attack hit.
+// Called when the ice projectile arrives at the target.
+// Applies cold stack logic and freeze at threshold.
 declare
 	integer stacks;
 begin
@@ -35,7 +50,7 @@ begin
 	if ( stacks < 0 )
 		return;
 
-	// Deal cold damage on each hit
+	// Deal cold damage on hit
 	$adjustattribute ( target, #ATTRIB_HP, -#Cold_Damage_Per_Hit );
 
 	// Increment cold stacks
@@ -45,7 +60,7 @@ begin
 	// Check freeze threshold
 	if ( stacks >= #Cold_Stacks_To_Freeze )
 		begin
-			// Apply freeze
+			// Apply freeze overlay + timer
 			$createeffector ( target, "freeze_effector", 0 );
 			$createeffector ( target, "freeze_icon", #Freeze_Duration );
 
@@ -84,7 +99,7 @@ end
 
 ///////////////////////////////////////////////////////////////////////////////
 function Ice_Freeze_End ( agent ThisAgent )
-// Called by freeze_icon timer. Handles both unfreeze and immunity clear.
+// Called by freeze_icon timer. Handles unfreeze and immunity window.
 declare
 	integer stacks;
 begin
@@ -102,6 +117,9 @@ begin
 			$UnFreeze_Unit ( ThisAgent );
 			$KillThread ( ThisAgent's "FreezeScript" );
 			$DeleteEffector ( ThisAgent, "freeze_effector" );
+
+			// Show thaw/shatter effect briefly
+			$createeffector ( ThisAgent, "thaw_effector", 2000 );
 
 			// Set immunity (-1) and start immunity timer
 			$SetAttribute ( ThisAgent, #ATTRIB_IsFrozen, -1 );
