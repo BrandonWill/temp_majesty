@@ -6,10 +6,11 @@ maindata.cam. Can replace existing TILE entries or create new ones.
 
 TILE format (version 3):
   [16B header][6B zeros][u32 palette_id][height × u32 offsets][row data]
+  - height = u16 at byte 2; width (canvas) = u16 at byte 4
 
 Row data format (per row):
-  Repeated segments: [u16 x_pos][u8 count][u8 flags][count palette bytes]
-  - x_pos = absolute x column where opaque pixels start
+  Repeated segments: [u16 x_end][u8 count][u8 flags][count palette bytes]
+  - x_end = exclusive end column of the opaque run (start + count)
   - count = number of consecutive opaque pixels
   - flags: 0x80 = last segment in row, 0x00 = more segments follow
 
@@ -92,6 +93,7 @@ def encode_tile(pixel_indices, palette_id, header_w2=0, header_w3=0,
     pixel_indices: 2D numpy array or list-of-lists, shape (height, width).
                    Value 0 = transparent.
     palette_id: u32 palette index for SPLT section.
+    header_w2: canvas width stored at byte 4 (defaults to image width).
 
     Returns: bytes (complete TILE entry ready to be written).
     """
@@ -99,6 +101,8 @@ def encode_tile(pixel_indices, palette_id, header_w2=0, header_w3=0,
 
     pixels = np.array(pixel_indices, dtype=np.uint8)
     height, width = pixels.shape
+    if header_w2 <= 0:
+        header_w2 = width
 
     # Encode each row into segments
     row_blobs = []
@@ -126,7 +130,7 @@ def encode_tile(pixel_indices, palette_id, header_w2=0, header_w3=0,
     header = struct.pack("<HHHHHHHH",
                          3,           # version
                          height,      # w1 = height
-                         header_w2,   # w2
+                         header_w2,   # w2 = canvas width
                          header_w3,   # w3
                          header_w4,   # w4
                          header_w5,   # w5
@@ -152,8 +156,9 @@ def _encode_row(row):
     """
     Encode a single row of palette indices into RLE segments.
 
-    Format: repeated [u16 x_pos][u8 count][u8 flags][count bytes]
+    Format: repeated [u16 x_end][u8 count][u8 flags][count bytes]
     - Consecutive non-zero pixels become one segment
+    - x_end is the exclusive end column (start + count)
     - Only index 0 is treated as transparent (skipped)
     - Magenta palette indices (248-255) are preserved as real pixel data
       since the game engine may use them for shadow/blend effects
@@ -174,6 +179,7 @@ def _encode_row(row):
         # Found start of opaque run (includes magenta indices)
         x_start = x
         run = []
+        # Cap runs at 80 to match original game encoding style
         while x < width and row[x] != 0 and len(run) < 80:
             run.append(int(row[x]))
             x += 1
@@ -183,15 +189,16 @@ def _encode_row(row):
     # Encode segments to bytes
     if not segments:
         # Fully transparent row — still need at least one segment
-        # Write a zero-pixel segment at position 0 with last flag
+        # Write a zero-pixel segment at exclusive end 0 with last flag
         return struct.pack("<HBB", 0, 0, 0x80)
 
     parts = []
-    for i, (x_pos, pixels) in enumerate(segments):
+    for i, (x_start, pixels) in enumerate(segments):
         is_last = (i == len(segments) - 1)
         flags = 0x80 if is_last else 0x00
         count = len(pixels)
-        part = struct.pack("<HBB", x_pos, count, flags) + bytes(pixels)
+        x_end = x_start + count
+        part = struct.pack("<HBB", x_end, count, flags) + bytes(pixels)
         parts.append(part)
 
     return b''.join(parts)
@@ -243,7 +250,7 @@ def roundtrip_test(cam_data, tile_section, splt_section, tile_idx):
 
     # Compare
     if reencoded == original:
-        print(f"✓ TILE[{tile_idx}]: perfect round-trip ({len(original)} bytes)")
+        print(f"OK TILE[{tile_idx}]: perfect round-trip ({len(original)} bytes)")
         return True
     else:
         print(f"  TILE[{tile_idx}]: size {len(original)} -> {len(reencoded)} "
@@ -252,7 +259,7 @@ def roundtrip_test(cam_data, tile_section, splt_section, tile_idx):
         # Decode re-encoded to verify image matches
         decoded2 = decode_tile(reencoded)
         if decoded2 is None:
-            print(f"  ✗ Re-encoded data failed to decode!")
+            print(f"  FAIL: Re-encoded data failed to decode!")
             return False
 
         # Compare pixel content
@@ -269,11 +276,11 @@ def roundtrip_test(cam_data, tile_section, splt_section, tile_idx):
         p2 = pixels2[:min_h, :min_w]
 
         if np.array_equal(p1, p2):
-            print(f"  ✓ Image content matches (different byte encoding, same pixels)")
+            print(f"  OK: Image content matches (different byte encoding, same pixels)")
             return True
         else:
             diff_count = np.sum(p1 != p2)
-            print(f"  ✗ Pixel mismatch: {diff_count} pixels differ")
+            print(f"  FAIL: Pixel mismatch: {diff_count} pixels differ")
             return False
 
 

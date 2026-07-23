@@ -1045,22 +1045,28 @@ populated direction offset to determine frame count reliably.
 
 8-bit paletted sprites with per-row RLE compression.
 
+> **Root cause note:** An earlier revision of this guide (and older tooling) treated the
+> per-segment X field as an absolute *start* column. The engine stores an **exclusive end**.
+> Full write-up: `majesty-gold-hd-art-asset-extractor/docs/TILE_V3_RLE_ROOT_CAUSE.md`
+> (also mirrored under this toolkit as needed).
+
 #### Header
 ```
 +0x00   2     u16: version (always 3)
-+0x02   2     u16: width
-+0x04   2     u16: height
-+0x06   6     zeros
-+0x0C   4     u32: palette_id (index into SPLT section)
-+0x10   H×4   height × u32: per-row offset table (offsets from start of pixel data)
++0x02   2     u16: height
++0x04   2     u16: width (canvas; equals max exclusive-end X over all rows)
++0x06  10     remaining header words (preserve when re-encoding)
++0x10   6     zeros
++0x16   4     u32: palette_id (index into SPLT section)  ← byte 22
++0x1A   H×4   height × u32: per-row offset table (offsets relative to byte 26)
 ```
 
 #### Row RLE (after offset table)
 Each row is a sequence of segments:
 ```
-[u16 x_position] [u8 count] [u8 flags] [count × u8 pixel_bytes]
+[u16 x_end] [u8 count] [u8 flags] [count × u8 pixel_bytes]
 ```
-- `x_position` — absolute column position (not relative skip)
+- `x_end` — exclusive end column of the opaque run; draw at `[x_end - count, x_end)`
 - `count` — number of pixel bytes following
 - `flags` — 0x80 = last segment in row
 - Pixel bytes — palette indices (0 = transparent, 248-255 = shadow/blend)
@@ -1068,9 +1074,9 @@ Each row is a sequence of segments:
 #### Key Facts
 - Pixel indices reference the palette at `palette_id` in the SPLT section
 - Palette index 0 is always transparent
-- Indices 248-255 map to shadow/blend colors (rendered as magic pink in extraction)
+- Indices 248-255 map to shadow/blend colors (often shown as magic pink in raw previews)
 - `sprite_extractor.py` decodes this format; `sprite_injector.py` encodes it
-- Round-trip verified: encode → decode produces identical pixel data
+- Round-trip verified on multi-run hero tiles (e.g. AVB1 TILE 3794): decode → encode → same pixels
 
 ---
 
