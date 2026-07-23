@@ -8,13 +8,13 @@ and TILE RLE decoding are all working. Palette lookup is the remaining
 piece for correct colors (grayscale/raw-index output works now).
 
 TILE format (version 3):
-  [16B header] [6B zeros] [u32 mystery] [height × u32 offsets] [RLE row data]
-  - height = header word 1 (u16 at byte 2)
+  [16B header] [6B zeros] [u32 palette_id] [height × u32 offsets] [RLE row data]
+  - height = u16 at byte 2; width (canvas) = u16 at byte 4
   - offsets are relative to byte 26 of the TILE entry
-  - each row: repeated [u16 skip] [u16 count|flags] [count palette bytes]
-    - skip = transparent pixels from current position
-    - count = low byte of count_word (opaque pixel count)
-    - flags = high byte; 0x80 = last segment in row
+  - each row: repeated [u16 x_end][u8 count][u8 flags][count palette bytes]
+    - x_end = exclusive end column of the opaque run (draw at [x_end-count, x_end))
+    - count = opaque pixel count (palette indices follow)
+    - flags: 0x80 = last segment in row
   - Pixel values are 8-bit palette indices
 
 Usage:
@@ -202,16 +202,19 @@ def decode_tile(tile_data):
     Format:
       [16B header][6B zeros][u32 palette_index][height × u32 offsets][row data]
       - height = u16 at byte 2 (header word 1)
+      - width  = u16 at byte 4 (canvas width; matches max exclusive-end X)
       - u32 at byte 22 = palette index into SPLT section
       - offsets at byte 26, relative to byte 26 (self-referencing)
-      - row data: repeated [u16 x_pos][u8 count][u8 flags][count palette bytes]
-        - x_pos = absolute x column where opaque pixels start
+      - row data: repeated [u16 x_end][u8 count][u8 flags][count palette bytes]
+        - x_end = exclusive end column of the opaque run
+        - draw pixels at [x_end - count, x_end)
         - count = number of opaque pixels (palette indices follow)
         - flags: 0x80 = last segment in row, 0x00 = more segments follow
       - Palette index 0 = transparent
 
     Returns dict with 'width', 'height', 'palette_id', 'rows' where rows is
-    a list of [(x_start, [pixel_indices]), ...] segments per row.
+    a list of [(x_start, [pixel_indices]), ...] segments per row (starts are
+    converted from on-disk exclusive ends for callers).
     Returns None on failure.
     """
     if len(tile_data) < 26:
@@ -220,16 +223,17 @@ def decode_tile(tile_data):
         return None
 
     height = u16(tile_data, 2)
+    header_width = u16(tile_data, 4)
     palette_id = u32(tile_data, 22)
     OFFSET_BASE = 26
 
-    if OFFSET_BASE + height * 4 > len(tile_data):
+    if height <= 0 or OFFSET_BASE + height * 4 > len(tile_data):
         return None
 
     offsets = [u32(tile_data, OFFSET_BASE + i * 4) for i in range(height)]
 
     rows = []
-    max_x = 0
+    max_end = 0
 
     for r in range(height):
         start = OFFSET_BASE + offsets[r]
@@ -247,7 +251,7 @@ def decode_tile(tile_data):
         pos = 0
 
         while pos + 4 <= len(row_data):
-            x_pos = u16(row_data, pos)
+            x_end = u16(row_data, pos)
             count_word = u16(row_data, pos + 2)
             pos += 4
 
@@ -255,19 +259,24 @@ def decode_tile(tile_data):
             flags = (count_word >> 8) & 0xFF
             is_last = (flags & 0x80) != 0
 
-            if count > 0 and pos + count <= len(row_data):
+            if count > 0 and count <= x_end and pos + count <= len(row_data):
                 pixels = list(row_data[pos:pos + count])
                 pos += count
-                segments.append((x_pos, pixels))
-                if x_pos + count > max_x:
-                    max_x = x_pos + count
+                x_start = x_end - count
+                segments.append((x_start, pixels))
+                if x_end > max_end:
+                    max_end = x_end
 
             if is_last:
                 break
 
         rows.append(segments)
 
-    return {"width": max_x, "height": height, "palette_id": palette_id, "rows": rows}
+    width = header_width if header_width > 0 else max_end
+    if max_end > width:
+        width = max_end
+
+    return {"width": width, "height": height, "palette_id": palette_id, "rows": rows}
 
 
 def load_splt_palette(cam_data, splt_section, palette_id):
