@@ -37,11 +37,6 @@ with proper terminators and matching STRT string counts). A malformed SMNU will 
 panel parser at runtime. See `SMNUResearch/findings/smnu_parser_decompilation.md` for the
 exact format specification.
 
-**Previous incorrect finding (corrected July 2026):** Earlier testing concluded SMNU/STRT
-used "first-loaded wins" and could not be overridden. This was a misdiagnosis — the actual
-failure was a malformed custom SMNU binary that crashed the engine. The override mechanism
-works correctly for all resource types.
-
 ---
 
 ## Quick Reference: What's In Each File
