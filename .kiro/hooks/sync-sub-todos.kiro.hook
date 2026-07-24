@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "name": "Sync Subfolder TODOs",
+  "description": "When a TODO file in any subfolder is edited, remind the agent to also update the root TODO.md to keep the master task list in sync with subsystem TODOs.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/TODO.md",
+      "**/TODO-*.md",
+      "**/FUTURE_TODO.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A subfolder TODO file was just edited. Check if the root TODO.md needs to be updated to reflect these changes. Keep the root TODO as a high-level summary that cross-references subfolder TODOs for details. Also check if the change belongs in TODO-Ghidra.md (exe patching/disassembly work)."
+  }
+}
