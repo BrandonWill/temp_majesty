@@ -10,13 +10,15 @@ When working on specific subsystems, include the relevant detailed steering file
 ## TODO Structure
 
 Work is tracked across multiple TODO files:
-- **`TODO.md`** — Master TODO. High-level summary of all active work. Cross-references subfolder TODOs.
+- **`TODO.md`** — Master TODO. Work doable on this machine (scripting, tooling, offline analysis).
 - **`TODO-Ghidra.md`** — EXE patching / Ghidra disassembly work. Delegate to the Ghidra machine session.
+- **`TODO-GameTests.md`** — Tests requiring the game to be loaded. Delegate to game machine session.
 - **`IceSpell/TODO.md`** — IceSpell mod-specific tasks (sprites, GPL, in-game testing).
 - **`SMNUResearch/FUTURE_TODO.md`** — Panel system research, SMNU compiler, navigation patches.
 
 **Rules:**
 - When adding Ghidra/exe-patch tasks, put them in `TODO-Ghidra.md`, not the root TODO.
+- When adding tasks that need the game running, put them in `TODO-GameTests.md`.
 - When editing any subfolder TODO, keep the root TODO.md summary in sync (a hook reminds you).
 - Subfolder TODOs contain detailed implementation steps; root TODO has one-liner summaries.
 
