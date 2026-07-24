@@ -92,6 +92,14 @@ The reverse direction (GPL → cheat internals) should be structurally similar.
 
 ---
 
+## Low Priority: Decompile Sound Editor EXE
+
+**Goal:** Reverse-engineer the SDK sound editor executable to understand sound/DSND authoring.
+
+**Record results in:** `CAM_MODDING_GUIDE.md` (sound sections) or new `SoundResearch/` folder if large.
+
+---
+
 ## Verification Tasks
 
 | Task | Record in |
