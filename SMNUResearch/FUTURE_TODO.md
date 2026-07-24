@@ -204,8 +204,72 @@ panel_defs.xml → smnu_compiler.py → Quest_textdata.cam (SMNU + STRT sections
 ```
 
 ### Implementation Steps (after exe patches are working)
-- [ ] Write `smnu_compiler.py` that reads XML and emits valid SMNU int32 stream
-- [ ] Include STRT generation from `<Strings>` section
-- [ ] Pack into CAM using existing `build_cam()` function
-- [ ] Validate output with existing SMNU parser/verifier
+- ✅ `smnu_format.py` — parser + writer for the SMNU tag-value stream, built on
+  the confirmed opcode tables in `findings/smnu_parser_decompilation.md`.
+  Byte-perfect roundtrip verified against all 169 real panels (base +
+  expansion). Widget types 0/1/2/5/6/9/11/12 use positional geometry
+  (x,y,w,h read directly after sub_id); types 3/4/7/8/10 use the generic
+  tag-2 geometry. Both shapes round-trip correctly — the "custom
+  constructor" concern from the original TODO line is resolved.
+  Tests: `SMNUResearch/test_smnu_format.py` (7 tests, all passing).
+- ✅ `smnu_compiler.py` — compiles a parsed Panel + string table into
+  byte-perfect SMNU+STRT via `smnu_format.py` + `str_tool.py`. Validates
+  every tag-7/tag-33 STRT string-index reference is in range at compile
+  time (catches the null-STRT-handle crash class before it reaches the
+  game). Verified byte-perfect against 168/169 real panels — see
+  "Known Data Quirk: GDB4" below for the one exception.
+- ✅ `cam_writer.build_cam_from_sections()` — new function alongside the
+  existing `repack_cam()` (which modifies an existing CAM's entries).
+  `build_cam_from_sections()` builds a CAM from scratch out of in-memory
+  section data, which is what a quest-only textdata.cam needs (there's no
+  "original" CAM to repack — SMNU/STRT panels are being added new).
+  `smnu_compiler.build_textdata_cam(named_panels)` ties this together:
+  takes a dict of {entry_name: PanelSource}, compiles each, and packs them
+  into one CAM with matching SMNU/STRT entry names (the same-name pairing
+  the engine relies on — see smnu_parser_decompilation.md). Fails the
+  whole build loudly if any single panel is invalid, rather than shipping
+  a CAM with one bad panel in it. Verified end-to-end: a real panel
+  (MX03) round-tripped through load -> compile -> pack -> cam_reader ->
+  byte-identical SMNU+STRT. 9 tests in test_smnu_compiler.py.
+- **Deferred:** XML front-end that would parse the `<Panels>` schema above
+  into `smnu_compiler.py`'s Panel/Widget/Property dataclasses. This only
+  earns its cost if modders other than us are hand-authoring panels
+  without touching Python — the same reason `gplbcc.exe` exists as a
+  distributable compiler for GPL. For our own use, driving the
+  dataclasses directly from Python is simpler and already fully
+  validated. Revisit if/when this tooling needs to be handed to other
+  modders.
+- [ ] Validate new/hand-authored panels don't crash in-game (roundtrip alone
+  only proves we can reproduce EXISTING panels — authoring new content still
+  needs in-game testing per TODO-GameTests.md)
 - [ ] Integrate into quest build pipeline (call from build scripts)
+
+### Known Data Quirk: GDB4 (GPL Debugger Panel, textdata.cam)
+
+`smnu_compiler.py verify-all` found that GDB4's SMNU (in `Data/textdata.cam`,
+2628 bytes) has two widgets (widget[29], widget[30] — type 0 buttons at
+`(409,570,81,24)` and `(490,570,81,24)`, action codes 2016/2017) referencing
+STRT string indices 28 and 29. Its own paired STRT (same file, 651 bytes)
+only has 28 strings (valid indices 0-27).
+
+This is a genuine inconsistency in the shipped game data, not a bug in the
+compiler — confirmed by reading both files directly (not just through
+`smnu_analysis.load_panels()`; see `utility/test_decoder.py` for the
+investigation script). Note `Data/GPLDebuggerUI.cam` also has its own
+separate, unrelated GDB4 SMNU+STRT pair (2164B/16 strings) — that is NOT
+the one being compiled here; textdata.cam's GDB4 is self-contained and
+distinct.
+
+Working theory: those two buttons are either dead/unused debug-only UI
+elements, or they're populated by C++ code at runtime rather than via the
+STRT lookup (similar to the type-6 list-widget content question in
+Priority 3.5 above) — which would mean the tag-7 index isn't actually
+resolved for them in practice, explaining why the game doesn't crash on
+this panel. See TODO-Ghidra.md "Priority 3" for the request to confirm
+this with Ghidra.
+
+Until confirmed, `smnu_compiler.py`'s strict validation is intentionally
+kept as-is (fail loudly on out-of-range string refs) since silently
+tolerating this would mask the exact crash class the validation exists to
+catch. GDB4 itself is excluded from the "must reproduce byte-perfect"
+guarantee pending the Ghidra finding.

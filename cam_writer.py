@@ -123,6 +123,69 @@ def repack_cam(cam_data, sections, replacements=None):
     return bytes(out)
 
 
+def build_cam_from_sections(sections_data):
+    """
+    Build a brand-new CAM file from in-memory section data (no original CAM
+    file needed). This is the tool for authoring a quest-only CAM (e.g. a
+    textdata.cam containing new/overridden SMNU+STRT panels) from scratch,
+    as opposed to repack_cam() which modifies an existing CAM's entries.
+
+    sections_data: list of (extension_4char: str, files: list[(name: str, data: bytes)])
+        `extension_4char` is the section type (e.g. "SMNU", "STRT").
+        `name` is the entry name (e.g. "MX03"), ASCII, <=20 bytes.
+
+    Returns: new CAM file as bytes, structurally identical in layout to the
+    game's own CAM files (verified via read_cam() round-trip in
+    SMNUResearch/test_smnu_cam_builder.py).
+    """
+    section_count = len(sections_data)
+
+    content_header_parts = [4 + 4 + len(files) * 28 for _, files in sections_data]
+    content_header_length = sum(content_header_parts)
+
+    file_header_size = 12 + 4 + 4 + 8 * section_count
+    content_start = file_header_size + content_header_length
+
+    # Calculate file data offsets
+    current_offset = content_start
+    file_offsets = []  # list of list of (offset, size) per section
+    for _, files in sections_data:
+        sec_offsets = []
+        for _, data in files:
+            sec_offsets.append((current_offset, len(data)))
+            current_offset += len(data)
+        file_offsets.append(sec_offsets)
+
+    out = bytearray()
+
+    # === File header ===
+    out += b"CYLBPC  \x01\x00\x01\x00"
+    out += struct.pack("<I", section_count)
+    out += struct.pack("<I", content_header_length)
+
+    sec_header_offset = file_header_size
+    for i, (ext, files) in enumerate(sections_data):
+        out += ext.encode("ascii")[:4].ljust(4, b"\x00")
+        out += struct.pack("<I", sec_header_offset)
+        sec_header_offset += content_header_parts[i]
+
+    # === Content header ===
+    for sec_idx, (ext, files) in enumerate(sections_data):
+        out += struct.pack("<II", len(files), 0)
+        for file_idx, (name, data) in enumerate(files):
+            name_bytes = name.encode("ascii")[:20].ljust(20, b"\x00")
+            offset, size = file_offsets[sec_idx][file_idx]
+            out += name_bytes
+            out += struct.pack("<II", offset, size)
+
+    # === Content ===
+    for _, files in sections_data:
+        for _, data in files:
+            out += data
+
+    return bytes(out)
+
+
 def pack_from_directory(input_dir):
     """
     Pack a CAM file from an extracted directory (CamTool.index + section subdirs).

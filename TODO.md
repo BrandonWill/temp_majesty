@@ -11,9 +11,26 @@ See also:
 ## Active Work (this machine)
 
 ### SMNU Panel Compiler
-- [ ] Build `smnu_compiler.py` that produces valid panel binary
-  - Must handle the custom constructor formats for widget types 0, 1, 2, 5, 6, 9
-  - Validate against real game panels by roundtrip comparison
+- ✅ `smnu_format.py` — structured parser/writer, byte-perfect roundtrip on all
+  169 real panels (base + expansion), 7 unit tests passing (SMNUResearch/)
+- ✅ `smnu_compiler.py` — compiles Panel+strings to SMNU+STRT via str_tool.py,
+  validates STRT string-index refs at compile time, byte-perfect on 168/169
+  real panels (1 known data quirk — GDB4, see below)
+- ✅ `cam_writer.build_cam_from_sections()` + `smnu_compiler.build_textdata_cam()`
+  — packs compiled SMNU+STRT panels into a fresh quest CAM from scratch.
+  Verified byte-perfect end-to-end (real panel -> compile -> pack -> read back).
+  9 tests passing (SMNUResearch/test_smnu_compiler.py)
+- Deferred: XML front-end for `smnu_compiler.py`. Only worth building if
+  modders other than us are authoring panels directly (same rationale as
+  gplbcc.exe existing for GPL). We drive the Panel/Widget/Property
+  dataclasses from Python directly for now. See SMNUResearch/FUTURE_TODO.md.
+- [ ] **Game machine: validate compiler output loads in-game** — the new
+  smnu_format.py/smnu_compiler.py work is committed to Python-level
+  byte-perfect verification only; nobody has confirmed the engine accepts
+  a tooling-generated CAM at load time. See TODO-GameTests.md "SMNU Panel
+  Override — Passthrough Test" for the concrete test.
+- [ ] Ghidra: confirm GDB4's 2 out-of-range STRT refs are dead/unreachable code
+  (see TODO-Ghidra.md Priority 3.5, SMNUResearch/FUTURE_TODO.md "Known Data Quirk")
 
 ### Landscape Objects (Trees/Rocks)
 - [ ] Document which fractal refs (`xFel`, `xFer`, `xBBC`, etc.) produce which vegetation

@@ -75,6 +75,42 @@ See `SMNUResearch/FUTURE_TODO.md` for geometry examples and known behavior.
 
 ---
 
+## Priority 3.5: Confirm GDB4 Out-of-Range STRT References (Debugger Panel)
+
+**Goal:** Confirm whether GDB4's two "extra" widgets (in `Data/textdata.cam`)
+are dead code, or are populated without going through the normal STRT
+string lookup.
+
+**Background:** `smnu_compiler.py` (SMNUResearch/) strictly validates that
+every tag-7/tag-33 string index resolves within the panel's paired STRT
+table — this is exactly the check that would have caught the original
+null-STRT-handle crash (see TASK_smnu_parser_decompile.md). Running it
+against all 169 real panels found ONE exception: GDB4 (GPL Debugger UI
+panel, `Data/textdata.cam`) has two type-0 button widgets referencing STRT
+indices 28 and 29, but its own paired STRT only has 28 strings (valid
+0-27). Confirmed via direct file reads (not a load_panels() pairing bug —
+see `utility/test_decoder.py`). The game evidently doesn't crash on this
+panel in normal play, so *something* prevents those two indices from ever
+being resolved.
+
+**Steps:**
+1. Find where GDB4 is loaded/opened (likely gated behind a debug/dev mode
+   flag — search for xrefs to the "GDB4" string, similar to the SMNU
+   section string search in TASK_smnu_parser_decompile.md)
+2. Decompile the code path that populates those two specific button
+   widgets (offsets/action codes 2016/2017 in the SMNU — see
+   SMNUResearch/FUTURE_TODO.md "Known Data Quirk: GDB4" for exact geometry)
+3. Determine: are these buttons ever actually shown/clickable, or is this
+   panel only reachable via a debug build/cheat that never exercises them?
+4. If they ARE reachable: find where their label text actually comes from
+   if not tag-7's STRT lookup (hardcoded string? separate resource?)
+
+**Record results in:** `SMNUResearch/FUTURE_TODO.md` ("Known Data Quirk:
+GDB4" section) and update `smnu_compiler.py`'s validation/exclusion if the
+finding changes how string refs should be checked.
+
+---
+
 ## Priority 4: Expose Cheat Functions to GPL
 
 **Goal:** Add GPL primitives that call internal cheat engine functions.
